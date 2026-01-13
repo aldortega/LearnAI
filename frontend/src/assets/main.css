@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Roboto Flex", "Roboto", system-ui, sans-serif;
+
+  --color-md-surface: #f9fffc;
+  --color-md-on-surface: #1b1f1d;
+  --color-md-on-surface-variant: #44514c;
+  --color-md-primary: #4fb6a1;
+  --color-md-on-primary: #ffffff;
+  --color-md-secondary-container: #cfeedf;
+  --color-md-on-secondary-container: #0f2f28;
+  --color-md-tertiary: #4b6f9c;
+  --color-md-surface-container: #eef7f3;
+  --color-md-surface-container-low: #e3efeb;
+  --color-md-outline: #7c8a84;
+
+  --radius-card: 24px;
+  --radius-xl: 32px;
+  --radius-2xl: 48px;
+}
+
+@layer base {
+  * {
+    @apply border-md-outline/30;
+  }
+
+  body {
+    @apply bg-md-surface text-md-on-surface font-sans antialiased;
+  }
+}
+
+@layer components {
+  .md-input {
+    @apply h-14 rounded-t-lg rounded-b-none border-b-2 border-md-outline bg-md-surface-container-low px-4 text-sm text-md-on-surface placeholder:text-md-on-surface-variant/60 transition-colors duration-200 focus:border-md-primary focus:outline-none focus:ring-2 focus:ring-md-primary/30;
+  }
+}
+
+@layer utilities {
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

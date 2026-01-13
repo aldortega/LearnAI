@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+motor
+pydantic
+pydantic-settings
+passlib[argon2]
+email-validator
