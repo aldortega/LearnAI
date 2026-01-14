@@ -22,10 +22,10 @@ export function Header() {
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-zinc-100 bg-white/80 px-8 backdrop-blur-md">
       {/* Left: Branding */}
       <div className="flex items-center gap-2">
-        <div className="grid h-8 w-8 place-items-center rounded-lg bg-[color:var(--color-fern-900)] text-white">
+        <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-900 text-white">
           <GraduationCap className="h-5 w-5" />
         </div>
-        <span className="text-lg font-bold tracking-tight text-[color:var(--color-fern-900)]">
+        <span className="text-lg font-bold tracking-tight text-emerald-900">
           LearnAI
         </span>
       </div>
@@ -34,7 +34,7 @@ export function Header() {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-fern-100)] text-[color:var(--color-fern-700)] ring-2 ring-transparent transition-all hover:bg-[color:var(--color-fern-200)] focus:outline-none focus:ring-[color:var(--color-fern-200)]"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 ring-2 ring-transparent transition-all hover:bg-emerald-200 focus:outline-none focus:ring-emerald-200"
           aria-label="User menu"
         >
           <User className="h-5 w-5" />

@@ -19,10 +19,10 @@ export function NotebookCard({
   return (
     <div className="group flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 transition-shadow hover:shadow-md">
       <div>
-        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--color-moss-green-200)] text-[color:var(--color-fern-600)]">
+        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-200 text-emerald-600">
           <Icon className="h-5 w-5" />
         </div>
-        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-zinc-900 group-hover:text-[color:var(--color-fern-700)]">
+        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-zinc-900 group-hover:text-emerald-700">
           {title}
         </h3>
       </div>

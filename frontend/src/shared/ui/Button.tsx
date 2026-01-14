@@ -31,13 +31,13 @@ export function Button({
       disabled={isDisabled}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-moss-green-500)] focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
         isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
         variant === "primary" &&
           cn(
-            "bg-[color:var(--color-fern-900)] text-white shadow-sm",
+            "bg-emerald-900 text-white shadow-sm",
             !isDisabled &&
-              "hover:bg-[color:var(--color-fern-800)] active:bg-[color:var(--color-fern-950)]",
+              "hover:bg-emerald-800 active:bg-emerald-950",
           ),
         variant === "ghost" &&
           cn(

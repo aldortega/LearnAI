@@ -73,7 +73,7 @@ export function TextField({
       >
         {label}
         {required ? (
-          <span className="text-[color:var(--color-fern-600)]"> *</span>
+          <span className="text-emerald-600"> *</span>
         ) : null}
       </label>
 
@@ -83,7 +83,7 @@ export function TextField({
           className={cn(
             "h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 transition-all duration-200",
             "placeholder:text-zinc-400",
-            "focus:border-[color:var(--color-fern-600)] focus:ring-1 focus:ring-[color:var(--color-fern-600)] focus:outline-none",
+            "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none",
             error
               ? "border-red-300 focus:border-red-500 focus:ring-red-500"
               : "hover:border-zinc-300",
@@ -104,7 +104,7 @@ export function TextField({
             className={cn(
               "absolute inset-y-0 right-2 flex items-center rounded-md px-2 text-zinc-400 transition",
               "hover:text-zinc-600",
-              "focus:outline-none focus:ring-2 focus:ring-[color:var(--color-fern-600)]",
+              "focus:outline-none focus:ring-2 focus:ring-emerald-600",
             )}
             aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
           >

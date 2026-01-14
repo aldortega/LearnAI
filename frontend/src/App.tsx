@@ -8,9 +8,9 @@ function AppInner() {
 
   if (isBootstrapping) {
     return (
-      <div className="min-h-screen bg-[color:var(--color-frosted-mint-50)]">
+      <div className="min-h-screen bg-emerald-50">
         <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4">
-          <div className="rounded-3xl bg-white/70 px-6 py-5 text-sm font-semibold text-[color:var(--color-fern-700)] ring-1 ring-[color:var(--color-fern-100)] backdrop-blur-xl">
+          <div className="rounded-3xl bg-white/70 px-6 py-5 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-100 backdrop-blur-xl">
             Cargando…
           </div>
         </div>
