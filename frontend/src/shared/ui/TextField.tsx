@@ -41,10 +41,10 @@ export function TextField({
   const showPasswordToggle = type === "password";
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <label
         htmlFor={id}
-        className="block text-sm font-semibold text-[color:var(--color-fern-900)]"
+        className="block text-sm font-medium text-zinc-700"
       >
         {label}
         {required ? (
@@ -63,18 +63,18 @@ export function TextField({
           autoComplete={autoComplete}
           required={required}
           className={cn(
-            "h-11 w-full rounded-2xl bg-white px-4 text-sm text-[color:var(--color-fern-950)] ring-1 transition",
-            "placeholder:text-[color:var(--color-fern-400)]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-moss-green-400)]",
+            "h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 transition-all duration-200",
+            "placeholder:text-zinc-400",
+            "focus:border-[color:var(--color-fern-600)] focus:ring-1 focus:ring-[color:var(--color-fern-600)] focus:outline-none",
             error
-              ? "ring-[color:var(--color-fern-300)] focus-visible:ring-[color:var(--color-celadon-bright-500)]"
-              : "ring-[color:var(--color-fern-200)]",
-            (showPasswordToggle || Boolean(rightAdornment)) && "pr-12",
+              ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+              : "hover:border-zinc-300",
+            (showPasswordToggle || Boolean(rightAdornment)) && "pr-10",
           )}
         />
 
         {rightAdornment ? (
-          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[color:var(--color-fern-400)]">
+          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-zinc-400">
             {rightAdornment}
           </div>
         ) : null}
@@ -84,16 +84,16 @@ export function TextField({
             type="button"
             onClick={() => setIsPasswordVisible((v) => !v)}
             className={cn(
-              "absolute inset-y-0 right-2 flex items-center rounded-xl px-2 text-[color:var(--color-fern-500)] transition",
-              "hover:text-[color:var(--color-fern-700)]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-moss-green-400)]",
+              "absolute inset-y-0 right-2 flex items-center rounded-md px-2 text-zinc-400 transition",
+              "hover:text-zinc-600",
+              "focus:outline-none focus:ring-2 focus:ring-[color:var(--color-fern-600)]",
             )}
             aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
             {isPasswordVisible ? (
-              <EyeOff aria-hidden className="h-5 w-5" />
+              <EyeOff aria-hidden className="h-4 w-4" />
             ) : (
-              <Eye aria-hidden className="h-5 w-5" />
+              <Eye aria-hidden className="h-4 w-4" />
             )}
           </button>
         ) : null}
@@ -102,7 +102,7 @@ export function TextField({
       {error ? (
         <p
           role="alert"
-          className="text-sm text-[color:var(--color-fern-700)]"
+          className="text-sm text-red-600"
         >
           {error}
         </p>

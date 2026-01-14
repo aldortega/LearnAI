@@ -21,7 +21,7 @@ export function Tabs<T extends string>({
   return (
     <div
       className={cn(
-        "rounded-full bg-white/60 p-1 ring-1 ring-[color:var(--color-fern-100)]",
+        "rounded-lg bg-zinc-100 p-1",
         className,
       )}
       role="tablist"
@@ -39,11 +39,11 @@ export function Tabs<T extends string>({
               aria-selected={isActive}
               onClick={() => onChange(tab.value)}
               className={cn(
-                "h-10 rounded-full text-sm font-semibold transition",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-moss-green-400)]",
+                "h-9 rounded-md text-sm font-medium transition-all duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-fern-500)]",
                 isActive
-                  ? "bg-white text-[color:var(--color-fern-900)] shadow-[0_10px_24px_-20px_rgba(13,32,21,0.45)]"
-                  : "text-[color:var(--color-fern-600)] hover:bg-white/70",
+                  ? "bg-white text-zinc-900 shadow-sm ring-1 ring-black/5"
+                  : "text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-700",
               )}
             >
               {tab.label}

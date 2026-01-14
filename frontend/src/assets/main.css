@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --font-sans: "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-sans: "Geist Sans", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   /* fern */
   --color-fern-50: #eff6f0;
   --color-fern-100: #dfece1;

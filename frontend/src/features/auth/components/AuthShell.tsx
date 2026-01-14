@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { GraduationCap, Lightbulb } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
 
@@ -16,53 +16,14 @@ function LogoMark() {
     <div className="flex items-center gap-3">
       <div
         className={cn(
-          "grid h-10 w-10 place-items-center rounded-2xl",
-          "bg-[color:var(--color-fern-100)] ring-1 ring-[color:var(--color-fern-200)]",
+          "grid h-10 w-10 place-items-center rounded-lg bg-white/10 ring-1 ring-white/20",
         )}
       >
-        <GraduationCap
-          aria-hidden
-          className="h-6 w-6 text-[color:var(--color-fern-700)]"
-        />
+        <GraduationCap aria-hidden className="h-6 w-6 text-white" />
       </div>
       <div>
-        <div className="text-lg font-extrabold tracking-tight text-[color:var(--color-fern-950)]">
-          ScholarAI
-        </div>
-        <div className="text-xs font-medium text-[color:var(--color-fern-500)]">
-          Study smarter
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function HeroCard() {
-  return (
-    <div className="relative overflow-hidden rounded-3xl bg-[color:var(--color-fern-800)] p-6 ring-1 ring-white/10">
-      <div className="absolute -left-10 -top-16 h-48 w-48 rounded-full bg-[color:var(--color-celadon-500)] opacity-20 blur-2xl" />
-      <div className="absolute -bottom-20 -right-14 h-64 w-64 rounded-full bg-[color:var(--color-frosted-mint-500)] opacity-15 blur-3xl" />
-
-      <div className="relative">
-        <div className="text-sm font-semibold text-white/80">Daily Streak</div>
-        <div className="mt-2 text-2xl font-extrabold tracking-tight text-white">
-          Dominá tus documentos
-          <br />
-          con IA
-        </div>
-        <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">
-          Subí tus materiales de estudio, generá quizzes y mejorá tu retención
-          en minutos.
-        </p>
-
-        <div className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/80 ring-1 ring-white/10">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-white/10">
-            <Lightbulb aria-hidden className="h-5 w-5" />
-          </span>
-          <div>
-            <div className="font-semibold">Vas genial</div>
-            <div className="text-xs text-white/60">seguí así</div>
-          </div>
+        <div className="text-lg font-bold tracking-tight text-white">
+          LearnAI
         </div>
       </div>
     </div>
@@ -71,30 +32,75 @@ function HeroCard() {
 
 export function AuthShell({ children, title, topSlot }: Props) {
   return (
-    <div className="min-h-screen bg-[color:var(--color-frosted-mint-50)]">
-      <div className="mx-auto grid min-h-screen max-w-6xl grid-cols-1 gap-10 px-4 py-10 md:grid-cols-2 md:items-center">
-        <div className="space-y-8">
-          <LogoMark />
-          <HeroCard />
-          <p className="text-xs text-[color:var(--color-fern-500)]">
-            © {new Date().getFullYear()} ScholarAI Inc.
-          </p>
+    <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-2">
+      {/* Left Panel - Branding */}
+      <div className="relative hidden h-full flex-col justify-between bg-[color:var(--color-fern-900)] p-12 lg:flex">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -left-24 -top-24 h-[500px] w-[500px] rounded-full bg-[color:var(--color-fern-800)] blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-[color:var(--color-fern-950)] opacity-50 blur-3xl" />
         </div>
 
-        <div className="w-full">
-          <div className="mx-auto w-full max-w-md">
-            {topSlot}
-            <div className="mt-6">
-              <div className="rounded-3xl bg-white/70 p-6 shadow-[0_20px_70px_-55px_rgba(13,32,21,0.45)] ring-1 ring-[color:var(--color-fern-100)] backdrop-blur-xl">
-                <h1 className="text-3xl font-extrabold tracking-tight text-[color:var(--color-fern-950)]">
-                  {title}
-                </h1>
-                {/* <p className="mt-2 text-sm text-[color:var(--color-fern-600)]">
-                  {subtitle}
-                </p> */}
-                <div className="mt-6">{children}</div>
-              </div>
+        <div className="relative z-10">
+          <LogoMark />
+        </div>
+
+        <div className="relative z-10 max-w-md">
+          <h2 className="text-4xl font-bold tracking-tight text-white">
+            Dominá tus documentos con IA
+          </h2>
+          <p className="mt-6 text-lg leading-relaxed text-[color:var(--color-fern-200)]">
+            Subí tus materiales de estudio, generá quizzes y mejorá tu retención
+            en minutos. La plataforma diseñada para estudiantes que buscan
+            excelencia.
+          </p>
+
+          <div className="mt-12 flex items-center gap-4">
+            <div className="flex -space-x-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-10 w-10 rounded-full border-2 border-[color:var(--color-fern-900)] bg-[color:var(--color-fern-700)]"
+                />
+              ))}
             </div>
+            <div className="text-sm font-medium text-white">
+              Usado por +10k estudiantes
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 text-xs text-[color:var(--color-fern-400)]">
+          © {new Date().getFullYear()} LearnAI Inc.
+        </div>
+      </div>
+
+      {/* Right Panel - Form */}
+      <div className="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-20 xl:px-24">
+        <div className="mx-auto w-full max-w-sm lg:w-96">
+          <div className="mb-10 lg:hidden">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-[color:var(--color-fern-900)] text-white">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <span className="text-lg font-bold text-[color:var(--color-fern-900)]">
+                LearnAI
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
+              {title}
+            </h2>
+            <p className="mt-2 text-sm text-zinc-500">
+              Ingresá a tu cuenta para continuar
+            </p>
+          </div>
+
+          <div className="mt-8">
+            <div className="mb-6">{topSlot}</div>
+
+            {children}
           </div>
         </div>
       </div>
