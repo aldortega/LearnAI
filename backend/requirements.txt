@@ -5,3 +5,12 @@ pydantic
 pydantic-settings
 passlib[argon2]
 email-validator
+httpx
+redis
+rq
+langchain-core
+langchain-text-splitters
+langchain-google-genai
+pypdf
+docx2txt
+supabase
