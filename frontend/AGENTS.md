@@ -3,6 +3,9 @@
 Guía operativa para agentes que contribuyen a este proyecto.  
 Objetivo: mantener consistencia, calidad y escalabilidad en un codebase **React + TypeScript + Tailwind CSS v4**, con estructura **feature-based** y páginas compuestas por componentes.
 
+Este archivo aplica solo al frontend; para comandos globales y reglas base ver `AGENTS.md` en la raíz.
+
+
 ---
 
 ## Stack obligatorio
