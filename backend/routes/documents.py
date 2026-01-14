@@ -1,18 +1,32 @@
 from datetime import datetime, timezone
+from pathlib import Path
+from uuid import uuid4
 
 import httpx
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
 from supabase import create_client
 
 from ..config import settings
 from ..db import db
 from ..ingestion import process_document
 from ..rq_queue import queue
-from ..schemas import DocumentCreate, DocumentCreateResponse, DocumentOut
+from ..schemas import DocumentCreateResponse, DocumentOut
 from .auth import get_current_user
 
 router = APIRouter(prefix="/notebooks", tags=["documents"])
+
+ALLOWED_EXTENSIONS = {
+    ".pdf": "pdf",
+    ".docx": "docx",
+    ".txt": "txt",
+}
+MIME_TO_TYPE = {
+    "application/pdf": "pdf",
+    "text/plain": "txt",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+}
+TYPE_TO_EXTENSION = {value: key for key, value in ALLOWED_EXTENSIONS.items()}
 
 
 def document_to_out(document: dict) -> DocumentOut:
@@ -27,6 +41,21 @@ def document_to_out(document: dict) -> DocumentOut:
         created_at=document["created_at"],
         updated_at=document["updated_at"],
         error=document.get("error"),
+    )
+
+
+def resolve_content_type(file_name: str, content_type: str | None) -> tuple[str, str]:
+    extension = Path(file_name).suffix.lower()
+    if extension in ALLOWED_EXTENSIONS:
+        return ALLOWED_EXTENSIONS[extension], extension
+
+    if content_type and content_type in MIME_TO_TYPE:
+        inferred = MIME_TO_TYPE[content_type]
+        return inferred, TYPE_TO_EXTENSION[inferred]
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Tipo de archivo no soportado",
     )
 
 
@@ -48,7 +77,7 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
     status_code=status.HTTP_201_CREATED,
 )
 async def create_document(
-    notebook_id: str, payload: DocumentCreate, request: Request
+    notebook_id: str, request: Request, file: UploadFile = File(...)
 ) -> DocumentCreateResponse:
     user = await get_current_user(request)
     try:
@@ -66,13 +95,58 @@ async def create_document(
             status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
         )
 
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Supabase no está configurado",
+        )
+
+    bucket = settings.supabase_storage_bucket
+    if not bucket:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bucket de Supabase no configurado",
+        )
+
+    file_name = Path(file.filename or "").name
+    if not file_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Archivo inválido",
+        )
+
+    content_type, extension = resolve_content_type(file_name, file.content_type)
+    storage_path = f"{user['_id']}/{notebook_id}/{uuid4().hex}{extension}"
+    file_path = f"{bucket}/{storage_path}"
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Archivo vacío",
+        )
+
+    supabase_client = create_client(
+        settings.supabase_url, settings.supabase_service_role_key
+    )
+    storage_response = supabase_client.storage.from_(bucket).upload(
+        storage_path,
+        file_bytes,
+        {"content-type": file.content_type or "application/octet-stream"},
+    )
+    if isinstance(storage_response, dict) and storage_response.get("error"):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No se pudo subir archivo a Supabase",
+        )
+
     now = datetime.now(timezone.utc)
     document_doc = {
         "owner_id": user["_id"],
         "notebook_id": notebook_object_id,
-        "file_path": payload.file_path.strip(),
-        "file_name": payload.file_name.strip(),
-        "content_type": payload.content_type,
+        "file_path": file_path,
+        "file_name": file_name,
+        "content_type": content_type,
         "status": "pending",
         "created_at": now,
         "updated_at": now,
