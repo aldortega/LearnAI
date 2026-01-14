@@ -23,20 +23,9 @@ from .config import settings
 
 logger = logging.getLogger(__name__)
 
-_worker_client: AsyncIOMotorClient | None = None
-_worker_db: AsyncIOMotorDatabase | None = None
-
 
 def process_document(document_id: str) -> None:
     asyncio.run(_process_document(document_id))
-
-
-def get_worker_db() -> AsyncIOMotorDatabase:
-    global _worker_client, _worker_db
-    if _worker_db is None:
-        _worker_client = AsyncIOMotorClient(settings.mongodb_uri)
-        _worker_db = _worker_client[settings.database_name]
-    return _worker_db
 
 
 async def _process_document(document_id: str) -> None:
@@ -48,70 +37,76 @@ async def _process_document(document_id: str) -> None:
 
     job = get_current_job()
     job_id = job.id if job else None
-    worker_db = get_worker_db()
 
-    document = await worker_db.documents.find_one({"_id": document_object_id})
-    if not document:
-        logger.warning("Documento no encontrado", extra={"document_id": document_id})
-        return
-
-    await worker_db.documents.update_one(
-        {"_id": document_object_id},
-        {"$set": {"status": "processing", "updated_at": now}},
-    )
-    if job_id:
-        await worker_db.ingestion_jobs.update_one(
-            {"job_id": job_id},
-            {"$set": {"status": "processing", "started_at": now}},
-        )
-
-    start = time.perf_counter()
+    worker_client = AsyncIOMotorClient(settings.mongodb_uri)
+    worker_db = worker_client[settings.database_name]
     try:
-        file_path = document["file_path"]
-        file_bytes = await asyncio.to_thread(download_supabase_file, file_path)
-        documents = await asyncio.to_thread(
-            load_documents, file_bytes, document["content_type"]
+        document = await worker_db.documents.find_one({"_id": document_object_id})
+        if not document:
+            logger.warning(
+                "Documento no encontrado", extra={"document_id": document_id}
+            )
+            return
+
+        await worker_db.documents.update_one(
+            {"_id": document_object_id},
+            {"$set": {"status": "processing", "updated_at": now}},
         )
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
-        )
-        chunks = splitter.split_documents(documents)
-        filtered_chunks = [chunk for chunk in chunks if chunk.page_content]
-        texts = [chunk.page_content for chunk in filtered_chunks]
-        if not texts:
-            raise RuntimeError("Documento sin texto utilizable")
-        if not settings.gemini_api_key:
-            raise RuntimeError("Gemini no está configurado")
-        embeddings = GoogleGenerativeAIEmbeddings(
-            model="models/gemini-embedding-001",
-            api_key=SecretStr(settings.gemini_api_key),
-            output_dimensionality=settings.qdrant_vector_size,
-        )
-        vectors = await asyncio.to_thread(embeddings.embed_documents, texts)
-        await upsert_chunks(document, filtered_chunks, vectors)
-    except Exception as exc:
-        logger.exception(
-            "Ingesta fallida",
+        if job_id:
+            await worker_db.ingestion_jobs.update_one(
+                {"job_id": job_id},
+                {"$set": {"status": "processing", "started_at": now}},
+            )
+
+        start = time.perf_counter()
+        try:
+            file_path = document["file_path"]
+            file_bytes = await asyncio.to_thread(download_supabase_file, file_path)
+            documents = await asyncio.to_thread(
+                load_documents, file_bytes, document["content_type"]
+            )
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
+            )
+            chunks = splitter.split_documents(documents)
+            filtered_chunks = [chunk for chunk in chunks if chunk.page_content]
+            texts = [chunk.page_content for chunk in filtered_chunks]
+            if not texts:
+                raise RuntimeError("Documento sin texto utilizable")
+            if not settings.gemini_api_key:
+                raise RuntimeError("Gemini no está configurado")
+            embeddings = GoogleGenerativeAIEmbeddings(
+                model="models/gemini-embedding-001",
+                api_key=SecretStr(settings.gemini_api_key),
+                output_dimensionality=settings.qdrant_vector_size,
+            )
+            vectors = await asyncio.to_thread(embeddings.embed_documents, texts)
+            await upsert_chunks(document, filtered_chunks, vectors)
+        except Exception as exc:
+            logger.exception(
+                "Ingesta fallida",
+                extra={
+                    "document_id": document_id,
+                    "job_id": job_id,
+                    "error": str(exc),
+                },
+            )
+            await mark_failed(worker_db, document_object_id, job_id, str(exc))
+            return
+
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        logger.info(
+            "Ingesta completada",
             extra={
                 "document_id": document_id,
                 "job_id": job_id,
-                "error": str(exc),
+                "chunks": len(filtered_chunks),
+                "latency_ms": latency_ms,
             },
         )
-        await mark_failed(worker_db, document_object_id, job_id, str(exc))
-        return
-
-    latency_ms = int((time.perf_counter() - start) * 1000)
-    logger.info(
-        "Ingesta completada",
-        extra={
-            "document_id": document_id,
-            "job_id": job_id,
-            "chunks": len(filtered_chunks),
-            "latency_ms": latency_ms,
-        },
-    )
-    await mark_done(worker_db, document_object_id, job_id)
+        await mark_done(worker_db, document_object_id, job_id)
+    finally:
+        worker_client.close()
 
 
 def download_supabase_file(file_path: str) -> bytes:
