@@ -1,99 +1,56 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/TextField";
 import { useAuth } from "../../../shared/hooks/useAuth";
+import { registerSchema, type RegisterSchema } from "../utils/authSchemas";
 
 export function RegisterForm() {
   const { register } = useAuth();
-
-  const [name, setName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [birthdate, setBirthdate] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const nameError = useMemo(() => {
-    if (!name.trim()) return "El nombre es obligatorio";
-    if (name.trim().length < 2) return "Mínimo 2 caracteres";
-    return null;
-  }, [name]);
+  const {
+    register: registerField,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterSchema>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      lastName: "",
+      email: "",
+      username: "",
+      birthdate: "",
+      password: "",
+    },
+  });
 
-  const lastNameError = useMemo(() => {
-    if (!lastName.trim()) return "El apellido es obligatorio";
-    if (lastName.trim().length < 2) return "Mínimo 2 caracteres";
-    return null;
-  }, [lastName]);
-
-  const emailError = useMemo(() => {
-    if (!email.trim()) return "El email es obligatorio";
-    if (!/\S+@\S+\.\S+/.test(email)) return "Ingresá un email válido";
-    return null;
-  }, [email]);
-
-  const usernameError = useMemo(() => {
-    if (!username.trim()) return "El username es obligatorio";
-    if (username.trim().length < 3) return "Mínimo 3 caracteres";
-    return null;
-  }, [username]);
-
-  const birthdateError = useMemo(() => {
-    if (!birthdate) return "La fecha de nacimiento es obligatoria";
-    return null;
-  }, [birthdate]);
-
-  const passwordError = useMemo(() => {
-    if (!password) return "La contraseña es obligatoria";
-    if (password.length < 8) return "Mínimo 8 caracteres";
-    return null;
-  }, [password]);
-
-  const canSubmit =
-    !nameError &&
-    !lastNameError &&
-    !emailError &&
-    !usernameError &&
-    !birthdateError &&
-    !passwordError &&
-    !isSubmitting;
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const onSubmit = async (values: RegisterSchema) => {
     setFormError(null);
 
-    if (!canSubmit) {
-      setFormError("Revisá los campos marcados");
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
       await register({
-        name: name.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        username: username.trim(),
-        birthdate,
-        password,
+        name: values.name.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
+        username: values.username.trim(),
+        birthdate: values.birthdate,
+        password: values.password,
       });
     } catch (e) {
       const msg = (e as { message?: string }).message;
       setFormError(msg ?? "No se pudo crear la cuenta");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {formError ? (
         <div
           role="alert"
-          className="rounded-2xl bg-[color:var(--color-fern-50)] px-4 py-3 text-sm text-[color:var(--color-fern-800)] ring-1 ring-[color:var(--color-fern-200)]"
+          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
         >
           {formError}
         </div>
@@ -103,69 +60,63 @@ export function RegisterForm() {
         <TextField
           label="Nombre"
           name="name"
-          value={name}
-          onChange={setName}
           placeholder="Aldo"
           required
-          error={name ? (nameError ?? undefined) : undefined}
+          error={errors.name?.message}
           autoComplete="given-name"
+          inputProps={registerField("name")}
         />
         <TextField
           label="Apellido"
           name="lastName"
-          value={lastName}
-          onChange={setLastName}
           placeholder="García"
           required
-          error={lastName ? (lastNameError ?? undefined) : undefined}
+          error={errors.lastName?.message}
           autoComplete="family-name"
+          inputProps={registerField("lastName")}
         />
       </div>
 
       <TextField
         label="Email"
         name="email"
-        value={email}
-        onChange={setEmail}
         placeholder="student@university.edu"
         type="email"
         required
-        error={email ? (emailError ?? undefined) : undefined}
+        error={errors.email?.message}
         autoComplete="email"
+        inputProps={registerField("email")}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField
           label="Nombre de usuario"
           name="username"
-          value={username}
-          onChange={setUsername}
           placeholder="student123"
           required
-          error={username ? (usernameError ?? undefined) : undefined}
+          error={errors.username?.message}
           autoComplete="username"
+          inputProps={registerField("username")}
         />
         <TextField
           label="Fecha de nacimiento"
           name="birthdate"
-          value={birthdate}
-          onChange={setBirthdate}
           type="date"
           required
-          error={birthdate ? (birthdateError ?? undefined) : undefined}
+          error={errors.birthdate?.message}
           autoComplete="bday"
+          inputProps={registerField("birthdate")}
         />
       </div>
 
       <TextField
         label="Contraseña"
         name="password"
-        value={password}
-        onChange={setPassword}
         type="password"
         required
-        error={password ? (passwordError ?? undefined) : undefined}
+        error={errors.password?.message}
         autoComplete="new-password"
+        inputProps={registerField("password")}
       />
 
       <Button

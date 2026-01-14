@@ -1,3 +1,4 @@
+import type { ChangeEvent, InputHTMLAttributes } from "react";
 import { useId, useMemo, useState } from "react";
 
 import { Eye, EyeOff } from "lucide-react";
@@ -7,14 +8,15 @@ import { cn } from "../lib/cn";
 type Props = {
   label: string;
   name: string;
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  onChange?: (value: string) => void;
   placeholder?: string;
   type?: "text" | "email" | "password" | "date";
   autoComplete?: string;
   error?: string;
   required?: boolean;
   rightAdornment?: React.ReactNode;
+  inputProps?: InputHTMLAttributes<HTMLInputElement>;
 };
 
 
@@ -29,6 +31,7 @@ export function TextField({
   error,
   required,
   rightAdornment,
+  inputProps,
 }: Props) {
   const id = useId();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -39,11 +42,33 @@ export function TextField({
   }, [isPasswordVisible, type]);
 
   const showPasswordToggle = type === "password";
+  const inputId = inputProps?.id ?? id;
+  const inputName = inputProps?.name ?? name;
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    inputProps?.onChange?.(event);
+    onChange?.(event.target.value);
+  };
+
+  const mergedInputProps: InputHTMLAttributes<HTMLInputElement> = {
+    ...inputProps,
+    id: inputId,
+    name: inputName,
+    placeholder,
+    type: inputType,
+    autoComplete,
+    required,
+    onChange: handleChange,
+  };
+
+  if (value !== undefined) {
+    mergedInputProps.value = value;
+  }
 
   return (
     <div className="space-y-1.5">
       <label
-        htmlFor={id}
+        htmlFor={inputId}
         className="block text-sm font-medium text-zinc-700"
       >
         {label}
@@ -54,14 +79,7 @@ export function TextField({
 
       <div className="relative">
         <input
-          id={id}
-          name={name}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          type={inputType}
-          autoComplete={autoComplete}
-          required={required}
+          {...mergedInputProps}
           className={cn(
             "h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 transition-all duration-200",
             "placeholder:text-zinc-400",
