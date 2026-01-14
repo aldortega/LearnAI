@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
 
+import httpx
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, status
 from pymongo import ReturnDocument
+from supabase import create_client
 
+from ..config import settings
 from ..db import db
 from ..schemas import NotebookCreate, NotebookOut, NotebookUpdate
 from .auth import get_current_user
@@ -19,6 +22,18 @@ def notebook_to_out(notebook: dict) -> NotebookOut:
         description=notebook.get("description"),
         created_at=notebook["created_at"],
         updated_at=notebook["updated_at"],
+    )
+
+
+def parse_storage_path(file_path: str) -> tuple[str, str]:
+    if "/" in file_path:
+        bucket, storage_path = file_path.split("/", 1)
+        return bucket, storage_path
+    if settings.supabase_storage_bucket:
+        return settings.supabase_storage_bucket, file_path
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="file_path debe incluir bucket/path o configurar supabase_storage_bucket",
     )
 
 
@@ -116,12 +131,66 @@ async def delete_notebook(notebook_id: str, request: Request) -> None:
             status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook inválido"
         ) from exc
 
-    result = await db.notebooks.delete_one(
+    notebook = await db.notebooks.find_one(
         {"_id": notebook_object_id, "owner_id": user["_id"]}
     )
-    if result.deleted_count == 0:
+    if not notebook:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
         )
+
+    documents = [
+        document
+        async for document in db.documents.find(
+            {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+        )
+    ]
+
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Supabase no está configurado",
+        )
+
+    supabase_client = create_client(
+        settings.supabase_url, settings.supabase_service_role_key
+    )
+
+    for document in documents:
+        async with httpx.AsyncClient(
+            base_url=settings.qdrant_url, timeout=20
+        ) as client:
+            response = await client.post(
+                f"/collections/{settings.qdrant_collection_name}/points/delete",
+                json={
+                    "filter": {
+                        "must": [
+                            {
+                                "key": "document_id",
+                                "match": {"value": str(document["_id"])},
+                            }
+                        ]
+                    }
+                },
+                params={"wait": "true"},
+            )
+            if response.status_code not in (200, 202):
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="No se pudo eliminar embeddings en Qdrant",
+                )
+
+        bucket, storage_path = parse_storage_path(document["file_path"])
+        storage_response = supabase_client.storage.from_(bucket).remove([storage_path])
+        if isinstance(storage_response, dict) and storage_response.get("error"):
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="No se pudo eliminar archivo en Supabase",
+            )
+
+    await db.documents.delete_many(
+        {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+    )
+    await db.notebooks.delete_one({"_id": notebook_object_id, "owner_id": user["_id"]})
 
     return None
