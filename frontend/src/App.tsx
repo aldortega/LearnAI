@@ -1,9 +1,11 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { AuthPage } from "./features/auth/pages/AuthPage";
 import { HomePage } from "./features/home/pages/HomePage";
+import { NotebookPage } from "./features/notebooks/pages/NotebookPage";
 import { useAuth } from "./shared/hooks/useAuth";
 
-function AppInner() {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isBootstrapping } = useAuth();
 
   if (isBootstrapping) {
@@ -18,14 +20,38 @@ function AppInner() {
     );
   }
 
-  return user ? <HomePage /> : <AuthPage initialMode="login" />;
+  if (!user) {
+    return <AuthPage initialMode="login" />;
+  }
+
+  return <>{children}</>;
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notebook/:notebookId"
+            element={
+              <ProtectedRoute>
+                <NotebookPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

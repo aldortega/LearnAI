@@ -54,7 +54,7 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen w-full bg-zinc-50">
-      <Header />
+      <Header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md" />
 
       <main className="px-8 py-10">
         <div className="mx-auto max-w-5xl">
@@ -76,6 +76,7 @@ export function HomePage() {
               return (
                 <NotebookCard
                   key={notebook.id}
+                  id={notebook.id}
                   title={notebook.title}
                   sourceCount={0}
                   updatedAt={formatNotebookDate(notebook.updated_at)}

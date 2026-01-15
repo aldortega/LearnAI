@@ -1,9 +1,11 @@
 import { Clock } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
+import { useNavigate } from "react-router-dom";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 type Props = {
+  id: string; // Add ID prop
   title: string;
   sourceCount: number;
   updatedAt: string;
@@ -11,13 +13,19 @@ type Props = {
 };
 
 export function NotebookCard({
+  id,
   title,
   sourceCount,
   updatedAt,
   icon: Icon,
 }: Props) {
+  const navigate = useNavigate();
+
   return (
-    <div className="group flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 transition-shadow hover:shadow-md">
+    <div 
+        onClick={() => navigate(`/notebook/${id}`)}
+        className="group flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 transition-shadow hover:shadow-md"
+    >
       <div>
         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-200 text-emerald-600">
           <Icon className="h-5 w-5" />
