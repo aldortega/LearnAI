@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 
 import httpx
@@ -14,12 +15,13 @@ from .auth import get_current_user
 router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 
 
-def notebook_to_out(notebook: dict) -> NotebookOut:
+def notebook_to_out(notebook: dict, source_count: int = 0) -> NotebookOut:
     return NotebookOut(
         id=str(notebook["_id"]),
         owner_id=str(notebook["owner_id"]),
         title=notebook["title"],
         description=notebook.get("description"),
+        source_count=source_count,
         created_at=notebook["created_at"],
         updated_at=notebook["updated_at"],
     )
@@ -50,15 +52,28 @@ async def create_notebook(payload: NotebookCreate, request: Request) -> Notebook
     }
     result = await db.notebooks.insert_one(notebook_doc)
     notebook_doc["_id"] = result.inserted_id
-    return notebook_to_out(notebook_doc)
+    return notebook_to_out(notebook_doc, source_count=0)
 
 
 @router.get("", response_model=list[NotebookOut])
 async def list_notebooks(request: Request) -> list[NotebookOut]:
     user = await get_current_user(request)
     cursor = db.notebooks.find({"owner_id": user["_id"]}).sort("created_at", -1)
-    notebooks = [notebook_to_out(notebook) async for notebook in cursor]
-    return notebooks
+    notebooks = [notebook async for notebook in cursor]
+
+    counts = await asyncio.gather(
+        *[
+            db.documents.count_documents(
+                {"notebook_id": notebook["_id"], "owner_id": user["_id"]}
+            )
+            for notebook in notebooks
+        ]
+    )
+
+    return [
+        notebook_to_out(notebook, source_count=count)
+        for notebook, count in zip(notebooks, counts, strict=False)
+    ]
 
 
 @router.get("/{notebook_id}", response_model=NotebookOut)
@@ -79,7 +94,11 @@ async def get_notebook(notebook_id: str, request: Request) -> NotebookOut:
             status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
         )
 
-    return notebook_to_out(notebook)
+    source_count = await db.documents.count_documents(
+        {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+    )
+
+    return notebook_to_out(notebook, source_count=source_count)
 
 
 @router.patch("/{notebook_id}", response_model=NotebookOut)
@@ -118,7 +137,11 @@ async def update_notebook(
             status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
         )
 
-    return notebook_to_out(notebook)
+    source_count = await db.documents.count_documents(
+        {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+    )
+
+    return notebook_to_out(notebook, source_count=source_count)
 
 
 @router.delete("/{notebook_id}", status_code=status.HTTP_204_NO_CONTENT)

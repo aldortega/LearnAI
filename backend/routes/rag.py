@@ -31,7 +31,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notebooks", tags=["rag"])
 
-NO_CONTEXT_MESSAGE = "No tengo suficiente información en este notebook."
+GENERAL_KNOWLEDGE_NOTICE = (
+    "Aviso: no encontré suficiente información en tus fuentes; "
+    "respondo con conocimiento general."
+)
 
 
 def conversation_to_out(conversation: dict) -> ConversationOut:
@@ -70,15 +73,26 @@ def build_source_summaries(sources: list[RagSource]) -> list[dict]:
 
 
 def build_prompt_messages(
-    context_lines: list[str], question: str
+    context_lines: list[str], question: str, include_notice: bool = True
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
-        "Eres un asistente de estudio. Responde solo usando el contexto. "
-        "Si el contexto no contiene la respuesta, di que no tienes suficiente información."
+        "Eres un asistente de estudio. Usa el contexto como fuente principal. "
+        "Si el contexto es insuficiente para responder, complementa con conocimiento general. "
     )
-    user_prompt = (
-        "Contexto:\n" + "\n\n".join(context_lines) + "\n\nPregunta:\n" + question
-    )
+    if include_notice:
+        system_prompt += (
+            f'Cuando uses conocimiento general, inicia la respuesta con: "{GENERAL_KNOWLEDGE_NOTICE}". '
+            "Si el contexto está vacío, responde solo con conocimiento general y usa el aviso."
+        )
+    else:
+        system_prompt += (
+            "Si el contexto está vacío, responde solo con conocimiento general."
+        )
+    context_text = "\n\n".join(context_lines).strip()
+    if context_text:
+        user_prompt = "Contexto:\n" + context_text + "\n\nPregunta:\n" + question
+    else:
+        user_prompt = "Contexto: (sin información relevante)\n\nPregunta:\n" + question
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
 
@@ -88,6 +102,16 @@ def coerce_text(value: object | None) -> str:
     if isinstance(value, str):
         return value
     return str(value)
+
+
+def ensure_general_notice(answer_text: str) -> str:
+    trimmed = answer_text.strip()
+    if not trimmed:
+        return GENERAL_KNOWLEDGE_NOTICE
+    notice_lower = GENERAL_KNOWLEDGE_NOTICE.lower()
+    if trimmed.lower().startswith(notice_lower):
+        return trimmed
+    return f"{GENERAL_KNOWLEDGE_NOTICE}\n\n{trimmed}"
 
 
 def create_llm() -> ChatGoogleGenerativeAI:
@@ -195,6 +219,9 @@ async def retrieve_context(
     for hit in hits:
         payload_data = hit.get("payload") or {}
         text = payload_data.get("text") or ""
+        score = float(hit.get("score", 0.0))
+        if score < settings.rag_min_score:
+            continue
         if not text:
             continue
         document_id = payload_data.get("document_id")
@@ -204,7 +231,7 @@ async def retrieve_context(
             RagSource(
                 document_id=document_id or "",
                 chunk_id=payload_data.get("chunk_id", 0),
-                score=hit.get("score", 0.0),
+                score=score,
                 text=text,
                 file_name=payload_data.get("file_name"),
                 page=payload_data.get("page"),
@@ -216,13 +243,16 @@ async def retrieve_context(
 
 
 async def generate_answer(question: str, context_lines: list[str]) -> str:
-    if not context_lines:
-        return NO_CONTEXT_MESSAGE
-
-    system_message, user_message = build_prompt_messages(context_lines, question)
+    include_notice = bool(context_lines)
+    system_message, user_message = build_prompt_messages(
+        context_lines, question, include_notice=include_notice
+    )
     llm = create_llm()
     answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
-    return coerce_text(getattr(answer, "content", answer))
+    answer_text = coerce_text(getattr(answer, "content", answer))
+    if not context_lines:
+        return ensure_general_notice(answer_text)
+    return answer_text
 
 
 async def stream_answer(question: str, context_lines: list[str]):
@@ -472,7 +502,7 @@ async def stream_conversation_message(
             return
 
         if not context_lines:
-            answer_text = NO_CONTEXT_MESSAGE
+            answer_text = await generate_answer(question, context_lines)
             await record_rag_query(
                 start,
                 question,
@@ -491,7 +521,7 @@ async def stream_conversation_message(
                 "role": "assistant",
                 "content": answer_text,
                 "sources": source_summaries,
-                "created_at": datetime.now(timezone.utc),
+                "created_at": now,
             }
             result = await db.rag_messages.insert_one(assistant_message_doc)
             assistant_message_doc["_id"] = result.inserted_id

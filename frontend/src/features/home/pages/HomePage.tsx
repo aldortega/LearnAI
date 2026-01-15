@@ -13,8 +13,11 @@ import {
 import { useState } from "react";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
-import { useNotebooks } from "../../notebooks";
+import type { Notebook } from "../../notebooks";
+import { useDeleteNotebook, useNotebooks } from "../../notebooks";
 import { CreateNotebookModal } from "../../notebooks/components/CreateNotebookModal";
+import { DeleteNotebookModal } from "../../notebooks/components/DeleteNotebookModal";
+import { EditNotebookModal } from "../../notebooks/components/EditNotebookModal";
 import { CreateNotebookCard } from "../components/CreateNotebookCard";
 import { Header } from "../components/Header";
 import { NotebookCard } from "../components/NotebookCard";
@@ -48,9 +51,48 @@ function formatNotebookDate(value: string): string {
 export function HomePage() {
   const { user } = useAuth();
   const { notebooks, reload } = useNotebooks();
+  const { deleteNotebook, isLoading, error, clearError } = useDeleteNotebook();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedNotebook, setSelectedNotebook] = useState<Notebook | null>(null);
 
   const firstName = user?.name || "Estudiante";
+
+  const handleEditNotebook = (notebook: Notebook) => {
+    setSelectedNotebook(notebook);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteNotebook = (notebook: Notebook) => {
+    setSelectedNotebook(notebook);
+    clearError();
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedNotebook(null);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedNotebook(null);
+    clearError();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedNotebook) return;
+
+    try {
+      await deleteNotebook(selectedNotebook.id);
+      setIsDeleteModalOpen(false);
+      setSelectedNotebook(null);
+      await reload();
+    } catch {
+      // Error handled by hook.
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-zinc-50 dark:bg-zinc-950">
@@ -78,9 +120,11 @@ export function HomePage() {
                   key={notebook.id}
                   id={notebook.id}
                   title={notebook.title}
-                  sourceCount={0}
+                  sourceCount={notebook.source_count}
                   updatedAt={formatNotebookDate(notebook.updated_at)}
                   icon={Icon}
+                  onEdit={() => handleEditNotebook(notebook)}
+                  onDelete={() => handleDeleteNotebook(notebook)}
                 />
               );
             })}
@@ -94,6 +138,24 @@ export function HomePage() {
         onSuccess={() => {
           void reload();
         }}
+      />
+
+      <EditNotebookModal
+        isOpen={isEditModalOpen}
+        notebook={selectedNotebook}
+        onClose={handleCloseEditModal}
+        onSuccess={() => {
+          void reload();
+        }}
+      />
+
+      <DeleteNotebookModal
+        isOpen={isDeleteModalOpen}
+        notebookName={selectedNotebook?.title}
+        isDeleting={isLoading}
+        error={error}
+        onCancel={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

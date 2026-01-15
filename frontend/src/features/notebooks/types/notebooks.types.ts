@@ -3,6 +3,7 @@ export type Notebook = {
   owner_id: string;
   title: string;
   description?: string | null;
+  source_count: number;
   created_at: string;
   updated_at: string;
 };

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = "AIzaSyC1wH65WVkB6mQn7ooKmVoRZWWElnonXYI"
     gemini_chat_model: str = "gemini-2.5-pro"
     rag_top_k: int = 8
+    rag_min_score: float = 0.65
     chunk_size: int = 1000
     chunk_overlap: int = 150
     session_secret: str = "change-me"

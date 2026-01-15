@@ -47,6 +47,7 @@ class NotebookOut(BaseModel):
     owner_id: str
     title: str
     description: Optional[str] = None
+    source_count: int = 0
     created_at: datetime
     updated_at: datetime
 

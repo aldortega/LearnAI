@@ -3,6 +3,8 @@ export { documentsApi } from "./api/documentsApi";
 export { useNotebooks } from "./hooks/useNotebooks";
 export { useDocuments } from "./hooks/useDocuments";
 export { useUploadDocument } from "./hooks/useUploadDocument";
+export { useUpdateNotebook } from "./hooks/useUpdateNotebook";
+export { useDeleteNotebook } from "./hooks/useDeleteNotebook";
 import { useNotebookChat } from "./hooks/useNotebookChat";
 
 export { useDocumentStream } from "./hooks/useDocumentStream";
