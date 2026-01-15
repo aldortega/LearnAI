@@ -1,105 +1,61 @@
-import { 
-  Dna, 
-  Landmark, 
-  Atom, 
-  Brain, 
-  TrendingUp, 
-  Terminal, 
-  GraduationCap, 
-  Scale, 
-  FlaskConical, 
-  Megaphone 
+import {
+  Atom,
+  Brain,
+  Dna,
+  FlaskConical,
+  GraduationCap,
+  Landmark,
+  Megaphone,
+  Scale,
+  Terminal,
+  TrendingUp,
 } from "lucide-react";
+import { useState } from "react";
 
+import { useAuth } from "../../../shared/hooks/useAuth";
+import { useNotebooks } from "../../notebooks";
+import { CreateNotebookModal } from "../../notebooks/components/CreateNotebookModal";
+import { CreateNotebookCard } from "../components/CreateNotebookCard";
 import { Header } from "../components/Header";
 import { NotebookCard } from "../components/NotebookCard";
-import { CreateNotebookCard } from "../components/CreateNotebookCard";
-import { useAuth } from "../../../shared/hooks/useAuth";
+
+const notebookIcons = [
+  Dna,
+  Landmark,
+  Atom,
+  Brain,
+  TrendingUp,
+  Terminal,
+  GraduationCap,
+  Scale,
+  FlaskConical,
+  Megaphone,
+];
+
+function formatNotebookDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Sin fecha";
+  }
+
+  return date.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 export function HomePage() {
   const { user } = useAuth();
-  
-  // Mock data
-  const notebooks = [
-    {
-      id: "1",
-      title: "Introducción a la Biología Celular",
-      sourceCount: 4,
-      updatedAt: "Hace 2 horas",
-      icon: Dna,
-    },
-    {
-      id: "2",
-      title: "Apuntes de Historia Argentina",
-      sourceCount: 12,
-      updatedAt: "Ayer",
-      icon: Landmark,
-    },
-    {
-      id: "3",
-      title: "Resumen para el final de Física II",
-      sourceCount: 2,
-      updatedAt: "Hace 3 días",
-      icon: Atom,
-    },
-    {
-      id: "4",
-      title: "Investigación sobre LLMs y RAG",
-      sourceCount: 8,
-      updatedAt: "Hace 1 semana",
-      icon: Brain,
-    },
-    {
-      id: "5",
-      title: "Economía: Macro y Micro",
-      sourceCount: 5,
-      updatedAt: "Hace 2 semanas",
-      icon: TrendingUp,
-    },
-    {
-      id: "6",
-      title: "Proyecto de Sistemas Operativos",
-      sourceCount: 3,
-      updatedAt: "Hace 1 mes",
-      icon: Terminal,
-    },
-    {
-      id: "7",
-      title: "Tesis: IA en Educación",
-      sourceCount: 15,
-      updatedAt: "Hace 2 meses",
-      icon: GraduationCap,
-    },
-    {
-      id: "8",
-      title: "Apuntes de Derecho Constitucional",
-      sourceCount: 6,
-      updatedAt: "Hace 3 meses",
-      icon: Scale,
-    },
-    {
-      id: "9",
-      title: "Química Orgánica - Unidad 4",
-      sourceCount: 1,
-      updatedAt: "Hace 4 meses",
-      icon: FlaskConical,
-    },
-    {
-      id: "10",
-      title: "Marketing Digital y SEO",
-      sourceCount: 9,
-      updatedAt: "Hace 6 meses",
-      icon: Megaphone,
-    },
-  ];
+  const { notebooks, reload } = useNotebooks();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Get first name for welcome message
   const firstName = user?.name || "Estudiante";
 
   return (
     <div className="min-h-screen w-full bg-zinc-50">
       <Header />
-      
+
       <main className="px-8 py-10">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10">
@@ -112,19 +68,32 @@ export function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <CreateNotebookCard />
-            {notebooks.map((notebook) => (
-              <NotebookCard
-                key={notebook.id}
-                title={notebook.title}
-                sourceCount={notebook.sourceCount}
-                updatedAt={notebook.updatedAt}
-                icon={notebook.icon}
-              />
-            ))}
+            <CreateNotebookCard onClick={() => setIsCreateModalOpen(true)} />
+            
+            {notebooks.map((notebook, index) => {
+              const Icon = notebookIcons[index % notebookIcons.length];
+
+              return (
+                <NotebookCard
+                  key={notebook.id}
+                  title={notebook.title}
+                  sourceCount={0}
+                  updatedAt={formatNotebookDate(notebook.updated_at)}
+                  icon={Icon}
+                />
+              );
+            })}
           </div>
         </div>
       </main>
+
+      <CreateNotebookModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          void reload();
+        }}
+      />
     </div>
   );
 }
