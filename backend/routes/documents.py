@@ -1,3 +1,5 @@
+import asyncio
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
@@ -5,6 +7,8 @@ from uuid import uuid4
 import httpx
 from bson import ObjectId
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import StreamingResponse
 from supabase import create_client
 
 from ..config import settings
@@ -194,6 +198,56 @@ async def list_documents(notebook_id: str, request: Request) -> list[DocumentOut
         {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
     ).sort("created_at", -1)
     return [document_to_out(document) async for document in cursor]
+
+
+@router.get("/{notebook_id}/documents/stream")
+async def stream_documents(notebook_id: str, request: Request) -> StreamingResponse:
+    user = await get_current_user(request)
+    try:
+        notebook_object_id = ObjectId(notebook_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook inválido"
+        ) from exc
+
+    notebook = await db.notebooks.find_one(
+        {"_id": notebook_object_id, "owner_id": user["_id"]}
+    )
+    if not notebook:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
+        )
+
+    async def event_generator():
+        last_signature: list[tuple[str, str, datetime]] | None = None
+        while True:
+            if await request.is_disconnected():
+                break
+
+            cursor = db.documents.find(
+                {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+            ).sort("created_at", -1)
+            documents = [document_to_out(document) async for document in cursor]
+            signature = [(doc.id, doc.status, doc.updated_at) for doc in documents]
+
+            if signature != last_signature:
+                payload = json.dumps(jsonable_encoder(documents))
+                yield f"event: documents\ndata: {payload}\n\n"
+                last_signature = signature
+
+            if documents and all(doc.status == "done" for doc in documents):
+                break
+
+            await asyncio.sleep(2)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.delete(
