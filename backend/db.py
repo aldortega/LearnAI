@@ -25,3 +25,11 @@ async def ensure_indexes() -> None:
     await db.ingestion_jobs.create_index("created_at")
     await db.rag_queries.create_index("notebook_id")
     await db.rag_queries.create_index("created_at")
+    await db.rag_conversations.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.rag_conversations.create_index("created_at")
+    await db.rag_messages.create_index("conversation_id")
+    await db.rag_messages.create_index("notebook_id")
+    await db.rag_messages.create_index("owner_id")
+    await db.rag_messages.create_index("created_at")

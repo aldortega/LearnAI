@@ -92,3 +92,29 @@ class RagSource(BaseModel):
 class RagResponse(BaseModel):
     answer: str
     sources: list[RagSource]
+
+
+class ConversationOut(BaseModel):
+    id: str
+    owner_id: str
+    notebook_id: str
+    created_at: datetime
+
+
+class ChatMessageSource(BaseModel):
+    file_name: str
+
+
+class ChatMessageCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class ChatMessageOut(BaseModel):
+    id: str
+    conversation_id: str
+    notebook_id: str
+    owner_id: str
+    role: Literal["user", "assistant"]
+    content: str
+    sources: list[ChatMessageSource] = Field(default_factory=list)
+    created_at: datetime

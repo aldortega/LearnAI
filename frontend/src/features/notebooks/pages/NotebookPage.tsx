@@ -10,7 +10,12 @@ import type { Document } from "../types/documents.types";
 import { notebooksApi } from "../api/notebooksApi";
 import { documentsApi } from "../api/documentsApi";
 import { Header } from "../../home/components/Header";
-import { useDocuments, useUploadDocument, useDocumentStream } from "../index";
+import {
+  useDocuments,
+  useUploadDocument,
+  useDocumentStream,
+  useNotebookChat,
+} from "../index";
 
 const allowedExtensions = [".pdf", ".docx", ".txt"];
 
@@ -35,6 +40,14 @@ export function NotebookPage() {
     useFallback,
   );
   const { uploadDocument, isUploading } = useUploadDocument(notebookId);
+  const {
+    messages,
+    streamingContent,
+    isLoading: isChatLoading,
+    isStreaming: isChatStreaming,
+    error: chatError,
+    sendMessage,
+  } = useNotebookChat(notebookId);
 
   useEffect(() => {
     if (streamError) {
@@ -162,6 +175,12 @@ export function NotebookPage() {
         <div className="flex-1 min-w-0">
           <ChatArea
             hasSources={hasReadySources}
+            messages={messages}
+            streamingContent={streamingContent}
+            isLoading={isChatLoading}
+            isStreaming={isChatStreaming}
+            error={chatError}
+            onSendMessage={sendMessage}
             onDropFile={handleDropFile}
           />
         </div>
