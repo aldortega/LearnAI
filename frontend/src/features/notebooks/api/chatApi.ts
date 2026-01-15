@@ -74,6 +74,12 @@ export const chatApi = {
       },
     );
   },
+
+  clearMessages: async (notebookId: string): Promise<void> => {
+    await apiRequest<void>(`/notebooks/${notebookId}/conversation/messages`, {
+      method: "DELETE",
+    });
+  },
 };
 
 export async function streamChatMessage(

@@ -10,8 +10,10 @@ type Result = {
   streamingContent: string;
   isLoading: boolean;
   isStreaming: boolean;
+  isClearing: boolean;
   error: string | null;
   sendMessage: (content: string) => Promise<void>;
+  clearConversation: () => Promise<void>;
   resetError: () => void;
 };
 
@@ -34,6 +36,7 @@ export function useNotebookChat(notebookId?: string): Result {
   const [streamingContent, setStreamingContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -46,6 +49,7 @@ export function useNotebookChat(notebookId?: string): Result {
     setMessages([]);
     setStreamingContent("");
     setIsStreaming(false);
+    setIsClearing(false);
     setError(null);
 
     if (!notebookId) {
@@ -130,6 +134,27 @@ export function useNotebookChat(notebookId?: string): Result {
     [isStreaming, notebookId],
   );
 
+  const clearConversation = useCallback(async () => {
+    if (!notebookId || isClearing) return;
+
+    setIsClearing(true);
+    setError(null);
+
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsStreaming(false);
+    setStreamingContent("");
+
+    try {
+      await chatApi.clearMessages(notebookId);
+      setMessages([]);
+    } catch (err) {
+      setError(toNotebookErrorMessage(err));
+    } finally {
+      setIsClearing(false);
+    }
+  }, [isClearing, notebookId]);
+
   const resetError = useCallback(() => setError(null), []);
 
   return {
@@ -138,8 +163,10 @@ export function useNotebookChat(notebookId?: string): Result {
     streamingContent,
     isLoading,
     isStreaming,
+    isClearing,
     error,
     sendMessage,
+    clearConversation,
     resetError,
   };
 }

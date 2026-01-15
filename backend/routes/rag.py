@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notebooks", tags=["rag"])
 
+NO_CONTEXT_MESSAGE = "No tengo suficiente información en este notebook."
+
 
 def conversation_to_out(conversation: dict) -> ConversationOut:
     return ConversationOut(
@@ -67,10 +69,33 @@ def build_source_summaries(sources: list[RagSource]) -> list[dict]:
     return summaries
 
 
-def chunk_text(text: str, size: int = 140) -> list[str]:
-    if not text:
-        return []
-    return [text[index : index + size] for index in range(0, len(text), size)]
+def build_prompt_messages(
+    context_lines: list[str], question: str
+) -> tuple[SystemMessage, HumanMessage]:
+    system_prompt = (
+        "Eres un asistente de estudio. Responde solo usando el contexto. "
+        "Si el contexto no contiene la respuesta, di que no tienes suficiente información."
+    )
+    user_prompt = (
+        "Contexto:\n" + "\n\n".join(context_lines) + "\n\nPregunta:\n" + question
+    )
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def coerce_text(value: object | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def create_llm() -> ChatGoogleGenerativeAI:
+    return ChatGoogleGenerativeAI(
+        model=settings.gemini_chat_model,
+        api_key=SecretStr(settings.gemini_api_key),
+        temperature=0.2,
+    )
 
 
 async def get_notebook_object_id(notebook_id: str, user: dict) -> ObjectId:
@@ -117,12 +142,12 @@ async def ensure_conversation(notebook_object_id: ObjectId, user_id: ObjectId) -
         return conversation
 
 
-async def run_rag_query(
+async def retrieve_context(
     question: str,
     notebook_object_id: ObjectId,
     user: dict,
     top_k: int | None = None,
-) -> tuple[str, list[RagSource], list[str], int, int]:
+) -> tuple[list[str], list[RagSource], list[str], int]:
     if not settings.gemini_api_key:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Gemini no configurado"
@@ -136,7 +161,6 @@ async def run_rag_query(
     )
     query_vector = await asyncio.to_thread(embeddings.embed_query, question)
 
-    start = time.perf_counter()
     async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
         response = await client.post(
             f"/collections/{settings.qdrant_collection_name}/points/search",
@@ -188,56 +212,62 @@ async def run_rag_query(
         )
         context_lines.append(text)
 
+    return context_lines, sources, document_ids, selected_top_k
+
+
+async def generate_answer(question: str, context_lines: list[str]) -> str:
     if not context_lines:
-        answer_text = "No tengo suficiente información en este notebook."
-        latency_ms = int((time.perf_counter() - start) * 1000)
-        await db.rag_queries.insert_one(
-            {
-                "owner_id": user["_id"],
-                "notebook_id": notebook_object_id,
-                "query_text": question,
-                "top_k": selected_top_k,
-                "latency_ms": latency_ms,
-                "document_ids": document_ids,
-                "created_at": datetime.now(timezone.utc),
-            }
-        )
-        logger.info(
-            "Consulta RAG",
-            extra={
-                "notebook_id": str(notebook_object_id),
-                "owner_id": str(user["_id"]),
-                "top_k": selected_top_k,
-                "sources": len(sources),
-                "latency_ms": latency_ms,
-            },
-        )
-        return answer_text, sources, document_ids, latency_ms, selected_top_k
+        return NO_CONTEXT_MESSAGE
 
-    system_prompt = (
-        "Eres un asistente de estudio. Responde solo usando el contexto. "
-        "Si el contexto no contiene la respuesta, di que no tienes suficiente información."
-    )
-    user_prompt = (
-        "Contexto:\n" + "\n\n".join(context_lines) + "\n\nPregunta:\n" + question
-    )
+    system_message, user_message = build_prompt_messages(context_lines, question)
+    llm = create_llm()
+    answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
+    return coerce_text(getattr(answer, "content", answer))
 
-    llm = ChatGoogleGenerativeAI(
-        model=settings.gemini_chat_model,
-        api_key=SecretStr(settings.gemini_api_key),
-        temperature=0.2,
-    )
-    answer = await asyncio.to_thread(
-        llm.invoke,
-        [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)],
-    )
-    if hasattr(answer, "content"):
-        answer_text = answer.content
-    else:
-        answer_text = str(answer)
-    if not isinstance(answer_text, str):
-        answer_text = str(answer_text)
 
+async def stream_answer(question: str, context_lines: list[str]):
+    system_message, user_message = build_prompt_messages(context_lines, question)
+    llm = create_llm()
+
+    if hasattr(llm, "astream"):
+        async for chunk in llm.astream([system_message, user_message]):
+            content = coerce_text(getattr(chunk, "content", None))
+            if content:
+                yield content
+        return
+
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+    def run_sync_stream() -> None:
+        try:
+            for chunk in llm.stream([system_message, user_message]):
+                content = coerce_text(getattr(chunk, "content", None))
+                if content:
+                    loop.call_soon_threadsafe(queue.put_nowait, content)
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    task = asyncio.create_task(asyncio.to_thread(run_sync_stream))
+
+    while True:
+        item = await queue.get()
+        if item is None:
+            break
+        yield item
+
+    await task
+
+
+async def record_rag_query(
+    start: float,
+    question: str,
+    notebook_object_id: ObjectId,
+    user: dict,
+    document_ids: list[str],
+    selected_top_k: int,
+    sources: list[RagSource],
+) -> int:
     latency_ms = int((time.perf_counter() - start) * 1000)
     await db.rag_queries.insert_one(
         {
@@ -260,6 +290,24 @@ async def run_rag_query(
             "sources": len(sources),
             "latency_ms": latency_ms,
         },
+    )
+
+    return latency_ms
+
+
+async def run_rag_query(
+    question: str,
+    notebook_object_id: ObjectId,
+    user: dict,
+    top_k: int | None = None,
+) -> tuple[str, list[RagSource], list[str], int, int]:
+    start = time.perf_counter()
+    context_lines, sources, document_ids, selected_top_k = await retrieve_context(
+        question, notebook_object_id, user, top_k
+    )
+    answer_text = await generate_answer(question, context_lines)
+    latency_ms = await record_rag_query(
+        start, question, notebook_object_id, user, document_ids, selected_top_k, sources
     )
 
     return answer_text, sources, document_ids, latency_ms, selected_top_k
@@ -308,6 +356,25 @@ async def list_conversation_messages(
         }
     ).sort("created_at", 1)
     return [message_to_out(message) async for message in cursor]
+
+
+@router.delete(
+    "/{notebook_id}/conversation/messages", status_code=status.HTTP_204_NO_CONTENT
+)
+async def clear_conversation_messages(notebook_id: str, request: Request) -> None:
+    user = await get_current_user(request)
+    notebook_object_id = await get_notebook_object_id(notebook_id, user)
+    conversation = await ensure_conversation(notebook_object_id, user["_id"])
+
+    await db.rag_messages.delete_many(
+        {
+            "conversation_id": conversation["_id"],
+            "notebook_id": notebook_object_id,
+            "owner_id": user["_id"],
+        }
+    )
+
+    return None
 
 
 @router.post("/{notebook_id}/conversation/messages", response_model=ChatMessageOut)
@@ -382,10 +449,14 @@ async def stream_conversation_message(
     await db.rag_messages.insert_one(user_message_doc)
 
     async def event_generator():
+        start = time.perf_counter()
         try:
-            answer_text, sources, _, _, _ = await run_rag_query(
-                question, notebook_object_id, user
-            )
+            (
+                context_lines,
+                sources,
+                document_ids,
+                selected_top_k,
+            ) = await retrieve_context(question, notebook_object_id, user)
         except HTTPException as exc:
             detail = (
                 exc.detail
@@ -400,6 +471,65 @@ async def stream_conversation_message(
             yield f"event: error\ndata: {error_payload}\n\n"
             return
 
+        if not context_lines:
+            answer_text = NO_CONTEXT_MESSAGE
+            await record_rag_query(
+                start,
+                question,
+                notebook_object_id,
+                user,
+                document_ids,
+                selected_top_k,
+                sources,
+            )
+
+            source_summaries = build_source_summaries(sources)
+            assistant_message_doc = {
+                "owner_id": user["_id"],
+                "notebook_id": notebook_object_id,
+                "conversation_id": conversation["_id"],
+                "role": "assistant",
+                "content": answer_text,
+                "sources": source_summaries,
+                "created_at": datetime.now(timezone.utc),
+            }
+            result = await db.rag_messages.insert_one(assistant_message_doc)
+            assistant_message_doc["_id"] = result.inserted_id
+
+            payload_chunk = json.dumps({"content": answer_text})
+            yield f"event: chunk\ndata: {payload_chunk}\n\n"
+            done_payload = json.dumps(
+                {"message": jsonable_encoder(message_to_out(assistant_message_doc))}
+            )
+            yield f"event: done\ndata: {done_payload}\n\n"
+            return
+
+        answer_parts: list[str] = []
+        try:
+            async for chunk in stream_answer(question, context_lines):
+                if chunk:
+                    answer_parts.append(chunk)
+                    payload_chunk = json.dumps({"content": chunk})
+                    yield f"event: chunk\ndata: {payload_chunk}\n\n"
+        except Exception:
+            error_payload = json.dumps({"message": "No se pudo generar respuesta"})
+            yield f"event: error\ndata: {error_payload}\n\n"
+            return
+
+        answer_text = "".join(answer_parts).strip()
+        if not answer_text:
+            answer_text = "No se pudo generar respuesta"
+
+        await record_rag_query(
+            start,
+            question,
+            notebook_object_id,
+            user,
+            document_ids,
+            selected_top_k,
+            sources,
+        )
+
         source_summaries = build_source_summaries(sources)
         assistant_message_doc = {
             "owner_id": user["_id"],
@@ -412,10 +542,6 @@ async def stream_conversation_message(
         }
         result = await db.rag_messages.insert_one(assistant_message_doc)
         assistant_message_doc["_id"] = result.inserted_id
-
-        for chunk in chunk_text(answer_text):
-            payload_chunk = json.dumps({"content": chunk})
-            yield f"event: chunk\ndata: {payload_chunk}\n\n"
 
         done_payload = json.dumps(
             {"message": jsonable_encoder(message_to_out(assistant_message_doc))}
