@@ -4,7 +4,7 @@ export type ApiError = {
   detail?: unknown;
 };
 
-function getBaseUrl(): string {
+export function getApiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
   return raw.endsWith("/") ? raw.slice(0, -1) : raw;
 }
@@ -37,7 +37,7 @@ export async function apiRequest<T>(
   path: string,
   options?: ApiRequestOptions,
 ): Promise<T> {
-  const baseUrl = getBaseUrl();
+  const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path}`;
 
   const headers = new Headers(options?.headers);
@@ -53,6 +53,38 @@ export async function apiRequest<T>(
       options?.body === undefined
         ? undefined
         : JSON.stringify(options.body),
+  });
+
+  if (response.status === 204) {
+    return undefined as unknown as T;
+  }
+
+  const payload = await parseJsonSafe(response);
+
+  if (!response.ok) {
+    const error: ApiError = {
+      status: response.status,
+      message: extractMessage(payload),
+      detail: payload,
+    };
+    throw error;
+  }
+
+  return payload as T;
+}
+
+export async function apiUploadRequest<T>(
+  path: string,
+  formData: FormData,
+  options?: Omit<RequestInit, "body">,
+): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${path}`;
+
+  const response = await fetch(url, {
+    ...options,
+    credentials: "include",
+    body: formData,
   });
 
   if (response.status === 204) {
