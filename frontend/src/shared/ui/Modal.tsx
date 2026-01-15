@@ -48,7 +48,7 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-all"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all"
       onClick={handleBackdropClick}
       aria-modal="true"
       role="dialog"
@@ -58,14 +58,15 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
         className={cn(
           "relative w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-zinc-200 transition-all",
           "animate-in fade-in zoom-in-95 duration-200",
+          "dark:bg-zinc-900 dark:ring-zinc-800",
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
-          <h2 className="text-lg font-semibold text-zinc-900">{title}</h2>
+        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-zinc-800">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             aria-label="Cerrar"
           >
             <X className="h-5 w-5" />

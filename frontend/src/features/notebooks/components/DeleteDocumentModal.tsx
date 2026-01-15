@@ -19,11 +19,11 @@ export function DeleteDocumentModal({
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title="Eliminar fuente">
       <div className="space-y-4">
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">
           ¿Seguro que quieres eliminar esta fuente?
         </p>
         {documentName ? (
-          <p className="truncate text-sm font-medium text-zinc-900">
+          <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
             {documentName}
           </p>
         ) : null}

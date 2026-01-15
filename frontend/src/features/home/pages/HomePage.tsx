@@ -53,16 +53,16 @@ export function HomePage() {
   const firstName = user?.name || "Estudiante";
 
   return (
-    <div className="min-h-screen w-full bg-zinc-50">
-      <Header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md" />
+    <div className="min-h-screen w-full bg-zinc-50 dark:bg-zinc-950">
+      <Header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md dark:bg-zinc-950/80" />
 
       <main className="px-8 py-10">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10">
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               Hola, {firstName}
             </h1>
-            <p className="mt-2 text-zinc-500">
+            <p className="mt-2 text-zinc-500 dark:text-zinc-400">
               Continuá con tus estudios o creá un nuevo espacio de trabajo.
             </p>
           </div>

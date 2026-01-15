@@ -53,7 +53,7 @@ export function TextArea({
     <div className="space-y-1.5">
       <label
         htmlFor={inputId}
-        className="block text-sm font-medium text-zinc-700"
+        className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
       >
         {label}
         {required ? <span className="text-emerald-600"> *</span> : null}
@@ -66,9 +66,10 @@ export function TextArea({
           "placeholder:text-zinc-400",
           "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none",
           "resize-none",
+          "dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500",
           error
-            ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-            : "hover:border-zinc-300",
+            ? "border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500/70 dark:focus:border-red-500 dark:focus:ring-red-500"
+            : "hover:border-zinc-300 dark:hover:border-zinc-700",
         )}
       />
 

@@ -62,7 +62,7 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
         {error ? (
           <div
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300"
           >
             {error}
           </div>

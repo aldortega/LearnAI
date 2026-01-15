@@ -32,7 +32,7 @@ function LogoMark() {
 
 export function AuthShell({ children, title, topSlot }: Props) {
   return (
-    <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-2">
+    <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-2 dark:bg-zinc-950">
       {/* Left Panel - Branding */}
       <div className="relative hidden h-full flex-col justify-between bg-emerald-900 p-12 lg:flex">
         <div className="absolute inset-0 overflow-hidden">
@@ -82,17 +82,17 @@ export function AuthShell({ children, title, topSlot }: Props) {
               <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-900 text-white">
                 <GraduationCap className="h-5 w-5" />
               </div>
-              <span className="text-lg font-bold text-emerald-900">
+              <span className="text-lg font-bold text-emerald-900 dark:text-emerald-200">
                 LearnAI
               </span>
             </div>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-900">
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               {title}
             </h2>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
               Ingresá a tu cuenta para continuar
             </p>
           </div>

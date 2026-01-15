@@ -69,7 +69,7 @@ export function TextField({
     <div className="space-y-1.5">
       <label
         htmlFor={inputId}
-        className="block text-sm font-medium text-zinc-700"
+        className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
       >
         {label}
         {required ? (
@@ -84,15 +84,16 @@ export function TextField({
             "h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 transition-all duration-200",
             "placeholder:text-zinc-400",
             "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none",
+            "dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500",
             error
-              ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-              : "hover:border-zinc-300",
+              ? "border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500/70 dark:focus:border-red-500 dark:focus:ring-red-500"
+              : "hover:border-zinc-300 dark:hover:border-zinc-700",
             (showPasswordToggle || Boolean(rightAdornment)) && "pr-10",
           )}
         />
 
         {rightAdornment ? (
-          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-zinc-400">
+          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-zinc-400 dark:text-zinc-500">
             {rightAdornment}
           </div>
         ) : null}
@@ -103,7 +104,7 @@ export function TextField({
             onClick={() => setIsPasswordVisible((v) => !v)}
             className={cn(
               "absolute inset-y-0 right-2 flex items-center rounded-md px-2 text-zinc-400 transition",
-              "hover:text-zinc-600",
+              "hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-200",
               "focus:outline-none focus:ring-2 focus:ring-emerald-600",
             )}
             aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}

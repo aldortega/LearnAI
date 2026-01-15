@@ -45,8 +45,10 @@ export function NotebookPage() {
     streamingContent,
     isLoading: isChatLoading,
     isStreaming: isChatStreaming,
+    isClearing: isChatClearing,
     error: chatError,
     sendMessage,
+    clearConversation,
   } = useNotebookChat(notebookId);
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export function NotebookPage() {
   const hasReadySources = documents.some((doc) => doc.status === "done");
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-white">
+    <div className="flex h-screen flex-col overflow-hidden bg-white dark:bg-zinc-950">
       <Header title={notebook?.title} className="flex-none" />
 
       <input
@@ -179,8 +181,10 @@ export function NotebookPage() {
             streamingContent={streamingContent}
             isLoading={isChatLoading}
             isStreaming={isChatStreaming}
+            isClearing={isChatClearing}
             error={chatError}
             onSendMessage={sendMessage}
+            onClearChat={clearConversation}
             onDropFile={handleDropFile}
           />
         </div>

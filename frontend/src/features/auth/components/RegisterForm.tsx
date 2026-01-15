@@ -50,7 +50,7 @@ export function RegisterForm() {
       {formError ? (
         <div
           role="alert"
-          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           {formError}
         </div>

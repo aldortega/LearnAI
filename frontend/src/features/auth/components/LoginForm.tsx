@@ -52,7 +52,7 @@ export function LoginForm() {
       {formError ? (
         <div
           role="alert"
-          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
         >
           {formError}
         </div>
@@ -79,14 +79,16 @@ export function LoginForm() {
         inputProps={register("password")}
       />
 
-      <div className="flex items-center justify-between gap-4">
-        <label className="inline-flex items-center gap-2 text-sm text-zinc-600">
+        <div className="flex items-center justify-between gap-4">
+          <label className="inline-flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+
           <input
             type="checkbox"
             {...register("rememberMe")}
             className={cn(
-              "h-4 w-4 rounded border-zinc-300 text-emerald-700",
-              "focus:ring-emerald-500 focus:ring-2 focus:ring-offset-2",
+              "h-4 w-4 rounded border-zinc-300 text-emerald-700 dark:border-zinc-700 dark:bg-zinc-900",
+              "focus:ring-emerald-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
+              "dark:focus:ring-emerald-400 dark:focus:ring-offset-zinc-950",
             )}
           />
           Recordarme
@@ -94,7 +96,7 @@ export function LoginForm() {
 
         <button
           type="button"
-          className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+          className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
           onClick={() => setFormError("Recuperación de contraseña: pendiente")}
         >
           ¿Olvidaste tu contraseña?
