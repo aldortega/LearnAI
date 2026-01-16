@@ -5,11 +5,7 @@ export { useDocuments } from "./hooks/useDocuments";
 export { useUploadDocument } from "./hooks/useUploadDocument";
 export { useUpdateNotebook } from "./hooks/useUpdateNotebook";
 export { useDeleteNotebook } from "./hooks/useDeleteNotebook";
-import { useNotebookChat } from "./hooks/useNotebookChat";
-
 export { useDocumentStream } from "./hooks/useDocumentStream";
-export { useNotebookChat };
-export { chatApi } from "./api/chatApi";
 export type {
   Notebook,
   NotebookCreate,
@@ -20,9 +16,3 @@ export type {
   DocumentCreateResponse,
   DocumentStatus,
 } from "./types/documents.types";
-export type {
-  ChatConversation,
-  ChatMessage,
-  ChatRole,
-  ChatSource,
-} from "./types/chat.types";

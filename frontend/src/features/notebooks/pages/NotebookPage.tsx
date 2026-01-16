@@ -1,21 +1,16 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
-import { SourcesSidebar } from "../components/SourcesSidebar";
-import { ChatArea } from "../components/ChatArea";
-import { StudioSidebar } from "../components/StudioSidebar";
-import { DeleteDocumentModal } from "../components/DeleteDocumentModal";
-import type { Notebook } from "../types/notebooks.types";
-import type { Document } from "../types/documents.types";
-import { notebooksApi } from "../api/notebooksApi";
-import { documentsApi } from "../api/documentsApi";
+import { ChatArea, useNotebookChat } from "../../notebook-chat";
 import { Header } from "../../home/components/Header";
-import {
-  useDocuments,
-  useUploadDocument,
-  useDocumentStream,
-  useNotebookChat,
-} from "../index";
+import { documentsApi } from "../api/documentsApi";
+import { notebooksApi } from "../api/notebooksApi";
+import { DeleteDocumentModal } from "../components/DeleteDocumentModal";
+import { SourcesSidebar } from "../components/SourcesSidebar";
+import { StudioSidebar } from "../components/StudioSidebar";
+import type { Document } from "../types/documents.types";
+import type { Notebook } from "../types/notebooks.types";
+import { useDocuments, useDocumentStream, useUploadDocument } from "../index";
 
 const allowedExtensions = [".pdf", ".docx", ".txt"];
 

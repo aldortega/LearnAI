@@ -13,7 +13,6 @@ import { Button } from "../../../shared/ui/Button";
 import { cn } from "../../../shared/lib/cn";
 import { ClearChatModal } from "./ClearChatModal";
 
-
 type Props = {
   hasSources: boolean;
   messages: ChatMessage[];
@@ -126,10 +125,9 @@ export function ChatArea({
                 type="button"
                 className={cn(
                   "flex w-full items-center px-4 py-2 text-sm",
-                    canClearChat && !isLoading && !isStreaming && !isClearing
-                      ? "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                      : "cursor-not-allowed text-zinc-300 dark:text-zinc-600",
-
+                  canClearChat && !isLoading && !isStreaming && !isClearing
+                    ? "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                    : "cursor-not-allowed text-zinc-300 dark:text-zinc-600",
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);

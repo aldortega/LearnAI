@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { toNotebookErrorMessage } from "../../../shared/lib/apiErrors";
 import { chatApi, streamChatMessage } from "../api/chatApi";
 import type { ChatMessage, ChatConversation } from "../types/chat.types";
-import { toNotebookErrorMessage } from "../utils/notebookErrors";
 
 type Result = {
   conversation: ChatConversation | null;

@@ -40,7 +40,7 @@ export function NotebookCard({
   }, []);
 
   const handleNavigate = () => {
-    navigate(`/notebook/${id}`);
+    navigate(`/notebook/${id}/chat`);
   };
 
   return (

@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+} from "react-router-dom";
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { AuthPage } from "./features/auth/pages/AuthPage";
@@ -28,6 +34,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function NotebookRedirect() {
+  const { notebookId } = useParams();
+
+  if (!notebookId) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Navigate to={`/notebook/${notebookId}/chat`} replace />;
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -44,6 +60,14 @@ function App() {
             />
             <Route
               path="/notebook/:notebookId"
+              element={
+                <ProtectedRoute>
+                  <NotebookRedirect />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notebook/:notebookId/chat"
               element={
                 <ProtectedRoute>
                   <NotebookPage />
