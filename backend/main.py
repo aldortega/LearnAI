@@ -1,5 +1,7 @@
 from contextlib import asynccontextmanager
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +12,7 @@ from .routes.auth import router as auth_router
 from .routes.documents import router as documents_router
 from .routes.notebooks import router as notebooks_router
 from .routes.rag import router as rag_router
+from .routes.quiz import router as quiz_router
 
 
 @asynccontextmanager
@@ -18,6 +21,8 @@ async def lifespan(app: FastAPI):
     await ensure_qdrant_collection()
     yield
 
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -33,6 +38,7 @@ app.include_router(auth_router)
 app.include_router(notebooks_router)
 app.include_router(documents_router)
 app.include_router(rag_router)
+app.include_router(quiz_router)
 
 
 @app.get("/health")

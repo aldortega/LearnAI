@@ -33,3 +33,20 @@ async def ensure_indexes() -> None:
     await db.rag_messages.create_index("notebook_id")
     await db.rag_messages.create_index("owner_id")
     await db.rag_messages.create_index("created_at")
+    await db.quiz_roadmaps.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.quiz_questions.create_index("level_id")
+    await db.quiz_questions.create_index("unit_id")
+    await db.quiz_questions.create_index("notebook_id")
+    await db.quiz_attempts.create_index("level_id")
+    await db.quiz_attempts.create_index("question_id")
+    await db.quiz_attempts.create_index("owner_id")
+    await db.quiz_level_progress.create_index(
+        [("owner_id", 1), ("level_id", 1)], unique=True
+    )
+    await db.quiz_level_progress.create_index("notebook_id")
+    await db.quiz_llm_payloads.create_index("notebook_id")
+    await db.quiz_llm_payloads.create_index("owner_id")
+    await db.quiz_llm_payloads.create_index("type")
+    await db.quiz_llm_payloads.create_index("level_id")

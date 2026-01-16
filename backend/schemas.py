@@ -119,3 +119,60 @@ class ChatMessageOut(BaseModel):
     content: str
     sources: list[ChatMessageSource] = Field(default_factory=list)
     created_at: datetime
+
+
+class RoadmapLevelOut(BaseModel):
+    id: str
+    unit_id: str
+    title: str
+    type: Literal["lesson", "exam"]
+    order: int
+    passing_score: int
+    status: Literal["locked", "unlocked", "passed"]
+    best_score: Optional[int] = None
+
+
+class RoadmapUnitOut(BaseModel):
+    id: str
+    title: str
+    description: str
+    order: int
+    levels: list[RoadmapLevelOut]
+
+
+class RoadmapOut(BaseModel):
+    id: str
+    notebook_id: str
+    owner_id: str
+    title: str
+    units: list[RoadmapUnitOut]
+    created_at: datetime
+    updated_at: datetime
+
+
+class QuizOptionOut(BaseModel):
+    id: str
+    text: str
+
+
+class QuizQuestionOut(BaseModel):
+    id: str
+    level_id: str
+    unit_id: str
+    question: str
+    options: list[QuizOptionOut]
+    hint: str
+
+
+class QuizSubmitRequest(BaseModel):
+    question_id: str
+    selected_option_id: str
+
+
+class QuizSubmitResponse(BaseModel):
+    is_correct: bool
+    explanation: str
+    correct_option_id: str
+    level_score: int
+    passed: bool
+    unlocked_levels: list[str] = Field(default_factory=list)
