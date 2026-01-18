@@ -3,8 +3,9 @@ export type User = {
   name: string;
   last_name: string;
   email: string;
-  username: string;
-  birthdate: string;
+  username: string | null;
+  birthdate: string | null;
+  profile_complete: boolean;
 };
 
 export type AuthResponse = {
@@ -15,6 +16,15 @@ export type LoginRequest = {
   email: string;
   password: string;
   remember_me: boolean;
+};
+
+export type GoogleLoginRequest = {
+  credential: string;
+};
+
+export type CompleteProfileRequest = {
+  username: string;
+  birthdate: string;
 };
 
 export type RegisterRequest = {

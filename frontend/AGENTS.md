@@ -15,7 +15,7 @@ Este archivo aplica solo al frontend; para comandos globales y reglas base ver `
 - Tailwind CSS **v4**
 - Arquitectura por features (feature-first)
 
-Cualquier contribución debe respetar este stack. No introducir librerías o enfoques alternativos sin justificación explícita.
+Cualquier contribución debe respetar este stack. 
 
 ---
 
@@ -25,6 +25,9 @@ Cualquier contribución debe respetar este stack. No introducir librerías o enf
    - Una _Page_ no debe contener toda la UI en un único archivo.
    - Una _Page_ orquesta: layout + composición + hooks + wiring de handlers.
    - La UI se divide en componentes ubicados en `components/` dentro de la feature o en `shared/ui`.
+   - max 300 lines per any file
+    - max 1 react component per file
+
 
 2. **Feature-first**
    - Todo lo específico de una funcionalidad vive dentro de su feature.

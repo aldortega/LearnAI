@@ -8,8 +8,10 @@ import {
 import { AuthProvider } from "./app/providers/AuthProvider";
 import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { AuthPage } from "./features/auth/pages/AuthPage";
+import { CompleteProfilePage } from "./features/auth/pages/CompleteProfilePage";
 import { HomePage } from "./features/home/pages/HomePage";
 import { NotebookPage } from "./features/notebooks/pages/NotebookPage";
+import { NotebookQuizPage } from "./features/quiz/pages/NotebookQuizPage";
 import { useAuth } from "./shared/hooks/useAuth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -29,6 +31,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <AuthPage initialMode="login" />;
+  }
+
+  // Redirect to profile completion if user has incomplete profile
+  if (!user.profile_complete) {
+    return <CompleteProfilePage />;
   }
 
   return <>{children}</>;
@@ -71,6 +78,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <NotebookPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notebook/:notebookId/quiz"
+              element={
+                <ProtectedRoute>
+                  <NotebookQuizPage />
                 </ProtectedRoute>
               }
             />

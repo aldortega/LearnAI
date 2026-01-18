@@ -12,6 +12,7 @@ import {
   type LoginSchema,
   type LoginSchemaInput,
 } from "../utils/authSchemas";
+import { GoogleLoginButton } from "./GoogleLoginButton";
 
 export function LoginForm() {
   const { login } = useAuth();
@@ -111,6 +112,21 @@ export function LoginForm() {
       >
         Iniciar sesión
       </Button>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-white px-3 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
+            o continuar con
+          </span>
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <GoogleLoginButton onError={setFormError} />
+      </div>
     </form>
   );
 }

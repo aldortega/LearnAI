@@ -19,13 +19,23 @@ class LoginRequest(BaseModel):
     remember_me: bool = False
 
 
+class GoogleLoginRequest(BaseModel):
+    credential: str
+
+
+class CompleteProfileRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=30)
+    birthdate: date
+
+
 class UserOut(BaseModel):
     id: str
     name: str
     last_name: str
     email: EmailStr
-    username: str
-    birthdate: date
+    username: Optional[str] = None
+    birthdate: Optional[date] = None
+    profile_complete: bool = True
 
 
 class AuthResponse(BaseModel):

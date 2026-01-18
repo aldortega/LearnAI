@@ -11,6 +11,11 @@ export type AuthContextValue = {
     password: string;
     rememberMe: boolean;
   }) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
+  completeProfile: (args: {
+    username: string;
+    birthdate: string;
+  }) => Promise<void>;
   register: (args: {
     name: string;
     lastName: string;

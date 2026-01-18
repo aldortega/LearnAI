@@ -2,11 +2,20 @@ from datetime import datetime, timezone
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, Response, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from pymongo.errors import DuplicateKeyError
 
 from ..config import settings
 from ..db import db
-from ..schemas import AuthResponse, LoginRequest, RegisterRequest, UserOut
+from ..schemas import (
+    AuthResponse,
+    CompleteProfileRequest,
+    GoogleLoginRequest,
+    LoginRequest,
+    RegisterRequest,
+    UserOut,
+)
 from ..security import (
     create_session_token,
     hash_password,
@@ -23,17 +32,21 @@ def normalize_email(email: str) -> str:
 
 
 def user_to_out(user: dict) -> UserOut:
-    birthdate = user["birthdate"]
+    birthdate = user.get("birthdate")
     if isinstance(birthdate, datetime):
         birthdate = birthdate.date()
+
+    username = user.get("username")
+    profile_complete = bool(username and birthdate)
 
     return UserOut(
         id=str(user["_id"]),
         name=user["name"],
         last_name=user["last_name"],
         email=user["email"],
-        username=user["username"],
+        username=username,
         birthdate=birthdate,
+        profile_complete=profile_complete,
     )
 
 
@@ -167,4 +180,111 @@ async def logout(request: Request, response: Response) -> None:
 @router.get("/me", response_model=AuthResponse)
 async def me(request: Request) -> AuthResponse:
     user = await get_current_user(request)
+    return AuthResponse(user=user_to_out(user))
+
+
+@router.post("/google", response_model=AuthResponse)
+async def google_login(
+    payload: GoogleLoginRequest, request: Request, response: Response
+) -> AuthResponse:
+    """Authenticate with Google ID token."""
+    if not settings.google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google login no configurado",
+        )
+
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            payload.credential,
+            google_requests.Request(),
+            settings.google_client_id,
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de Google inválido",
+        ) from None
+
+    email = idinfo.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email no disponible en token",
+        )
+
+    user = await db.users.find_one({"email_normalized": email})
+
+    if user:
+        # Existing user - link Google if not already linked
+        if not user.get("google_sub"):
+            await db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"google_sub": idinfo["sub"], "updated_at": datetime.now(timezone.utc)}},
+            )
+            user["google_sub"] = idinfo["sub"]
+    else:
+        # New user from Google
+        given_name = idinfo.get("given_name", "")
+        family_name = idinfo.get("family_name", "")
+        user_doc = {
+            "name": given_name,
+            "last_name": family_name,
+            "email": email,
+            "email_normalized": email,
+            "username": None,
+            "birthdate": None,
+            "password_hash": None,
+            "google_sub": idinfo["sub"],
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+        result = await db.users.insert_one(user_doc)
+        user_doc["_id"] = result.inserted_id
+        user = user_doc
+
+    await create_session(user["_id"], request, response, remember_me=True)
+    return AuthResponse(user=user_to_out(user))
+
+
+@router.post("/complete-profile", response_model=AuthResponse)
+async def complete_profile(
+    payload: CompleteProfileRequest, request: Request
+) -> AuthResponse:
+    """Complete profile for Google users who lack username/birthdate."""
+    user = await get_current_user(request)
+
+    if user.get("username") and user.get("birthdate"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Perfil ya completo",
+        )
+
+    # Check username uniqueness
+    existing = await db.users.find_one(
+        {"username": payload.username, "_id": {"$ne": user["_id"]}}
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El username ya existe",
+        )
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "username": payload.username.strip(),
+                "birthdate": datetime.combine(
+                    payload.birthdate, datetime.min.time(), tzinfo=timezone.utc
+                ),
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    user["username"] = payload.username.strip()
+    user["birthdate"] = datetime.combine(
+        payload.birthdate, datetime.min.time(), tzinfo=timezone.utc
+    )
     return AuthResponse(user=user_to_out(user))

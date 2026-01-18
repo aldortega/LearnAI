@@ -50,6 +50,22 @@ export function AuthProvider({ children }: Props) {
     [],
   );
 
+  const googleLogin: AuthContextValue["googleLogin"] = useCallback(
+    async (credential) => {
+      const res = await authApi.googleLogin({ credential });
+      setUser(res.user);
+    },
+    [],
+  );
+
+  const completeProfile: AuthContextValue["completeProfile"] = useCallback(
+    async ({ username, birthdate }) => {
+      const res = await authApi.completeProfile({ username, birthdate });
+      setUser(res.user);
+    },
+    [],
+  );
+
   const register: AuthContextValue["register"] = useCallback(
     async ({ name, lastName, email, username, birthdate, password }) => {
       const res = await authApi.register({
@@ -79,10 +95,12 @@ export function AuthProvider({ children }: Props) {
       isBootstrapping,
       refreshMe,
       login,
+      googleLogin,
+      completeProfile,
       register,
       logout,
     }),
-    [user, isBootstrapping, refreshMe, login, register, logout],
+    [user, isBootstrapping, refreshMe, login, googleLogin, completeProfile, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

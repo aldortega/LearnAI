@@ -1,22 +1,19 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import { ChatArea, useNotebookChat } from "../../notebook-chat";
-import { Header } from "../../home/components/Header";
 import { documentsApi } from "../api/documentsApi";
-import { notebooksApi } from "../api/notebooksApi";
 import { DeleteDocumentModal } from "../components/DeleteDocumentModal";
-import { SourcesSidebar } from "../components/SourcesSidebar";
-import { StudioSidebar } from "../components/StudioSidebar";
+import { NotebookShell } from "../components/NotebookShell";
 import type { Document } from "../types/documents.types";
-import type { Notebook } from "../types/notebooks.types";
-import { useDocuments, useDocumentStream, useUploadDocument } from "../index";
+import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../index";
 
 const allowedExtensions = [".pdf", ".docx", ".txt"];
 
 export function NotebookPage() {
   const { notebookId } = useParams();
-  const [notebook, setNotebook] = useState<Notebook | null>(null);
+  const navigate = useNavigate();
+  const { notebook } = useNotebook(notebookId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
@@ -47,17 +44,21 @@ export function NotebookPage() {
   } = useNotebookChat(notebookId);
 
   useEffect(() => {
-    if (streamError) {
-      setUseFallback(true);
-    }
-  }, [streamError]);
-
-  useEffect(() => {
-    setUseFallback(false);
-    setStreamKey(0);
+    queueMicrotask(() => {
+      setUseFallback(false);
+      setStreamKey(0);
+    });
   }, [notebookId]);
 
   const documents = useFallback ? fetchedDocuments : streamedDocuments;
+
+  useEffect(() => {
+    if (streamError && documents.length === 0) {
+      queueMicrotask(() => {
+        setUseFallback(true);
+      });
+    }
+  }, [streamError, documents.length]);
 
   const handlePickFile = () => {
     fileInputRef.current?.click();
@@ -139,62 +140,61 @@ export function NotebookPage() {
     }
   };
 
-  // Simple fetch for title (could be a hook)
-  useEffect(() => {
-    if (notebookId) {
-      notebooksApi.get(notebookId).then(setNotebook).catch(console.error);
-    }
-  }, [notebookId]);
+
 
   const hasReadySources = documents.some((doc) => doc.status === "done");
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-white dark:bg-zinc-950">
-      <Header title={notebook?.title} className="flex-none" />
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        accept=".pdf,.docx,.txt"
-        onChange={handleFileChange}
-      />
-
-      {/* Main Layout */}
-      <main className="flex flex-1 overflow-hidden">
-        <SourcesSidebar
-          documents={documents}
-          isUploading={isUploading}
-          deletingDocumentIds={deletingDocumentIds}
-          onAddSource={handlePickFile}
-          onDeleteDocument={handleDeleteRequest}
+    <NotebookShell
+      title={notebook?.title}
+      documents={documents}
+      isUploading={isUploading}
+      deletingDocumentIds={deletingDocumentIds}
+      onAddSource={handlePickFile}
+      onDeleteDocument={handleDeleteRequest}
+      mode="chat"
+      canStartQuiz={hasReadySources}
+      isGeneratingQuiz={false}
+      onGoChat={() => {
+        // already on chat
+      }}
+      onGoQuiz={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/quiz`);
+      }}
+      beforeMain={
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.docx,.txt"
+          onChange={handleFileChange}
         />
-        <div className="flex-1 min-w-0">
-          <ChatArea
-            hasSources={hasReadySources}
-            messages={messages}
-            streamingContent={streamingContent}
-            isLoading={isChatLoading}
-            isStreaming={isChatStreaming}
-            isClearing={isChatClearing}
-            error={chatError}
-            onSendMessage={sendMessage}
-            onClearChat={clearConversation}
-            onDropFile={handleDropFile}
-          />
-        </div>
-        <StudioSidebar />
-      </main>
-
-      <DeleteDocumentModal
-        isOpen={Boolean(deleteTarget)}
-        documentName={deleteTarget?.file_name}
-        isDeleting={
-          deleteTarget ? deletingDocumentIds.has(deleteTarget.id) : false
-        }
-        onCancel={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
+      }
+      footer={
+        <DeleteDocumentModal
+          isOpen={Boolean(deleteTarget)}
+          documentName={deleteTarget?.file_name}
+          isDeleting={
+            deleteTarget ? deletingDocumentIds.has(deleteTarget.id) : false
+          }
+          onCancel={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+        />
+      }
+    >
+      <ChatArea
+        hasSources={hasReadySources}
+        messages={messages}
+        streamingContent={streamingContent}
+        isLoading={isChatLoading}
+        isStreaming={isChatStreaming}
+        isClearing={isChatClearing}
+        error={chatError}
+        onSendMessage={sendMessage}
+        onClearChat={clearConversation}
+        onDropFile={handleDropFile}
       />
-    </div>
+    </NotebookShell>
   );
 }

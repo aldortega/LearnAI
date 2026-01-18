@@ -2,10 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { toNotebookErrorMessage } from "../../../shared/lib/apiErrors";
 import { chatApi, streamChatMessage } from "../api/chatApi";
-import type { ChatMessage, ChatConversation } from "../types/chat.types";
+import type { ChatMessage } from "../types/chat.types";
+import {
+  appendChatMessage,
+  clearChatMessages,
+  setChatData,
+  useChatStore,
+} from "./useChatStore";
 
 type Result = {
-  conversation: ChatConversation | null;
   messages: ChatMessage[];
   streamingContent: string;
   isLoading: boolean;
@@ -30,9 +35,11 @@ function buildLocalMessage(content: string, notebookId: string): ChatMessage {
   };
 }
 
+// Track which notebooks we've already fetched (persists across component mounts)
+const fetchedNotebooks = new Set<string>();
+
 export function useNotebookChat(notebookId?: string): Result {
-  const [conversation, setConversation] = useState<ChatConversation | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { messages: cachedMessages } = useChatStore(notebookId);
   const [streamingContent, setStreamingContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -41,31 +48,27 @@ export function useNotebookChat(notebookId?: string): Result {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    let isActive = true;
-    abortRef.current?.abort();
-    abortRef.current = null;
-
-    setConversation(null);
-    setMessages([]);
-    setStreamingContent("");
-    setIsStreaming(false);
-    setIsClearing(false);
-    setError(null);
-
     if (!notebookId) {
       setIsLoading(false);
       return;
     }
 
+    // Skip if we already fetched for this notebook (even if result was empty)
+    if (fetchedNotebooks.has(notebookId)) {
+      return;
+    }
+
+    fetchedNotebooks.add(notebookId);
     setIsLoading(true);
+
+    let isActive = true;
 
     const loadConversation = async () => {
       try {
         const conversationData = await chatApi.getConversation(notebookId);
         const messagesData = await chatApi.getMessages(notebookId);
         if (!isActive) return;
-        setConversation(conversationData);
-        setMessages(messagesData);
+        setChatData(notebookId, conversationData, messagesData);
       } catch (err) {
         if (!isActive) return;
         setError(toNotebookErrorMessage(err));
@@ -92,7 +95,7 @@ export function useNotebookChat(notebookId?: string): Result {
       setStreamingContent("");
       setIsStreaming(true);
 
-      setMessages((prev) => [...prev, buildLocalMessage(trimmed, notebookId)]);
+      appendChatMessage(notebookId, buildLocalMessage(trimmed, notebookId));
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -106,7 +109,7 @@ export function useNotebookChat(notebookId?: string): Result {
               setStreamingContent((prev) => prev + chunk);
             },
             onDone: (message) => {
-              setMessages((prev) => [...prev, message]);
+              appendChatMessage(notebookId, message);
               setStreamingContent("");
               setIsStreaming(false);
             },
@@ -147,7 +150,7 @@ export function useNotebookChat(notebookId?: string): Result {
 
     try {
       await chatApi.clearMessages(notebookId);
-      setMessages([]);
+      clearChatMessages(notebookId);
     } catch (err) {
       setError(toNotebookErrorMessage(err));
     } finally {
@@ -158,8 +161,7 @@ export function useNotebookChat(notebookId?: string): Result {
   const resetError = useCallback(() => setError(null), []);
 
   return {
-    conversation,
-    messages,
+    messages: cachedMessages,
     streamingContent,
     isLoading,
     isStreaming,

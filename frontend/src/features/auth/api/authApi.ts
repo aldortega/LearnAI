@@ -1,6 +1,8 @@
 import { apiRequest } from "../../../shared/lib/apiClient";
 import type {
   AuthResponse,
+  CompleteProfileRequest,
+  GoogleLoginRequest,
   LoginRequest,
   RegisterRequest,
 } from "../types/auth.types";
@@ -21,6 +23,20 @@ export const authApi = {
 
   register: async (payload: RegisterRequest): Promise<AuthResponse> => {
     return apiRequest<AuthResponse>("/auth/register", {
+      method: "POST",
+      body: payload,
+    });
+  },
+
+  googleLogin: async (payload: GoogleLoginRequest): Promise<AuthResponse> => {
+    return apiRequest<AuthResponse>("/auth/google", {
+      method: "POST",
+      body: payload,
+    });
+  },
+
+  completeProfile: async (payload: CompleteProfileRequest): Promise<AuthResponse> => {
+    return apiRequest<AuthResponse>("/auth/complete-profile", {
       method: "POST",
       body: payload,
     });

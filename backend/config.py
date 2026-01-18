@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     session_cookie_name: str = "session"
     session_short_hours: int = 12
     session_remember_days: int = 7
+    google_client_id: str = "80071616097-224o58j1hhepfm7rno3blrep71qev3rh.apps.googleusercontent.com"
 
     class Config:
         env_file = ".env"

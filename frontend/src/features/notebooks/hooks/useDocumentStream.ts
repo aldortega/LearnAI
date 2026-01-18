@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { getApiBaseUrl } from "../../../shared/lib/apiClient";
 import type { Document } from "../types/documents.types";
+import {
+  setNotebookDocuments,
+  setNotebookDocumentsError,
+  setNotebookStreaming,
+  useNotebookDocumentsStore,
+} from "./useNotebookDocumentsStore";
 
 const STREAM_ERROR_MESSAGE = "No se pudo conectar al stream";
 
@@ -15,16 +21,11 @@ export function useDocumentStream(
   notebookId?: string,
   streamKey = 0,
 ): Result {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { documents, isStreaming, error } = useNotebookDocumentsStore(notebookId);
   const latestDocumentsRef = useRef<Document[]>([]);
 
   useEffect(() => {
     if (!notebookId) {
-      setDocuments([]);
-      setIsStreaming(false);
-      setError(null);
       return;
     }
 
@@ -32,16 +33,18 @@ export function useDocumentStream(
     const streamUrl = `${baseUrl}/notebooks/${notebookId}/documents/stream?key=${streamKey}`;
     const eventSource = new EventSource(streamUrl, { withCredentials: true });
 
-    setIsStreaming(true);
-    setError(null);
+    queueMicrotask(() => {
+      setNotebookStreaming(notebookId, true);
+      setNotebookDocumentsError(notebookId, null);
+    });
 
     const handleDocuments = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as Document[];
         latestDocumentsRef.current = data;
-        setDocuments(data);
+        setNotebookDocuments(notebookId, data);
       } catch {
-        setError(STREAM_ERROR_MESSAGE);
+        setNotebookDocumentsError(notebookId, STREAM_ERROR_MESSAGE);
         eventSource.close();
       }
     };
@@ -53,9 +56,9 @@ export function useDocumentStream(
         latestDocuments.every((doc) => doc.status === "done");
 
       eventSource.close();
-      setIsStreaming(false);
+      setNotebookStreaming(notebookId, false);
       if (!allDone) {
-        setError(STREAM_ERROR_MESSAGE);
+        setNotebookDocumentsError(notebookId, STREAM_ERROR_MESSAGE);
       }
     };
 

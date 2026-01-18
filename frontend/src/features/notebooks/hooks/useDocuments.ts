@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Document } from "../types/documents.types";
 import { documentsApi } from "../api/documentsApi";
 import { toNotebookErrorMessage } from "../utils/notebookErrors";
+import { setNotebookDocuments } from "./useNotebookDocumentsStore";
 
 type Result = {
   documents: Document[];
@@ -30,6 +31,7 @@ export function useDocuments(notebookId?: string, enabled = true): Result {
     try {
       const data = await documentsApi.list(notebookId);
       setDocuments(data);
+      setNotebookDocuments(notebookId, data);
     } catch (e) {
       setError(toNotebookErrorMessage(e));
     } finally {
