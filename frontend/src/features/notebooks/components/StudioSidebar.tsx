@@ -1,5 +1,5 @@
 import { BookOpenCheck, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
@@ -21,7 +21,14 @@ export function StudioSidebar({
   onGoChat,
   onGoQuiz,
 }: Props) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(() => {
+    const saved = localStorage.getItem("studioSidebarOpen");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("studioSidebarOpen", String(isOpen));
+  }, [isOpen]);
 
   return (
     <div
@@ -106,8 +113,10 @@ export function StudioSidebar({
             <button
               type="button"
               className={cn(
-                "rounded-md p-2 text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
-                mode === "chat" && "bg-white shadow-sm dark:bg-zinc-950",
+                "rounded-md p-2 transition-colors",
+                mode === "chat"
+                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
               )}
               onClick={onGoChat}
               title="Chat"
@@ -118,8 +127,10 @@ export function StudioSidebar({
             <button
               type="button"
               className={cn(
-                "rounded-md p-2 text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
-                mode === "quiz" && "bg-white shadow-sm dark:bg-zinc-950",
+                "rounded-md p-2 transition-colors",
+                mode === "quiz"
+                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
                 (!canStartQuiz || isGeneratingQuiz) && "cursor-not-allowed opacity-50",
               )}
               onClick={onGoQuiz}

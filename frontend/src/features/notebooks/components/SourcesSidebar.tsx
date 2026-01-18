@@ -8,7 +8,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
@@ -38,7 +38,14 @@ export function SourcesSidebar({
   onAddSource,
   onDeleteDocument,
 }: Props) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(() => {
+    const saved = localStorage.getItem("sourcesSidebarOpen");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sourcesSidebarOpen", String(isOpen));
+  }, [isOpen]);
 
   const renderStatusIcon = (status: DocumentStatus) => {
     if (status === "done") {
@@ -55,7 +62,7 @@ export function SourcesSidebar({
       className={cn(
         "relative flex h-full flex-col overflow-hidden border-r border-zinc-200 bg-zinc-50 transition-all duration-300 ease-in-out",
         "dark:border-zinc-800 dark:bg-zinc-900",
-        isOpen ? "w-80" : "w-12",
+        isOpen ? "w-72" : "w-12",
       )}
     >
       <div
@@ -156,7 +163,7 @@ export function SourcesSidebar({
         ) : (
           <div className="flex flex-col items-center gap-4 pt-4">
             <button
-              className="rounded-md p-2 text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              className="rounded-md p-2 bg-emerald-900 text-white shadow-sm transition-colors hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
               title="Añadir fuente"
               onClick={onAddSource}
               disabled={isUploading}
