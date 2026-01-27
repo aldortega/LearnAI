@@ -42,10 +42,18 @@ async def ensure_indexes() -> None:
     await db.quiz_attempts.create_index("level_id")
     await db.quiz_attempts.create_index("question_id")
     await db.quiz_attempts.create_index("owner_id")
+    quiz_progress_indexes = await db.quiz_level_progress.index_information()
+    if "owner_id_1_level_id_1" in quiz_progress_indexes:
+        await db.quiz_level_progress.drop_index("owner_id_1_level_id_1")
     await db.quiz_level_progress.create_index(
-        [("owner_id", 1), ("level_id", 1)], unique=True
+        [("owner_id", 1), ("notebook_id", 1), ("level_id", 1)], unique=True
     )
     await db.quiz_level_progress.create_index("notebook_id")
+    await db.quiz_generation_jobs.create_index("job_id", unique=True)
+    await db.quiz_generation_jobs.create_index("owner_id")
+    await db.quiz_generation_jobs.create_index("notebook_id")
+    await db.quiz_generation_jobs.create_index("status")
+    await db.quiz_generation_jobs.create_index("created_at")
     await db.quiz_llm_payloads.create_index("notebook_id")
     await db.quiz_llm_payloads.create_index("owner_id")
     await db.quiz_llm_payloads.create_index("type")
