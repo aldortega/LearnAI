@@ -5,3 +5,4 @@ from .config import settings
 
 redis_client = Redis.from_url(settings.redis_url)
 queue = Queue("ingestion", connection=redis_client)
+quiz_queue = Queue("quiz", connection=redis_client)
