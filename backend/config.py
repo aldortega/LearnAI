@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpobWJrcmplcGFnY3J4cWhsbW93Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODM5MjQ3NiwiZXhwIjoyMDgzOTY4NDc2fQ.Fr-RVWL9z7H19yOwg25vRI-0yW5dEstoJ-dCzN_9I2A"
     supabase_storage_bucket: str = "documents"
     gemini_api_key: str = "AIzaSyC1wH65WVkB6mQn7ooKmVoRZWWElnonXYI"
-    gemini_chat_model: str = "gemini-2.5-pro"
+    gemini_chat_model: str = "gemini-2.5-flash-lite"
     rag_top_k: int = 8
     rag_min_score: float = 0.65
     chunk_size: int = 1000
