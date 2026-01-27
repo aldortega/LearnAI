@@ -33,6 +33,11 @@ export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
 };
 
+export type ApiResponse<T> = {
+  status: number;
+  data: T | null;
+};
+
 export async function apiRequest<T>(
   path: string,
   options?: ApiRequestOptions,
@@ -71,6 +76,46 @@ export async function apiRequest<T>(
   }
 
   return payload as T;
+}
+
+export async function apiRequestWithStatus<T>(
+  path: string,
+  options?: ApiRequestOptions,
+): Promise<ApiResponse<T>> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${path}`;
+
+  const headers = new Headers(options?.headers);
+  if (options?.body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: "include",
+    body:
+      options?.body === undefined
+        ? undefined
+        : JSON.stringify(options.body),
+  });
+
+  if (response.status === 204) {
+    return { status: response.status, data: null };
+  }
+
+  const payload = await parseJsonSafe(response);
+
+  if (!response.ok) {
+    const error: ApiError = {
+      status: response.status,
+      message: extractMessage(payload),
+      detail: payload,
+    };
+    throw error;
+  }
+
+  return { status: response.status, data: payload as T };
 }
 
 export async function apiUploadRequest<T>(

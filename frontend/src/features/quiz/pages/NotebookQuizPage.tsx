@@ -9,8 +9,11 @@ import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from 
 import { GenerateQuizCard } from "../components/GenerateQuizCard";
 import { QuizArea } from "../components/QuizArea";
 import { RoadmapView } from "../components/RoadmapView";
+import { QuizShell } from "../components/QuizShell";
 import { useGenerateQuizRoadmap } from "../hooks/useGenerateQuizRoadmap";
 import { useQuizRoadmap } from "../hooks/useQuizRoadmap";
+import { useResetQuizAttempts } from "../hooks/useResetQuizAttempts";
+import type { QuizGenerateRequest } from "../types/quiz.types";
 
 const allowedExtensions = [".pdf", ".docx", ".txt"];
 
@@ -19,10 +22,9 @@ export function NotebookQuizPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { notebook } = useNotebook(notebookId);
-  const [autoGenerateAttempted, setAutoGenerateAttempted] = useState(false);
-
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
+  const [hasCheckedLatestJob, setHasCheckedLatestJob] = useState(false);
 
   const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
     () => new Set(),
@@ -48,6 +50,10 @@ export function NotebookQuizPage() {
     });
   }, [notebookId]);
 
+  useEffect(() => {
+    setHasCheckedLatestJob(false);
+  }, [notebookId]);
+
   const documents = useFallback ? fetchedDocuments : streamedDocuments;
 
   useEffect(() => {
@@ -70,7 +76,9 @@ export function NotebookQuizPage() {
     reload: reloadRoadmap,
   } = useQuizRoadmap(notebookId);
 
-  const { generate, isGenerating } = useGenerateQuizRoadmap(notebookId);
+  const { generate, resumeLatest, isGenerating, error: generateError } =
+    useGenerateQuizRoadmap(notebookId);
+  const { reset: resetAttempts } = useResetQuizAttempts(notebookId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -158,61 +166,79 @@ export function NotebookQuizPage() {
     navigate(`/notebook/${notebookId}/chat`);
   };
 
-  const handleGoQuiz = async () => {
+  const handleGoQuiz = () => {
     if (!notebookId) return;
-
-    const existing = await reloadRoadmap();
-    if (!existing && hasReadySources) {
-      const created = await generate();
-      if (created) {
-        await reloadRoadmap();
-      }
-    }
-
     navigate(`/notebook/${notebookId}/quiz`);
   };
 
-  const handleAutoGenerate = useCallback(async () => {
-    if (!notebookId) return;
+  const handleGenerateQuiz = useCallback(
+    async (options: QuizGenerateRequest) => {
+      if (!notebookId) return;
 
-    const existing = await reloadRoadmap();
-    if (existing) {
-      return;
-    }
+      const result = await generate(options);
+      if (result) {
+        await reloadRoadmap();
+      }
+    },
+    [generate, notebookId, reloadRoadmap],
+  );
 
-    if (!hasReadySources) return;
+  const [retryingLevelId, setRetryingLevelId] = useState<string | null>(null);
 
-    const created = await generate();
-    if (created) {
-      await reloadRoadmap();
-    }
-  }, [generate, hasReadySources, notebookId, reloadRoadmap]);
+  const handleRetryLevel = useCallback(
+    async (levelId: string) => {
+      if (!notebookId) return;
 
-  useEffect(() => {
-    if (!notebookId || autoGenerateAttempted) return;
+      setRetryingLevelId(levelId);
+      const result = await resetAttempts(levelId);
+      if (result) {
+        await reloadRoadmap();
+        navigate(`/notebook/${notebookId}/quiz?level=${levelId}`);
+      }
+      setRetryingLevelId(null);
+    },
+    [notebookId, resetAttempts, reloadRoadmap, navigate],
+  );
 
-    if (!roadmap && hasReadySources && !isGenerating && !isRoadmapLoading) {
-      queueMicrotask(() => {
-        setAutoGenerateAttempted(true);
-      });
-      void handleAutoGenerate();
-    }
-  }, [
-    notebookId,
-    roadmap,
-    hasReadySources,
-    isGenerating,
-    isRoadmapLoading,
-    autoGenerateAttempted,
-    handleAutoGenerate,
-  ]);
 
   useEffect(() => {
     if (!notebookId) return;
     void reloadRoadmap();
   }, [notebookId, reloadRoadmap]);
 
+  useEffect(() => {
+    if (!notebookId || hasCheckedLatestJob) return;
+    if (roadmap || isRoadmapLoading || isGenerating) return;
+
+    setHasCheckedLatestJob(true);
+
+    void (async () => {
+      const result = await resumeLatest();
+      if (result?.status === "done") {
+        await reloadRoadmap();
+      }
+    })();
+  }, [
+    notebookId,
+    hasCheckedLatestJob,
+    roadmap,
+    isRoadmapLoading,
+    isGenerating,
+    resumeLatest,
+    reloadRoadmap,
+  ]);
+
   const levelId = searchParams.get("level");
+  const selectedLevelTitle = useMemo(() => {
+    if (!roadmap || !levelId) return null;
+
+    for (const unit of roadmap.units) {
+      const level = unit.levels.find((item) => item.id === levelId);
+      if (level) return level.title;
+    }
+
+    return null;
+  }, [roadmap, levelId]);
 
   return (
     <NotebookShell
@@ -224,7 +250,7 @@ export function NotebookQuizPage() {
       onDeleteDocument={handleDeleteRequest}
       mode="quiz"
       canStartQuiz={hasReadySources}
-      isGeneratingQuiz={isGenerating || isRoadmapLoading}
+      isGeneratingQuiz={isGenerating || (isRoadmapLoading && !roadmap)}
       onGoChat={handleGoChat}
       onGoQuiz={() => void handleGoQuiz()}
       beforeMain={
@@ -248,18 +274,19 @@ export function NotebookQuizPage() {
         />
       }
     >
-      {roadmap && levelId ? (
-        <QuizArea
-          notebookId={notebookId ?? ""}
-          levelId={levelId}
-          roadmap={roadmap}
-          onReloadRoadmap={async () => {
-            await reloadRoadmap();
-          }}
-        />
-      ) : roadmap ? (
-        <div className="h-full overflow-y-auto p-6">
-          <div className="mx-auto max-w-5xl">
+      <QuizShell>
+        {roadmap && levelId ? (
+          <QuizArea
+            notebookId={notebookId ?? ""}
+            levelId={levelId}
+            levelTitle={selectedLevelTitle ?? "Nivel"}
+            onReloadRoadmap={async () => {
+              await reloadRoadmap();
+            }}
+          />
+        ) : roadmap ? (
+          <div className="h-full overflow-y-auto p-6">
+            <div className="mx-auto max-w-5xl">
             <RoadmapView
               roadmap={roadmap}
               selectedLevelId={null}
@@ -267,17 +294,20 @@ export function NotebookQuizPage() {
                 if (!notebookId) return;
                 navigate(`/notebook/${notebookId}/quiz?level=${selectedId}`);
               }}
+              onRetryLevel={handleRetryLevel}
+              retryingLevelId={retryingLevelId}
             />
+            </div>
           </div>
-        </div>
-      ) : (
-        <GenerateQuizCard
-          isGenerating={isGenerating || isRoadmapLoading}
-          canStartQuiz={hasReadySources}
-          error={roadmapError}
-          onGenerate={() => void handleGoQuiz()}
-        />
-      )}
+        ) : (
+          <GenerateQuizCard
+            isGenerating={isGenerating || isRoadmapLoading}
+            canStartQuiz={hasReadySources}
+            error={generateError ?? roadmapError}
+            onGenerate={(options) => void handleGenerateQuiz(options)}
+          />
+        )}
+      </QuizShell>
     </NotebookShell>
   );
 }

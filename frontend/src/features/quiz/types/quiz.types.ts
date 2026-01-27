@@ -1,5 +1,6 @@
 export type RoadmapLevelStatus = "locked" | "unlocked" | "passed";
 export type RoadmapLevelType = "lesson" | "exam";
+export type RoadmapQuestionStatus = "idle" | "generating" | "ready" | "failed";
 
 export type RoadmapLevelOut = {
   id: string;
@@ -10,6 +11,7 @@ export type RoadmapLevelOut = {
   passing_score: number;
   status: RoadmapLevelStatus;
   best_score?: number | null;
+  questions_status?: RoadmapQuestionStatus | null;
 };
 
 export type RoadmapUnitOut = {
@@ -28,6 +30,27 @@ export type RoadmapOut = {
   units: RoadmapUnitOut[];
   created_at: string;
   updated_at: string;
+};
+
+export type QuizLength = "short" | "medium" | "long";
+export type QuizDifficulty = "basic" | "intermediate" | "advanced";
+
+export type QuizGenerateRequest = {
+  length: QuizLength;
+  difficulty: QuizDifficulty;
+};
+
+export type QuizGenerationJobOut = {
+  job_id: string;
+  status: "queued" | "processing" | "done" | "failed";
+  error?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+};
+
+export type QuizQuestionsGenerationOut = {
+  status: RoadmapQuestionStatus;
+  error?: string | null;
 };
 
 export type QuizOptionOut = {
@@ -56,4 +79,13 @@ export type QuizSubmitResponse = {
   level_score: number;
   passed: boolean;
   unlocked_levels: string[];
+};
+
+export type QuizAttemptOut = {
+  question_id: string;
+  selected_option_id: string;
+  is_correct: boolean;
+  correct_option_id: string;
+  explanation: string;
+  created_at: string;
 };

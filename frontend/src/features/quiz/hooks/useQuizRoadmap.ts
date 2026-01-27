@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
@@ -22,6 +22,15 @@ export function useQuizRoadmap(notebookId?: string): Result {
   const [error, setError] = useState<string | null>(null);
   const [isNotFound, setIsNotFound] = useState(false);
   const hasFetchedRef = useRef<string | null>(null);
+  const shouldPoll = useMemo(() => {
+    if (!cachedRoadmap) return false;
+    return cachedRoadmap.units.some((unit) =>
+      unit.levels.some((level) => {
+        const status = level.questions_status ?? "idle";
+        return status === "generating";
+      }),
+    );
+  }, [cachedRoadmap]);
 
   const reload = useCallback(async () => {
     if (!notebookId) {
@@ -69,6 +78,15 @@ export function useQuizRoadmap(notebookId?: string): Result {
       hasFetchedRef.current = null;
     }
   }, [notebookId, cachedRoadmap]);
+
+  useEffect(() => {
+    if (!notebookId || !shouldPoll) return;
+    const intervalId = window.setInterval(() => {
+      void reload();
+    }, 3000);
+
+    return () => window.clearInterval(intervalId);
+  }, [notebookId, reload, shouldPoll]);
 
   return {
     roadmap: cachedRoadmap,

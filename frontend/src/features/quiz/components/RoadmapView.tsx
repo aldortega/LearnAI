@@ -1,12 +1,18 @@
 import { Lock, ShieldCheck, Unlock } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
-import type { RoadmapLevelOut, RoadmapOut } from "../types/quiz.types";
+import type {
+  RoadmapLevelOut,
+  RoadmapOut,
+  RoadmapQuestionStatus,
+} from "../types/quiz.types";
 
 type Props = {
   roadmap: RoadmapOut;
   selectedLevelId: string | null;
   onSelectLevel: (levelId: string) => void;
+  onRetryLevel?: (levelId: string) => void;
+  retryingLevelId?: string | null;
 };
 
 function getLevelIcon(level: RoadmapLevelOut) {
@@ -15,7 +21,26 @@ function getLevelIcon(level: RoadmapLevelOut) {
   return <Unlock className="h-4 w-4" />;
 }
 
-export function RoadmapView({ roadmap, selectedLevelId, onSelectLevel }: Props) {
+function getQuestionStatusLabel(status?: RoadmapQuestionStatus | null) {
+  switch (status) {
+    case "idle":
+      return "Preguntas pendientes";
+    case "generating":
+      return "Generando preguntas";
+    case "failed":
+      return "Error en preguntas";
+    default:
+      return "Preguntas listas";
+  }
+}
+
+export function RoadmapView({
+  roadmap,
+  selectedLevelId,
+  onSelectLevel,
+  onRetryLevel,
+  retryingLevelId,
+}: Props) {
   return (
     <div className="space-y-6">
       {roadmap.units.map((unit) => (
@@ -41,7 +66,26 @@ export function RoadmapView({ roadmap, selectedLevelId, onSelectLevel }: Props) 
               .sort((a, b) => a.order - b.order)
               .map((level) => {
                 const isSelected = selectedLevelId === level.id;
+                const questionsStatus = level.questions_status ?? "idle";
                 const isLocked = level.status === "locked";
+                const hasScore = typeof level.best_score === "number";
+                const isFailed =
+                  !isLocked &&
+                  level.status !== "passed" &&
+                  hasScore &&
+                  level.best_score < level.passing_score;
+                const questionStatusLabel = getQuestionStatusLabel(questionsStatus);
+                const availabilityLabel = (() => {
+                  if (level.status === "locked") return "Bloqueado";
+                  if (questionsStatus === "failed") return "Error";
+                  if (questionsStatus === "idle") return "Pendiente";
+                  if (questionsStatus === "generating") return "Generando";
+                  if (level.status === "passed") return "Aprobado";
+                  if (isFailed) return "Reprobado";
+                  return "Disponible";
+                })();
+                const isRetrying = retryingLevelId === level.id;
+                const canRetry = Boolean(onRetryLevel) && !isRetrying;
 
                 return (
                   <button
@@ -76,7 +120,8 @@ export function RoadmapView({ roadmap, selectedLevelId, onSelectLevel }: Props) 
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{level.title}</p>
                         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                          {level.type === "exam" ? "Examen" : "Leccion"} · Aprobacion {level.passing_score}%
+                          {level.type === "exam" ? "Examen" : "Leccion"} ·
+                          Aprobacion {level.passing_score}% · {questionStatusLabel}
                         </p>
                       </div>
                     </div>
@@ -94,22 +139,50 @@ export function RoadmapView({ roadmap, selectedLevelId, onSelectLevel }: Props) 
                           {level.best_score}%
                         </span>
                       ) : null}
-                      <span
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-semibold",
-                          isLocked
-                            ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-                            : level.status === "passed"
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200"
-                              : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
-                        )}
-                      >
-                        {level.status === "locked"
-                          ? "Bloqueado"
-                          : level.status === "passed"
-                            ? "Aprobado"
-                            : "Disponible"}
-                      </span>
+                      {isFailed ? (
+                        <span
+                          className={
+                            "group/failed relative inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold " +
+                            "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-200"
+                          }
+                        >
+                          <span>Reprobado</span>
+                          <span
+                            className={cn(
+                              "absolute left-full ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              "bg-rose-200/80 text-rose-900 transition group-hover/failed:opacity-100",
+                              "pointer-events-none group-hover/failed:pointer-events-auto",
+                              "dark:bg-rose-400/30 dark:text-rose-100",
+                              canRetry
+                                ? "cursor-pointer opacity-0"
+                                : "cursor-not-allowed opacity-0",
+                            )}
+                            onClick={(event) => {
+                              if (!canRetry) return;
+                              event.preventDefault();
+                              event.stopPropagation();
+                              onRetryLevel?.(level.id);
+                            }}
+                            aria-label="Reintentar nivel"
+                            title="Reintentar"
+                          >
+                            {isRetrying ? "Reintentando" : "Reintento"}
+                          </span>
+                        </span>
+                      ) : (
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-semibold",
+                            isLocked
+                              ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                              : level.status === "passed"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+                          )}
+                        >
+                          {availabilityLabel}
+                        </span>
+                      )}
                     </div>
                   </button>
                 );
