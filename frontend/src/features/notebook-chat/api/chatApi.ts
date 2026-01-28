@@ -47,17 +47,25 @@ function parseEventPayload<T>(data: string): T | null {
 }
 
 export const chatApi = {
-  getConversation: async (notebookId: string): Promise<ChatConversation> => {
+  getConversation: async (
+    notebookId: string,
+    signal?: AbortSignal,
+  ): Promise<ChatConversation> => {
     return apiRequest<ChatConversation>(`/notebooks/${notebookId}/conversation`, {
       method: "GET",
+      signal,
     });
   },
 
-  getMessages: async (notebookId: string): Promise<ChatMessage[]> => {
+  getMessages: async (
+    notebookId: string,
+    signal?: AbortSignal,
+  ): Promise<ChatMessage[]> => {
     return apiRequest<ChatMessage[]>(
       `/notebooks/${notebookId}/conversation/messages`,
       {
         method: "GET",
+        signal,
       },
     );
   },

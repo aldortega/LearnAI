@@ -35,9 +35,6 @@ function buildLocalMessage(content: string, notebookId: string): ChatMessage {
   };
 }
 
-// Track which notebooks we've already fetched (persists across component mounts)
-const fetchedNotebooks = new Set<string>();
-
 export function useNotebookChat(notebookId?: string): Result {
   const { messages: cachedMessages } = useChatStore(notebookId);
   const [streamingContent, setStreamingContent] = useState("");
@@ -53,29 +50,38 @@ export function useNotebookChat(notebookId?: string): Result {
       return;
     }
 
-    // Skip if we already fetched for this notebook (even if result was empty)
-    if (fetchedNotebooks.has(notebookId)) {
-      return;
-    }
-
-    fetchedNotebooks.add(notebookId);
     setIsLoading(true);
 
     let isActive = true;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, 15000);
 
     const loadConversation = async () => {
       try {
-        const conversationData = await chatApi.getConversation(notebookId);
-        const messagesData = await chatApi.getMessages(notebookId);
+        const conversationData = await chatApi.getConversation(
+          notebookId,
+          controller.signal,
+        );
+        const messagesData = await chatApi.getMessages(
+          notebookId,
+          controller.signal,
+        );
         if (!isActive) return;
         setChatData(notebookId, conversationData, messagesData);
       } catch (err) {
         if (!isActive) return;
-        setError(toNotebookErrorMessage(err));
+        if ((err as Error)?.name === "AbortError") {
+          setError("No se pudo cargar la conversación. Intenta de nuevo.");
+        } else {
+          setError(toNotebookErrorMessage(err));
+        }
       } finally {
         if (isActive) {
           setIsLoading(false);
         }
+        window.clearTimeout(timeoutId);
       }
     };
 
@@ -83,6 +89,8 @@ export function useNotebookChat(notebookId?: string): Result {
 
     return () => {
       isActive = false;
+      controller.abort();
+      window.clearTimeout(timeoutId);
     };
   }, [notebookId]);
 
