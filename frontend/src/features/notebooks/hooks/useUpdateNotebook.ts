@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import type { Notebook } from "../types/notebooks.types";
 import type { NotebookUpdate } from "../types/notebooks.types";
@@ -16,7 +16,7 @@ export function useUpdateNotebook(): Result {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   const updateNotebook = async (
     notebookId: string,

@@ -14,6 +14,8 @@ from .auth import get_current_user
 
 router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 
+DEFAULT_NOTEBOOK_EMOJI = "📓"
+
 
 def notebook_to_out(notebook: dict, source_count: int = 0) -> NotebookOut:
     return NotebookOut(
@@ -21,6 +23,7 @@ def notebook_to_out(notebook: dict, source_count: int = 0) -> NotebookOut:
         owner_id=str(notebook["owner_id"]),
         title=notebook["title"],
         description=notebook.get("description"),
+        emoji=notebook.get("emoji"),
         source_count=source_count,
         created_at=notebook["created_at"],
         updated_at=notebook["updated_at"],
@@ -43,10 +46,12 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
 async def create_notebook(payload: NotebookCreate, request: Request) -> NotebookOut:
     user = await get_current_user(request)
     now = datetime.now(timezone.utc)
+    emoji = payload.emoji.strip() if payload.emoji else None
     notebook_doc = {
         "owner_id": user["_id"],
         "title": payload.title.strip(),
         "description": payload.description.strip() if payload.description else None,
+        "emoji": emoji or DEFAULT_NOTEBOOK_EMOJI,
         "created_at": now,
         "updated_at": now,
     }
@@ -118,6 +123,8 @@ async def update_notebook(
         updates["title"] = payload.title.strip()
     if payload.description is not None:
         updates["description"] = payload.description.strip() or None
+    if payload.emoji is not None:
+        updates["emoji"] = payload.emoji.strip() or DEFAULT_NOTEBOOK_EMOJI
 
     if not updates:
         raise HTTPException(

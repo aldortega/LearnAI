@@ -56,7 +56,7 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
       <div
         ref={contentRef}
         className={cn(
-          "relative w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-zinc-200 transition-all",
+          "relative w-full max-w-md rounded-xl bg-white shadow-xl ring-1 ring-zinc-200 transition-all",
           "animate-in fade-in zoom-in-95 duration-200",
           "dark:bg-zinc-900 dark:ring-zinc-800",
           className,

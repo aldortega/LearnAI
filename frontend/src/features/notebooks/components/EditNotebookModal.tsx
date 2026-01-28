@@ -1,17 +1,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "../../../shared/ui/Button";
 import { Modal } from "../../../shared/ui/Modal";
 import { TextArea } from "../../../shared/ui/TextArea";
 import { TextField } from "../../../shared/ui/TextField";
+import { EmojiPicker } from "./EmojiPicker";
 import type { Notebook } from "../types/notebooks.types";
 import { useUpdateNotebook } from "../hooks/useUpdateNotebook";
 import {
   type NotebookUpdateInput,
   notebookUpdateSchema,
 } from "../utils/notebookSchemas";
+
+const DEFAULT_NOTEBOOK_EMOJI = "📓";
 
 type Props = {
   isOpen: boolean;
@@ -32,12 +35,15 @@ export function EditNotebookModal({
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
     formState: { errors },
   } = useForm<NotebookUpdateInput>({
     resolver: zodResolver(notebookUpdateSchema),
     defaultValues: {
       title: "",
       description: "",
+      emoji: DEFAULT_NOTEBOOK_EMOJI,
     },
   });
 
@@ -46,10 +52,14 @@ export function EditNotebookModal({
       reset({
         title: notebook?.title ?? "",
         description: notebook?.description ?? "",
+        emoji: notebook?.emoji ?? DEFAULT_NOTEBOOK_EMOJI,
       });
       clearError();
     }
   }, [isOpen, notebook, reset, clearError]);
+
+  const selectedEmoji =
+    useWatch({ control, name: "emoji" }) ?? DEFAULT_NOTEBOOK_EMOJI;
 
   const onSubmit = async (values: NotebookUpdateInput) => {
     if (!notebook) return;
@@ -96,6 +106,15 @@ export function EditNotebookModal({
           rows={3}
           error={errors.description?.message}
           inputProps={register("description")}
+        />
+
+        <EmojiPicker
+          label="Emoji"
+          value={selectedEmoji}
+          onChange={(value) => {
+            setValue("emoji", value, { shouldDirty: true, shouldValidate: true });
+          }}
+          helperText="Actualizá el emoji de tu notebook."
         />
 
         <div className="flex items-center justify-end gap-3 pt-2">
