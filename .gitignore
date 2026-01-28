@@ -1,7 +1,7 @@
 # Local data directories
 qdrant_storage/
 redis_data/
-
+.vscode/
 # Python cache
 **/__pycache__/
 *.pyc
