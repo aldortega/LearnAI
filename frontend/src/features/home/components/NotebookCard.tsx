@@ -1,16 +1,15 @@
 import { Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import type { ComponentType, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+const DEFAULT_NOTEBOOK_EMOJI = "📓";
 
 type Props = {
   id: string;
   title: string;
   sourceCount: number;
   updatedAt: string;
-  icon: IconComponent;
+  emoji?: string | null;
   onEdit: () => void;
   onDelete: () => void;
 };
@@ -20,7 +19,7 @@ export function NotebookCard({
   title,
   sourceCount,
   updatedAt,
-  icon: Icon,
+  emoji,
   onEdit,
   onDelete,
 }: Props) {
@@ -93,8 +92,10 @@ export function NotebookCard({
       </div>
 
       <div>
-        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-200 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
-          <Icon className="h-5 w-5" />
+        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+          <span className="text-xl" aria-hidden>
+            {emoji ?? DEFAULT_NOTEBOOK_EMOJI}
+          </span>
         </div>
         <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-zinc-900 group-hover:text-emerald-700 dark:text-zinc-100 dark:group-hover:text-emerald-300">
           {title}

@@ -31,21 +31,16 @@ export function QuizArea({
   onReloadRoadmap,
 }: Props) {
   const navigate = useNavigate();
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<QuizFeedback | null>(null);
-  const hydrationRef = useRef(false);
+  const [questionIndexState, setQuestionIndexState] = useState<{
+    levelId: string;
+    index: number | null;
+  }>({ levelId, index: null });
+  const [answerState, setAnswerState] = useState<{
+    questionId: string | null;
+    selectedOptionId: string | null;
+    lastResult: QuizFeedback | null;
+  }>({ questionId: null, selectedOptionId: null, lastResult: null });
   const hasSyncedRoadmapRef = useRef(false);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      setQuestionIndex(0);
-      setSelectedOptionId(null);
-      setLastResult(null);
-      hydrationRef.current = false;
-      hasSyncedRoadmapRef.current = false;
-    });
-  }, [levelId]);
 
   const { questions, isLoading: isQuestionsLoading, error: questionsError } =
     useQuizQuestions(notebookId, levelId);
@@ -88,59 +83,59 @@ export function QuizArea({
     };
   };
 
-  useEffect(() => {
-    if (!questions.length || isAttemptsLoading || hydrationRef.current) {
-      return;
-    }
+  const suggestedQuestionIndex = useMemo(() => {
+    if (!questions.length || isAttemptsLoading) return 0;
 
     const firstPendingIndex = questions.findIndex(
       (question) => !attemptsByQuestionId.has(question.id),
     );
-    const nextIndex = firstPendingIndex === -1 ? 0 : firstPendingIndex;
-    const nextQuestion = questions[nextIndex];
-    const nextAttempt = attemptsByQuestionId.get(nextQuestion.id) ?? null;
-
-    setQuestionIndex(nextIndex);
-    setSelectedOptionId(nextAttempt?.selected_option_id ?? null);
-    setLastResult(nextAttempt ? mapAttemptToResult(nextAttempt) : null);
-    hydrationRef.current = true;
+    return firstPendingIndex === -1 ? 0 : firstPendingIndex;
   }, [questions, attemptsByQuestionId, isAttemptsLoading]);
 
-  const currentQuestion = questions[questionIndex] ?? null;
+  const activeQuestionIndex =
+    questionIndexState.levelId === levelId && questionIndexState.index !== null
+      ? questionIndexState.index
+      : suggestedQuestionIndex;
 
-  useEffect(() => {
-    if (!currentQuestion) {
-      setSelectedOptionId(null);
-      setLastResult(null);
-      return;
-    }
+  const safeQuestionIndex = questions.length
+    ? Math.min(activeQuestionIndex, questions.length - 1)
+    : 0;
 
-    const attempt = attemptsByQuestionId.get(currentQuestion.id);
-    if (attempt) {
-      const shouldPreserveResult =
-        typeof lastResult?.level_score === "number" &&
-        attempt.selected_option_id === selectedOptionId;
-      if (!shouldPreserveResult) {
-        setSelectedOptionId(attempt.selected_option_id ?? null);
-        setLastResult(mapAttemptToResult(attempt));
-      }
-    } else {
-      setSelectedOptionId(null);
-      setLastResult(null);
-    }
-  }, [currentQuestion, attemptsByQuestionId, lastResult?.level_score]);
+  const currentQuestion = questions[safeQuestionIndex] ?? null;
+
+  const attemptForCurrent = currentQuestion
+    ? attemptsByQuestionId.get(currentQuestion.id) ?? null
+    : null;
+
+  const currentAnswerState =
+    answerState.questionId === currentQuestion?.id
+      ? answerState
+      : { questionId: null, selectedOptionId: null, lastResult: null };
+
+  const selectedOptionId =
+    currentAnswerState.selectedOptionId ??
+    attemptForCurrent?.selected_option_id ??
+    null;
+
+  const lastResult =
+    currentAnswerState.lastResult ??
+    (attemptForCurrent ? mapAttemptToResult(attemptForCurrent) : null);
 
   const handleSubmit = async () => {
     if (!currentQuestion || !selectedOptionId) return;
     const result = await submit(currentQuestion.id, selectedOptionId);
     if (!result) return;
 
-    setLastResult({
-      is_correct: result.is_correct,
-      explanation: result.explanation,
-      correct_option_id: result.correct_option_id,
-      level_score: result.level_score,
-      passed: result.passed,
+    setAnswerState({
+      questionId: currentQuestion.id,
+      selectedOptionId,
+      lastResult: {
+        is_correct: result.is_correct,
+        explanation: result.explanation,
+        correct_option_id: result.correct_option_id,
+        level_score: result.level_score,
+        passed: result.passed,
+      },
     });
 
     await reloadAttempts();
@@ -151,14 +146,11 @@ export function QuizArea({
   };
 
   const handleNext = () => {
-    setLastResult(null);
-    setSelectedOptionId(null);
-
-    const nextIndex = questionIndex + 1;
-    if (nextIndex >= questions.length) {
+    if (safeQuestionIndex + 1 >= questions.length) {
       return;
     }
-    setQuestionIndex(nextIndex);
+    setAnswerState({ questionId: null, selectedOptionId: null, lastResult: null });
+    setQuestionIndexState({ levelId, index: safeQuestionIndex + 1 });
   };
 
   const handleGoRoadmap = () => {
@@ -208,12 +200,22 @@ export function QuizArea({
               <div className="space-y-4">
                 <QuestionView
                   question={currentQuestion}
-                  index={questionIndex}
+                  index={safeQuestionIndex}
                   total={questions.length}
                   isSubmitting={isSubmitting}
                   isAnswered={Boolean(lastResult)}
                   selectedOptionId={selectedOptionId}
-                  onSelectOption={setSelectedOptionId}
+                  onSelectOption={(optionId) => {
+                    if (!currentQuestion) return;
+                    setAnswerState((prev) => ({
+                      questionId: currentQuestion.id,
+                      selectedOptionId: optionId,
+                      lastResult:
+                        prev.questionId === currentQuestion.id
+                          ? prev.lastResult
+                          : null,
+                    }));
+                  }}
                   onSubmit={handleSubmit}
                 />
 
@@ -229,7 +231,7 @@ export function QuizArea({
                     />
 
                     <div className="flex justify-end">
-                      {questionIndex + 1 >= questions.length ? (
+                      {safeQuestionIndex + 1 >= questions.length ? (
                         <Button onClick={handleGoRoadmap}>Volver al roadmap</Button>
                       ) : (
                         <Button onClick={handleNext}>Siguiente</Button>

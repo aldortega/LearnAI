@@ -24,7 +24,7 @@ export function NotebookQuizPage() {
   const { notebook } = useNotebook(notebookId);
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
-  const [hasCheckedLatestJob, setHasCheckedLatestJob] = useState(false);
+  const hasCheckedLatestJobRef = useRef(false);
 
   const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
     () => new Set(),
@@ -51,7 +51,7 @@ export function NotebookQuizPage() {
   }, [notebookId]);
 
   useEffect(() => {
-    setHasCheckedLatestJob(false);
+    hasCheckedLatestJobRef.current = false;
   }, [notebookId]);
 
   const documents = useFallback ? fetchedDocuments : streamedDocuments;
@@ -207,10 +207,10 @@ export function NotebookQuizPage() {
   }, [notebookId, reloadRoadmap]);
 
   useEffect(() => {
-    if (!notebookId || hasCheckedLatestJob) return;
+    if (!notebookId || hasCheckedLatestJobRef.current) return;
     if (roadmap || isRoadmapLoading || isGenerating) return;
 
-    setHasCheckedLatestJob(true);
+    hasCheckedLatestJobRef.current = true;
 
     void (async () => {
       const result = await resumeLatest();
@@ -220,7 +220,6 @@ export function NotebookQuizPage() {
     })();
   }, [
     notebookId,
-    hasCheckedLatestJob,
     roadmap,
     isRoadmapLoading,
     isGenerating,

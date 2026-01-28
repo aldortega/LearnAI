@@ -1,15 +1,3 @@
-import {
-  Atom,
-  Brain,
-  Dna,
-  FlaskConical,
-  GraduationCap,
-  Landmark,
-  Megaphone,
-  Scale,
-  Terminal,
-  TrendingUp,
-} from "lucide-react";
 import { useState } from "react";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
@@ -21,19 +9,6 @@ import { EditNotebookModal } from "../../notebooks/components/EditNotebookModal"
 import { CreateNotebookCard } from "../components/CreateNotebookCard";
 import { Header } from "../components/Header";
 import { NotebookCard } from "../components/NotebookCard";
-
-const notebookIcons = [
-  Dna,
-  Landmark,
-  Atom,
-  Brain,
-  TrendingUp,
-  Terminal,
-  GraduationCap,
-  Scale,
-  FlaskConical,
-  Megaphone,
-];
 
 function formatNotebookDate(value: string): string {
   const date = new Date(value);
@@ -112,22 +87,18 @@ export function HomePage() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <CreateNotebookCard onClick={() => setIsCreateModalOpen(true)} />
             
-            {notebooks.map((notebook, index) => {
-              const Icon = notebookIcons[index % notebookIcons.length];
-
-              return (
-                <NotebookCard
-                  key={notebook.id}
-                  id={notebook.id}
-                  title={notebook.title}
-                  sourceCount={notebook.source_count}
-                  updatedAt={formatNotebookDate(notebook.updated_at)}
-                  icon={Icon}
-                  onEdit={() => handleEditNotebook(notebook)}
-                  onDelete={() => handleDeleteNotebook(notebook)}
-                />
-              );
-            })}
+            {notebooks.map((notebook) => (
+              <NotebookCard
+                key={notebook.id}
+                id={notebook.id}
+                title={notebook.title}
+                sourceCount={notebook.source_count}
+                updatedAt={formatNotebookDate(notebook.updated_at)}
+                emoji={notebook.emoji}
+                onEdit={() => handleEditNotebook(notebook)}
+                onDelete={() => handleDeleteNotebook(notebook)}
+              />
+            ))}
           </div>
         </div>
       </main>
