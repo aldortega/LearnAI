@@ -5,7 +5,7 @@ import { StudioSidebar } from "./StudioSidebar";
 import { SourcesSidebar } from "./SourcesSidebar";
 import type { Document } from "../types/documents.types";
 
-export type NotebookShellMode = "chat" | "quiz";
+export type NotebookShellMode = "chat" | "quiz" | "quickstart";
 
 type Props = {
   title?: string;
@@ -17,8 +17,11 @@ type Props = {
   mode: NotebookShellMode;
   canStartQuiz: boolean;
   isGeneratingQuiz: boolean;
+  canStartQuickstart: boolean;
+  isGeneratingQuickstart: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
+  onGoQuickstart: () => void;
   beforeMain?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -34,8 +37,11 @@ export function NotebookShell({
   mode,
   canStartQuiz,
   isGeneratingQuiz,
+  canStartQuickstart,
+  isGeneratingQuickstart,
   onGoChat,
   onGoQuiz,
+  onGoQuickstart,
   beforeMain,
   children,
   footer,
@@ -58,8 +64,11 @@ export function NotebookShell({
           mode={mode}
           canStartQuiz={canStartQuiz}
           isGeneratingQuiz={isGeneratingQuiz}
+          canStartQuickstart={canStartQuickstart}
+          isGeneratingQuickstart={isGeneratingQuickstart}
           onGoChat={onGoChat}
           onGoQuiz={onGoQuiz}
+          onGoQuickstart={onGoQuickstart}
         />
       </main>
       {footer}

@@ -1,25 +1,37 @@
-import { BookOpenCheck, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import {
+  BookOpenCheck,
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  Sparkles,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 
-type Mode = "chat" | "quiz";
+type Mode = "chat" | "quiz" | "quickstart";
 
 type Props = {
   mode: Mode;
   canStartQuiz: boolean;
   isGeneratingQuiz: boolean;
+  canStartQuickstart: boolean;
+  isGeneratingQuickstart: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
+  onGoQuickstart: () => void;
 };
 
 export function StudioSidebar({
   mode,
   canStartQuiz,
   isGeneratingQuiz,
+  canStartQuickstart,
+  isGeneratingQuickstart,
   onGoChat,
   onGoQuiz,
+  onGoQuickstart,
 }: Props) {
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem("studioSidebarOpen");
@@ -74,7 +86,11 @@ export function StudioSidebar({
                     Modo
                   </p>
                   <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {mode === "quiz" ? "Quiz activo" : "Chat activo"}
+                    {mode === "quiz"
+                      ? "Quiz activo"
+                      : mode === "quickstart"
+                        ? "Inicio rapido activo"
+                        : "Chat activo"}
                   </p>
                 </div>
               </div>
@@ -90,6 +106,17 @@ export function StudioSidebar({
                 </Button>
 
                 <Button
+                  variant={mode === "quickstart" ? "primary" : "ghost"}
+                  className="w-full justify-start"
+                  leftIcon={<Sparkles className="h-4 w-4" />}
+                  onClick={onGoQuickstart}
+                  disabled={!canStartQuickstart}
+                  loading={isGeneratingQuickstart}
+                >
+                  Inicio rapido
+                </Button>
+
+                <Button
                   variant={mode === "quiz" ? "primary" : "ghost"}
                   className="w-full justify-start"
                   leftIcon={<BookOpenCheck className="h-4 w-4" />}
@@ -100,6 +127,12 @@ export function StudioSidebar({
                   Quiz
                 </Button>
               </div>
+
+              {!canStartQuickstart ? (
+                <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400" role="alert">
+                  Necesitas al menos una fuente lista para generar el inicio rapido.
+                </p>
+              ) : null}
 
               {!canStartQuiz ? (
                 <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400" role="alert">
@@ -123,6 +156,23 @@ export function StudioSidebar({
               aria-label="Chat"
             >
               <MessageSquare className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-md p-2 transition-colors",
+                mode === "quickstart"
+                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
+                (!canStartQuickstart || isGeneratingQuickstart) &&
+                  "cursor-not-allowed opacity-50",
+              )}
+              onClick={onGoQuickstart}
+              disabled={!canStartQuickstart || isGeneratingQuickstart}
+              title="Inicio rapido"
+              aria-label="Inicio rapido"
+            >
+              <Sparkles className="h-4 w-4" />
             </button>
             <button
               type="button"

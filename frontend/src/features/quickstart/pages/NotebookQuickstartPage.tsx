@@ -1,22 +1,33 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
-import { ChatArea, useNotebookChat } from "../../notebook-chat";
-import { documentsApi } from "../api/documentsApi";
-import { DeleteDocumentModal } from "../components/DeleteDocumentModal";
-import { NotebookShell } from "../components/NotebookShell";
-import type { Document } from "../types/documents.types";
-import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../index";
+import { documentsApi } from "../../notebooks/api/documentsApi";
+import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
+import { NotebookShell } from "../../notebooks/components/NotebookShell";
+import type { Document } from "../../notebooks/types/documents.types";
+import {
+  useDocuments,
+  useDocumentStream,
+  useNotebook,
+  useUploadDocument,
+} from "../../notebooks";
+import { QuickstartEmptyState } from "../components/QuickstartEmptyState";
+import { QuickstartOverview } from "../components/QuickstartOverview";
+import { QuickstartShell } from "../components/QuickstartShell";
+import { useGenerateQuickstart } from "../hooks/useGenerateQuickstart";
+import { useQuickstart } from "../hooks/useQuickstart";
 
 const allowedExtensions = [".pdf", ".docx", ".txt"];
 
-export function NotebookPage() {
+export function NotebookQuickstartPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook } = useNotebook(notebookId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
+  const hasCheckedLatestJobRef = useRef(false);
+
   const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -32,22 +43,31 @@ export function NotebookPage() {
     useFallback,
   );
   const { uploadDocument, isUploading } = useUploadDocument(notebookId);
+
   const {
-    messages,
-    streamingContent,
-    isLoading: isChatLoading,
-    isStreaming: isChatStreaming,
-    isClearing: isChatClearing,
-    error: chatError,
-    sendMessage,
-    clearConversation,
-  } = useNotebookChat(notebookId);
+    quickstart,
+    isLoading: isQuickstartLoading,
+    error: quickstartError,
+    reload: reloadQuickstart,
+  } = useQuickstart(notebookId);
+
+  const {
+    generate,
+    resumeLatest,
+    isGenerating,
+    error: generateError,
+    clearError: clearGenerateError,
+  } = useGenerateQuickstart(notebookId);
 
   useEffect(() => {
     queueMicrotask(() => {
       setUseFallback(false);
       setStreamKey(0);
     });
+  }, [notebookId]);
+
+  useEffect(() => {
+    hasCheckedLatestJobRef.current = false;
   }, [notebookId]);
 
   const documents = useFallback ? fetchedDocuments : streamedDocuments;
@@ -79,18 +99,12 @@ export function NotebookPage() {
     }
   };
 
-  const handleFileChange = async (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
 
     if (!file) return;
 
-    await processFileUpload(file);
-  };
-
-  const handleDropFile = async (file: File) => {
     await processFileUpload(file);
   };
 
@@ -140,9 +154,54 @@ export function NotebookPage() {
     }
   };
 
-
-
   const hasReadySources = documents.some((doc) => doc.status === "done");
+  const readySignature = useMemo(
+    () =>
+      documents
+        .filter((doc) => doc.status === "done")
+        .map((doc) => `${doc.id}:${doc.updated_at}`)
+        .join("|"),
+    [documents],
+  );
+
+  const handleGenerateQuickstart = async () => {
+    if (!notebookId) return;
+    clearGenerateError();
+    const result = await generate();
+    if (result) {
+      await reloadQuickstart();
+    }
+  };
+
+  useEffect(() => {
+    if (!notebookId) return;
+    void reloadQuickstart();
+  }, [notebookId, reloadQuickstart, readySignature]);
+
+  useEffect(() => {
+    if (!notebookId || hasCheckedLatestJobRef.current) return;
+    if (quickstart && quickstart.status !== "missing") return;
+    if (isQuickstartLoading || isGenerating) return;
+
+    hasCheckedLatestJobRef.current = true;
+
+    void (async () => {
+      const result = await resumeLatest();
+      if (result?.status === "done") {
+        await reloadQuickstart();
+      }
+    })();
+  }, [
+    notebookId,
+    quickstart,
+    isQuickstartLoading,
+    isGenerating,
+    resumeLatest,
+    reloadQuickstart,
+  ]);
+
+  const isEmpty = !quickstart || quickstart.status === "missing";
+  const combinedError = generateError ?? quickstartError;
 
   return (
     <NotebookShell
@@ -152,21 +211,21 @@ export function NotebookPage() {
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
-      mode="chat"
+      mode="quickstart"
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
       canStartQuickstart={hasReadySources}
-      isGeneratingQuickstart={false}
+      isGeneratingQuickstart={isGenerating}
       onGoChat={() => {
-        // already on chat
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/chat`);
       }}
       onGoQuiz={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/quiz`);
       }}
       onGoQuickstart={() => {
-        if (!notebookId) return;
-        navigate(`/notebook/${notebookId}/quickstart`);
+        // already on quickstart
       }}
       beforeMain={
         <input
@@ -189,18 +248,25 @@ export function NotebookPage() {
         />
       }
     >
-      <ChatArea
-        hasSources={hasReadySources}
-        messages={messages}
-        streamingContent={streamingContent}
-        isLoading={isChatLoading}
-        isStreaming={isChatStreaming}
-        isClearing={isChatClearing}
-        error={chatError}
-        onSendMessage={sendMessage}
-        onClearChat={clearConversation}
-        onDropFile={handleDropFile}
-      />
+      <QuickstartShell>
+        {isEmpty ? (
+          <QuickstartEmptyState
+            isGenerating={isGenerating}
+            canGenerate={hasReadySources}
+            error={combinedError}
+            onGenerate={handleGenerateQuickstart}
+          />
+        ) : quickstart ? (
+          <QuickstartOverview
+            quickstart={quickstart}
+            notebookId={notebookId}
+            isGenerating={isGenerating}
+            canGenerate={hasReadySources}
+            error={combinedError}
+            onGenerate={handleGenerateQuickstart}
+          />
+        ) : null}
+      </QuickstartShell>
     </NotebookShell>
   );
 }

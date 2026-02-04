@@ -171,6 +171,11 @@ export function NotebookQuizPage() {
     navigate(`/notebook/${notebookId}/quiz`);
   };
 
+  const handleGoQuickstart = () => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/quickstart`);
+  };
+
   const handleGenerateQuiz = useCallback(
     async (options: QuizGenerateRequest) => {
       if (!notebookId) return;
@@ -250,8 +255,11 @@ export function NotebookQuizPage() {
       mode="quiz"
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={isGenerating || (isRoadmapLoading && !roadmap)}
+      canStartQuickstart={hasReadySources}
+      isGeneratingQuickstart={false}
       onGoChat={handleGoChat}
       onGoQuiz={() => void handleGoQuiz()}
+      onGoQuickstart={handleGoQuickstart}
       beforeMain={
         <input
           ref={fileInputRef}
