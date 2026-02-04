@@ -1,10 +1,19 @@
 import { useId, useMemo, useState } from "react";
 
+import { getEmojiBackgroundClass, normalizeEmoji } from "../utils/emojiColors";
+
 const EMOJI_OPTIONS = [
   "📓",
   "📚",
   "📖",
+  "📒",
+  "📕",
+  "📗",
+  "📘",
+  "📙",
   "📝",
+  "🗒️",
+  "✏️",
   "🧠",
   "💡",
   "🔬",
@@ -12,6 +21,7 @@ const EMOJI_OPTIONS = [
   "🧬",
   "🧮",
   "📊",
+  "📈",
   "💻",
   "🛰️",
   "🌍",
@@ -24,8 +34,18 @@ const EMOJI_OPTIONS = [
   "🔭",
   "📌",
   "🏛️",
-  "📈",
- ];
+  "🗂️",
+  "🗃️",
+  "🔎",
+  "🗺️",
+  "🧵",
+  "📐",
+  "📏",
+  "🧾",
+  "🪐",
+  "🔋",
+  "🧯",
+];
 
 type Props = {
   label: string;
@@ -33,13 +53,6 @@ type Props = {
   onChange: (value: string) => void;
   helperText?: string;
 };
-
-function normalizeEmoji(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-
-  return Array.from(trimmed)[0] ?? "";
-}
 
 export function EmojiPicker({ label, value, onChange, helperText }: Props) {
   const id = useId();
@@ -76,7 +89,9 @@ export function EmojiPicker({ label, value, onChange, helperText }: Props) {
             id={id}
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className="flex h-10 w-12 items-center justify-center rounded-lg border border-zinc-200 bg-white text-xl transition hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-800 dark:bg-zinc-900"
+            className={`flex h-10 w-12 items-center justify-center rounded-lg border border-zinc-200 text-xl transition hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-800 ${getEmojiBackgroundClass(
+              currentEmoji,
+            )}`}
             aria-haspopup="dialog"
             aria-expanded={isOpen}
             aria-label="Elegir emoji"

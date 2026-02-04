@@ -2,6 +2,8 @@ import { Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { getEmojiBackgroundClass } from "../../notebooks/utils/emojiColors";
+
 const DEFAULT_NOTEBOOK_EMOJI = "📓";
 
 type Props = {
@@ -92,7 +94,11 @@ export function NotebookCard({
       </div>
 
       <div>
-        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+        <div
+          className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full ${getEmojiBackgroundClass(
+            emoji,
+          )}`}
+        >
           <span className="text-xl" aria-hidden>
             {emoji ?? DEFAULT_NOTEBOOK_EMOJI}
           </span>
