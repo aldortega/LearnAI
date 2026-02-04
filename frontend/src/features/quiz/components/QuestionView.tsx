@@ -44,10 +44,10 @@ export function QuestionView({
           disabled={isAnswered}
           className={cn(
             "w-full rounded-xl border px-4 py-3 text-left transition",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
             isAnswered && "cursor-not-allowed opacity-80",
             isSelected
-              ? "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100"
+              ? "border-green-300 bg-green-50 text-green-950 dark:border-green-500/40 dark:bg-green-500/10 dark:text-green-100"
               : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900",
           )}
         >
@@ -56,7 +56,7 @@ export function QuestionView({
               className={cn(
                 "grid h-7 w-7 flex-none place-items-center rounded-lg text-xs font-semibold",
                 isSelected
-                  ? "bg-emerald-900 text-white dark:bg-emerald-300 dark:text-emerald-950"
+                  ? "bg-green-900 text-white dark:bg-green-300 dark:text-green-950"
                   : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
               )}
             >
@@ -81,7 +81,7 @@ export function QuestionView({
           <button
             type="button"
             onClick={() => setHintOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-white"
           >
             <Lightbulb className="h-4 w-4" />
             Pista
@@ -112,10 +112,10 @@ export function QuestionView({
             disabled={!canSubmit || isSubmitting}
             className={cn(
               "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
               !canSubmit || isSubmitting
-                ? "cursor-not-allowed bg-emerald-900/40 text-white/70 dark:bg-emerald-400/40 dark:text-emerald-950/70"
-                : "bg-emerald-900 text-white hover:bg-emerald-800 active:bg-emerald-950 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 dark:active:bg-emerald-500",
+                ? "cursor-not-allowed bg-green-900/40 text-white/70 dark:bg-green-400/40 dark:text-green-950/70"
+                : "bg-green-900 text-white hover:bg-green-800 active:bg-green-950 dark:bg-green-400 dark:text-green-950 dark:hover:bg-green-300 dark:active:bg-green-500",
             )}
           >
             {isSubmitting ? "Enviando..." : "Responder"}

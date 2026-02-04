@@ -95,13 +95,13 @@ export function RoadmapView({
                     onClick={() => onSelectLevel(level.id)}
                     className={cn(
                       "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
                       isLocked
                         ? "cursor-not-allowed border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-600"
                         : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900",
                       isSelected &&
                         !isLocked &&
-                        "border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10",
+                        "border-green-300 bg-green-50 dark:border-green-500/40 dark:bg-green-500/10",
                     )}
                   >
                     <div className="flex min-w-0 items-center gap-3">
@@ -111,8 +111,8 @@ export function RoadmapView({
                           isLocked
                             ? "bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
                             : level.status === "passed"
-                              ? "bg-emerald-900 text-white dark:bg-emerald-300 dark:text-emerald-950"
-                              : "bg-emerald-200 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200",
+                              ? "bg-green-900 text-white dark:bg-green-300 dark:text-green-950"
+                              : "bg-green-200 text-green-900 dark:bg-green-500/20 dark:text-green-200",
                         )}
                       >
                         {getLevelIcon(level)}
@@ -132,7 +132,7 @@ export function RoadmapView({
                           className={cn(
                             "rounded-full px-2.5 py-1 text-xs font-semibold",
                             level.status === "passed"
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200"
+                              ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200"
                               : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
                           )}
                         >
@@ -176,7 +176,7 @@ export function RoadmapView({
                             isLocked
                               ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
                               : level.status === "passed"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200"
+                                ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200"
                                 : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
                           )}
                         >

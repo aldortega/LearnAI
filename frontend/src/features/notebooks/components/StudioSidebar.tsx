@@ -148,7 +148,7 @@ export function StudioSidebar({
               className={cn(
                 "rounded-md p-2 transition-colors",
                 mode === "quickstart"
-                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  ? "bg-green-900 text-white shadow-sm dark:bg-green-400 dark:text-green-950"
                   : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
                 (!canStartQuickstart || isGeneratingQuickstart) &&
                   "cursor-not-allowed opacity-50",
@@ -165,7 +165,7 @@ export function StudioSidebar({
               className={cn(
                 "rounded-md p-2 transition-colors",
                 mode === "chat"
-                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  ? "bg-green-900 text-white shadow-sm dark:bg-green-400 dark:text-green-950"
                   : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
               )}
               onClick={onGoChat}
@@ -179,7 +179,7 @@ export function StudioSidebar({
               className={cn(
                 "rounded-md p-2 transition-colors",
                 mode === "quiz"
-                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  ? "bg-green-900 text-white shadow-sm dark:bg-green-400 dark:text-green-950"
                   : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
                 (!canStartQuiz || isGeneratingQuiz) && "cursor-not-allowed opacity-50",
               )}

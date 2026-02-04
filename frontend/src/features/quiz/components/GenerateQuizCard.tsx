@@ -31,7 +31,7 @@ export function GenerateQuizCard({
   return (
     <div className="flex h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-10 text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-green-100 text-green-900 dark:bg-green-500/20 dark:text-green-200">
           <BookOpenCheck className="h-6 w-6" />
         </div>
 
@@ -61,7 +61,7 @@ export function GenerateQuizCard({
                     type="button"
                     onClick={() => setLength(option.value)}
                     className={
-                      "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " +
+                      "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 " +
                       (isActive
                         ? "bg-white text-zinc-900 shadow-sm ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700"
                         : "text-zinc-500 hover:bg-zinc-200/60 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-200")
@@ -96,7 +96,7 @@ export function GenerateQuizCard({
                     type="button"
                     onClick={() => setDifficulty(option.value)}
                     className={
-                      "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 " +
+                      "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 " +
                       (isActive
                         ? "bg-white text-zinc-900 shadow-sm ring-1 ring-black/5 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700"
                         : "text-zinc-500 hover:bg-zinc-200/60 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-200")

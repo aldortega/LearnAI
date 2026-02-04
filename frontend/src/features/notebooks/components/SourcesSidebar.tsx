@@ -49,7 +49,7 @@ export function SourcesSidebar({
 
   const renderStatusIcon = (status: DocumentStatus) => {
     if (status === "done") {
-      return <CheckCircle className="h-4 w-4 text-emerald-600" />;
+      return <CheckCircle className="h-4 w-4 text-green-600" />;
     }
     if (status === "error" || status === "failed") {
       return <AlertTriangle className="h-4 w-4 text-red-500" />;
@@ -163,7 +163,7 @@ export function SourcesSidebar({
         ) : (
           <div className="flex flex-col items-center gap-4 pt-4">
             <button
-              className="rounded-md p-2 bg-emerald-900 text-white shadow-sm transition-colors hover:bg-emerald-800 dark:bg-emerald-400 dark:text-emerald-950 dark:hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md p-2 bg-green-900 text-white shadow-sm transition-colors hover:bg-green-800 dark:bg-green-400 dark:text-green-950 dark:hover:bg-green-300 disabled:cursor-not-allowed disabled:opacity-60"
               title="Añadir fuente"
               onClick={onAddSource}
               disabled={isUploading}

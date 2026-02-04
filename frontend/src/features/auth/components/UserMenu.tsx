@@ -24,7 +24,7 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 ring-2 ring-transparent transition-all hover:bg-emerald-200 focus:outline-none focus:ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-200 dark:hover:bg-emerald-500/30"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-700 ring-2 ring-transparent transition-all hover:bg-green-200 focus:outline-none focus:ring-green-200 dark:bg-green-500/20 dark:text-green-200 dark:hover:bg-green-500/30"
         aria-label="User menu"
       >
         <User className="h-5 w-5" />
@@ -48,7 +48,7 @@ export function UserMenu() {
                 className={
                   "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "system"
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                    ? "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300"
                     : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60")
                 }
               >
@@ -66,7 +66,7 @@ export function UserMenu() {
                 className={
                   "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "light"
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                    ? "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300"
                     : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60")
                 }
               >
@@ -81,7 +81,7 @@ export function UserMenu() {
                 className={
                   "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "dark"
-                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+                    ? "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300"
                     : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60")
                 }
               >

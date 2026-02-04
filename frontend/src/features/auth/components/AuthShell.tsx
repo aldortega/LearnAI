@@ -34,10 +34,10 @@ export function AuthShell({ children, title, topSlot }: Props) {
   return (
     <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-2 dark:bg-zinc-950">
       {/* Left Panel - Branding */}
-      <div className="relative hidden h-full flex-col justify-between bg-emerald-900 p-12 lg:flex">
+      <div className="relative hidden h-full flex-col justify-between bg-green-900 p-12 lg:flex">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -left-24 -top-24 h-[500px] w-[500px] rounded-full bg-emerald-800 blur-3xl" />
-          <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-emerald-950 opacity-50 blur-3xl" />
+          <div className="absolute -left-24 -top-24 h-[500px] w-[500px] rounded-full bg-green-800 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-green-950 opacity-50 blur-3xl" />
         </div>
 
         <div className="relative z-10">
@@ -48,7 +48,7 @@ export function AuthShell({ children, title, topSlot }: Props) {
           <h2 className="text-4xl font-bold tracking-tight text-white">
             Dominá tus documentos con IA
           </h2>
-          <p className="mt-6 text-lg leading-relaxed text-emerald-200">
+          <p className="mt-6 text-lg leading-relaxed text-green-200">
             Subí tus materiales de estudio, generá quizzes y mejorá tu retención
             en minutos. La plataforma diseñada para estudiantes que buscan
             excelencia.
@@ -59,7 +59,7 @@ export function AuthShell({ children, title, topSlot }: Props) {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="h-10 w-10 rounded-full border-2 border-emerald-900 bg-emerald-700"
+                  className="h-10 w-10 rounded-full border-2 border-green-900 bg-green-700"
                 />
               ))}
             </div>
@@ -69,7 +69,7 @@ export function AuthShell({ children, title, topSlot }: Props) {
           </div>
         </div>
 
-        <div className="relative z-10 text-xs text-emerald-400">
+        <div className="relative z-10 text-xs text-green-400">
           © {new Date().getFullYear()} LearnAI Inc.
         </div>
       </div>
@@ -79,10 +79,10 @@ export function AuthShell({ children, title, topSlot }: Props) {
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-10 lg:hidden">
             <div className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-900 text-white">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-green-900 text-white">
                 <GraduationCap className="h-5 w-5" />
               </div>
-              <span className="text-lg font-bold text-emerald-900 dark:text-emerald-200">
+              <span className="text-lg font-bold text-green-900 dark:text-green-200">
                 LearnAI
               </span>
             </div>

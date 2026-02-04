@@ -87,9 +87,9 @@ export function LoginForm() {
             type="checkbox"
             {...register("rememberMe")}
             className={cn(
-              "h-4 w-4 rounded border-zinc-300 text-emerald-700 dark:border-zinc-700 dark:bg-zinc-900",
-              "focus:ring-emerald-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
-              "dark:focus:ring-emerald-400 dark:focus:ring-offset-zinc-950",
+              "h-4 w-4 rounded border-zinc-300 text-green-700 dark:border-zinc-700 dark:bg-zinc-900",
+              "focus:ring-green-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
+              "dark:focus:ring-green-400 dark:focus:ring-offset-zinc-950",
             )}
           />
           Recordarme

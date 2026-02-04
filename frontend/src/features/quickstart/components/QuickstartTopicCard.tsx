@@ -138,7 +138,7 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
                     {sourceNames.map((name) => (
                       <span
                         key={`${topic.id}-source-${name}`}
-                        className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"
+                        className="rounded-full bg-green-50 px-3 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-200"
                       >
                         {name}
                       </span>

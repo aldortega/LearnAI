@@ -18,7 +18,7 @@ export function QuickstartEmptyState({
   return (
     <div className="flex h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-10 text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-green-100 text-green-900 dark:bg-green-500/20 dark:text-green-200">
           <Sparkles className="h-6 w-6" />
         </div>
 

@@ -89,7 +89,7 @@ export function EmojiPicker({ label, value, onChange, helperText }: Props) {
             id={id}
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className={`flex h-10 w-12 items-center justify-center rounded-lg border border-zinc-200 text-xl transition hover:border-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-800 ${getEmojiBackgroundClass(
+            className={`flex h-10 w-12 items-center justify-center rounded-lg border border-zinc-200 text-xl transition hover:border-green-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:border-zinc-800 ${getEmojiBackgroundClass(
               currentEmoji,
             )}`}
             aria-haspopup="dialog"
@@ -102,7 +102,7 @@ export function EmojiPicker({ label, value, onChange, helperText }: Props) {
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:border-emerald-400 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-zinc-800 dark:text-zinc-200"
+            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 transition hover:border-green-400 hover:text-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:border-zinc-800 dark:text-zinc-200"
           >
             {isOpen ? "Cerrar" : "Cambiar"}
           </button>
@@ -126,7 +126,7 @@ export function EmojiPicker({ label, value, onChange, helperText }: Props) {
                     key={emoji}
                     type="button"
                     onClick={() => handleSelect(emoji)}
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-lg transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:bg-emerald-500/10"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-lg transition hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:hover:bg-green-500/10"
                     aria-label={`Seleccionar ${emoji}`}
                   >
                     {emoji}
@@ -148,7 +148,7 @@ export function EmojiPicker({ label, value, onChange, helperText }: Props) {
                 value={customValue}
                 onChange={(event) => handleCustomChange(event.target.value)}
                 placeholder="Ej: 🧠"
-                className="mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 transition focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                className="mt-1 h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 transition focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
               />
             </div>
           </div>

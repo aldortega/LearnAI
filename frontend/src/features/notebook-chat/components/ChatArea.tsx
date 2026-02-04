@@ -146,7 +146,7 @@ export function ChatArea({
         {!hasSources ? (
           <div className="flex flex-1 items-center justify-center p-8 text-center">
             <div className="max-w-md">
-              <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-300">
                 <Upload className="h-8 w-8" />
               </div>
               <h2 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
@@ -160,7 +160,7 @@ export function ChatArea({
                 className={
                   "flex items-center justify-center rounded-xl border-2 border-dashed px-6 py-8 text-sm text-zinc-500 transition-all " +
                   (isDragging
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-400 dark:bg-emerald-500/10 dark:text-emerald-300"
+                    ? "border-green-500 bg-green-50 text-green-700 dark:border-green-400 dark:bg-green-500/10 dark:text-green-300"
                     : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400")
                 }
                 onDragOver={handleDragOver}
@@ -205,7 +205,7 @@ export function ChatArea({
                         "max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm",
                         isAssistant
                           ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
-                          : "bg-emerald-600 text-white dark:bg-emerald-500",
+                          : "bg-green-900 text-white dark:bg-green-500",
                       )}
                     >
                       {isAssistant ? (
@@ -274,7 +274,7 @@ export function ChatArea({
               placeholder="Haz una pregunta sobre tus fuentes..."
               className={cn(
                 "min-h-[44px] flex-1 resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900",
-                "placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20",
+                "placeholder:text-zinc-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20",
                 "disabled:cursor-not-allowed disabled:opacity-60",
                 "dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500",
               )}

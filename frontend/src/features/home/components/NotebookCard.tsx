@@ -56,7 +56,7 @@ export function NotebookCard({
             event.stopPropagation();
             setIsMenuOpen((prev) => !prev);
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:ring-emerald-500"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-300 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:ring-green-500"
           aria-label="Opciones del notebook"
           aria-expanded={isMenuOpen}
         >
@@ -103,7 +103,7 @@ export function NotebookCard({
             {emoji ?? DEFAULT_NOTEBOOK_EMOJI}
           </span>
         </div>
-        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-zinc-900 group-hover:text-emerald-700 dark:text-zinc-100 dark:group-hover:text-emerald-300">
+        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-zinc-900 group-hover:text-green-700 dark:text-zinc-100 dark:group-hover:text-green-300">
           {title}
         </h3>
       </div>

@@ -66,7 +66,7 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-green-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             aria-label="Cerrar"
           >
             <X className="h-5 w-5" />

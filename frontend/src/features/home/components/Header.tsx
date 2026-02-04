@@ -23,10 +23,10 @@ export function Header({ title, className }: Props) {
           to="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-900 text-white">
-            <GraduationCap className="h-5 w-5 dark:text-emerald-200" />
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-green-900 text-white">
+            <GraduationCap className="h-5 w-5 dark:text-green-200" />
           </div>
-          <span className="text-lg font-bold tracking-tight text-emerald-900 dark:text-emerald-200">
+          <span className="text-lg font-bold tracking-tight text-green-900 dark:text-green-200">
             LearnAI
           </span>
         </Link>
