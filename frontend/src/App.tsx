@@ -49,7 +49,7 @@ function NotebookRedirect() {
     return <Navigate to="/" replace />;
   }
 
-  return <Navigate to={`/notebook/${notebookId}/chat`} replace />;
+  return <Navigate to={`/notebook/${notebookId}/quickstart`} replace />;
 }
 
 function App() {

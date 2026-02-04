@@ -41,7 +41,7 @@ export function NotebookCard({
   }, []);
 
   const handleNavigate = () => {
-    navigate(`/notebook/${id}/chat`);
+    navigate(`/notebook/${id}/quickstart`);
   };
 
   return (

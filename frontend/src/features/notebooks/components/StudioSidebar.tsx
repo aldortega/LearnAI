@@ -97,15 +97,6 @@ export function StudioSidebar({
 
               <div className="grid gap-2">
                 <Button
-                  variant={mode === "chat" ? "primary" : "ghost"}
-                  className="w-full justify-start"
-                  leftIcon={<MessageSquare className="h-4 w-4" />}
-                  onClick={onGoChat}
-                >
-                  Chat
-                </Button>
-
-                <Button
                   variant={mode === "quickstart" ? "primary" : "ghost"}
                   className="w-full justify-start"
                   leftIcon={<Sparkles className="h-4 w-4" />}
@@ -114,6 +105,15 @@ export function StudioSidebar({
                   loading={isGeneratingQuickstart}
                 >
                   Inicio rapido
+                </Button>
+
+                <Button
+                  variant={mode === "chat" ? "primary" : "ghost"}
+                  className="w-full justify-start"
+                  leftIcon={<MessageSquare className="h-4 w-4" />}
+                  onClick={onGoChat}
+                >
+                  Chat
                 </Button>
 
                 <Button
@@ -147,20 +147,6 @@ export function StudioSidebar({
               type="button"
               className={cn(
                 "rounded-md p-2 transition-colors",
-                mode === "chat"
-                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
-                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
-              )}
-              onClick={onGoChat}
-              title="Chat"
-              aria-label="Chat"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
                 mode === "quickstart"
                   ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
                   : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
@@ -173,6 +159,20 @@ export function StudioSidebar({
               aria-label="Inicio rapido"
             >
               <Sparkles className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-md p-2 transition-colors",
+                mode === "chat"
+                  ? "bg-emerald-900 text-white shadow-sm dark:bg-emerald-400 dark:text-emerald-950"
+                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
+              )}
+              onClick={onGoChat}
+              title="Chat"
+              aria-label="Chat"
+            >
+              <MessageSquare className="h-4 w-4" />
             </button>
             <button
               type="button"
