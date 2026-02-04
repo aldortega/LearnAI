@@ -108,6 +108,45 @@ class RagResponse(BaseModel):
     sources: list[RagSource]
 
 
+class QuickstartTopicOut(BaseModel):
+    id: str
+    title: str
+    summary: str
+    key_points: list[str] = Field(default_factory=list)
+
+
+class QuickstartOut(BaseModel):
+    notebook_id: str
+    has_ready_sources: bool
+    status: Literal["missing", "ready", "stale"]
+    generated_at: Optional[datetime] = None
+    topics: list[QuickstartTopicOut] = Field(default_factory=list)
+
+
+class QuickstartGenerationJobOut(BaseModel):
+    job_id: str
+    status: Literal["queued", "processing", "done", "failed"]
+    error: Optional[str] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+
+
+class QuickstartSourceRef(BaseModel):
+    document_id: str
+    chunk_id: int
+    score: float
+    file_name: Optional[str] = None
+    page: Optional[int] = None
+
+
+class QuickstartExpansionOut(BaseModel):
+    topic_id: str
+    content: str
+    key_points: list[str] = Field(default_factory=list)
+    example_questions: list[str] = Field(default_factory=list)
+    sources: list[QuickstartSourceRef] = Field(default_factory=list)
+
+
 class ConversationOut(BaseModel):
     id: str
     owner_id: str

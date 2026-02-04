@@ -58,3 +58,22 @@ async def ensure_indexes() -> None:
     await db.quiz_llm_payloads.create_index("owner_id")
     await db.quiz_llm_payloads.create_index("type")
     await db.quiz_llm_payloads.create_index("level_id")
+    await db.quickstart_summaries.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.quickstart_summaries.create_index("updated_at")
+    await db.quickstart_expansions.create_index(
+        [
+            ("owner_id", 1),
+            ("notebook_id", 1),
+            ("topic_id", 1),
+            ("sources_fingerprint", 1),
+        ],
+        unique=True,
+    )
+    await db.quickstart_expansions.create_index("updated_at")
+    await db.quickstart_generation_jobs.create_index("job_id", unique=True)
+    await db.quickstart_generation_jobs.create_index("owner_id")
+    await db.quickstart_generation_jobs.create_index("notebook_id")
+    await db.quickstart_generation_jobs.create_index("status")
+    await db.quickstart_generation_jobs.create_index("created_at")
