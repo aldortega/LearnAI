@@ -10,6 +10,7 @@ export type QuickstartOut = {
   has_ready_sources: boolean;
   status: "missing" | "ready" | "stale";
   generated_at?: string | null;
+  notebook_summary: string;
   topics: QuickstartTopic[];
 };
 

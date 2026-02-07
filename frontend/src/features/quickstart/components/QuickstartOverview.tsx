@@ -1,65 +1,38 @@
-import { RefreshCcw } from "lucide-react";
-
-import { Card } from "../../../shared/ui/Card";
-import { Button } from "../../../shared/ui/Button";
 import type { QuickstartOut } from "../types/quickstart.types";
 import { QuickstartTopicsList } from "./QuickstartTopicsList";
 
 type Props = {
   quickstart: QuickstartOut;
   notebookId?: string;
-  isGenerating: boolean;
-  canGenerate: boolean;
   error: string | null;
-  onGenerate: () => void;
 };
 
 export function QuickstartOverview({
   quickstart,
   notebookId,
-  isGenerating,
-  canGenerate,
   error,
-  onGenerate,
 }: Props) {
   const isStale = quickstart.status === "stale";
-
-  const formattedDate = quickstart.generated_at
-    ? new Date(quickstart.generated_at).toLocaleString("es-ES", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
+  const summaryParagraphs = quickstart.notebook_summary
+    .split(/\n\s*\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  const displaySummaryParagraphs =
+    summaryParagraphs.length > 0
+      ? summaryParagraphs
+      : quickstart.topics
+          .map((topic) => topic.summary.trim())
+          .filter(Boolean)
+          .slice(0, 2);
 
   return (
     <div className="flex h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8">
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Inicio rapido
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-                Resumen de temas
-              </h2>
-              {formattedDate ? (
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  Generado el {formattedDate}
-                </p>
-              ) : null}
-            </div>
-            <Button
-              onClick={onGenerate}
-              disabled={!canGenerate}
-              loading={isGenerating}
-              leftIcon={<RefreshCcw className="h-4 w-4" />}
-            >
-              {isStale ? "Regenerar" : "Actualizar"}
-            </Button>
+        <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <div>
+            <h2 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+              De que trata esta notebook
+            </h2>
           </div>
 
           {isStale ? (
@@ -80,7 +53,26 @@ export function QuickstartOverview({
               {error}
             </div>
           ) : null}
-        </Card>
+
+          <div className="space-y-3">
+            {displaySummaryParagraphs.map((paragraph, index) => (
+              <p
+                key={`summary-${index}`}
+                className="text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Temas principales
+          </p>
+          <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        </div>
 
         <QuickstartTopicsList
           topics={quickstart.topics}

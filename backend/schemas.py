@@ -120,6 +120,7 @@ class QuickstartOut(BaseModel):
     has_ready_sources: bool
     status: Literal["missing", "ready", "stale"]
     generated_at: Optional[datetime] = None
+    notebook_summary: str = ""
     topics: list[QuickstartTopicOut] = Field(default_factory=list)
 
 

@@ -248,7 +248,14 @@ export function NotebookQuickstartPage() {
         />
       }
     >
-      <QuickstartShell>
+      <QuickstartShell
+        showRefreshAction={!isEmpty}
+        canRefresh={hasReadySources}
+        isRefreshing={isGenerating}
+        onRefresh={() => {
+          void handleGenerateQuickstart();
+        }}
+      >
         {isEmpty ? (
           <QuickstartEmptyState
             isGenerating={isGenerating}
@@ -260,10 +267,7 @@ export function NotebookQuickstartPage() {
           <QuickstartOverview
             quickstart={quickstart}
             notebookId={notebookId}
-            isGenerating={isGenerating}
-            canGenerate={hasReadySources}
             error={combinedError}
-            onGenerate={handleGenerateQuickstart}
           />
         ) : null}
       </QuickstartShell>

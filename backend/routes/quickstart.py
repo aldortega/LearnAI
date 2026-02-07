@@ -53,6 +53,7 @@ DEFAULT_EXPANSION_QUESTIONS = [
 
 QUICKSTART_SCHEMA = (
     "{\n"
+    '  "notebook_summary": "string",\n'
     '  "topics": [\n'
     "    {\n"
     '      "title": "string",\n'
@@ -79,6 +80,7 @@ class QuickstartTopicLLM(BaseModel):
 
 
 class QuickstartPayloadLLM(BaseModel):
+    notebook_summary: str
     topics: list[QuickstartTopicLLM] = Field(min_length=1, max_length=12)
 
 
@@ -174,6 +176,44 @@ def normalize_topics(payload: dict, title: str) -> list[dict]:
     return normalized
 
 
+def build_notebook_summary_fallback(title: str, topics: list[dict]) -> str:
+    topic_titles = [
+        coerce_text(topic.get("title")).strip()
+        for topic in topics
+        if coerce_text(topic.get("title")).strip()
+    ][:3]
+    if topic_titles:
+        joined_titles = ", ".join(topic_titles)
+        return (
+            f"Esta notebook trata sobre {title} y presenta una vista general para "
+            "empezar con rapidez.\n\n"
+            f"Se enfoca en {joined_titles}, con conceptos y puntos clave para "
+            "ordenar tu estudio."
+        )
+    return (
+        f"Esta notebook trata sobre {title} y ofrece una introduccion practica "
+        "para comenzar.\n\n"
+        "Incluye conceptos centrales y temas clave para construir una base solida."
+    )
+
+
+def normalize_notebook_summary(raw_summary: object, title: str, topics: list[dict]) -> str:
+    summary = coerce_text(raw_summary).strip()
+    if summary:
+        return summary
+    return build_notebook_summary_fallback(title, topics)
+
+
+def normalize_quickstart_payload(payload: dict, title: str) -> dict:
+    topics = normalize_topics(payload, title)
+    notebook_summary = normalize_notebook_summary(
+        payload.get("notebook_summary"),
+        title,
+        topics,
+    )
+    return {"notebook_summary": notebook_summary, "topics": topics}
+
+
 def normalize_expansion(payload: dict, topic_title: str) -> dict:
     content = coerce_text(payload.get("content")).strip()
     if not content:
@@ -210,6 +250,7 @@ def build_quickstart_prompt(
     user_prompt = (
         f"Tema general (usa exactamente este tema): {title}\n\n"
         f"Contexto:\n{context_text}\n\n"
+        "Genera un notebook_summary general de 2 parrafos breves. "
         f"Genera un inicio rapido con exactamente {TOPIC_COUNT} temas. "
         "Cada tema debe tener un resumen breve y una lista de 3 a 5 puntos clave."
     )
@@ -329,7 +370,7 @@ async def generate_quickstart_topics(
     title: str,
     notebook_object_id: ObjectId,
     user: dict,
-) -> list[dict]:
+) -> dict:
     context_lines, _, _, _ = await retrieve_context(
         f"Conceptos clave sobre {title}", notebook_object_id, user
     )
@@ -348,7 +389,7 @@ async def generate_quickstart_topics(
             "Quickstart estructurado:\n%s",
             json.dumps(payload_data, ensure_ascii=False),
         )
-        return normalize_topics(payload_data, title)
+        return normalize_quickstart_payload(payload_data, title)
     except Exception as exc:
         logger.exception("Quickstart JSON invalido", extra={"error": str(exc)})
         raise HTTPException(
@@ -493,7 +534,7 @@ async def _process_quickstart_generation(
             return
 
         try:
-            topics = await generate_quickstart_topics(
+            quickstart_payload = await generate_quickstart_topics(
                 notebook["title"],
                 notebook_object_id,
                 {"_id": owner_object_id},
@@ -506,7 +547,8 @@ async def _process_quickstart_generation(
                         "owner_id": owner_object_id,
                         "notebook_id": notebook_object_id,
                         "sources_fingerprint": fingerprint,
-                        "topics": topics,
+                        "notebook_summary": quickstart_payload["notebook_summary"],
+                        "topics": quickstart_payload["topics"],
                         "updated_at": now,
                     },
                     "$setOnInsert": {"created_at": now},
@@ -540,16 +582,24 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
     has_ready_sources = ready_count > 0
 
     status_value: str = "missing"
+    notebook_summary = ""
     topics_out: list[QuickstartTopicOut] = []
     generated_at: datetime | None = None
 
     if summary:
+        raw_topics = summary.get("topics", [])
+        topics_list = raw_topics if isinstance(raw_topics, list) else []
         status_value = (
             "ready"
             if summary.get("sources_fingerprint") == fingerprint
             else "stale"
         )
-        topics_out = [topic_to_out(topic) for topic in summary.get("topics", [])]
+        topics_out = [topic_to_out(topic) for topic in topics_list]
+        notebook_summary = normalize_notebook_summary(
+            summary.get("notebook_summary"),
+            notebook["title"],
+            topics_list,
+        )
         generated_at = summary.get("updated_at") or summary.get("created_at")
 
     return QuickstartOut(
@@ -561,6 +611,7 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
             else "missing"
         ),
         generated_at=generated_at,
+        notebook_summary=notebook_summary,
         topics=topics_out,
     )
 
