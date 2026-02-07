@@ -1,15 +1,10 @@
 import { z } from "zod";
 
-import type { NotebookCreate } from "../types/notebooks.types";
-
-const notebookEmojiSchema = z.preprocess(
-  (value) => {
-    if (typeof value !== "string") return value;
-    const trimmed = value.trim();
-    return trimmed.length === 0 ? null : trimmed;
-  },
-  z.string().max(16, "El emoji no puede superar los 16 caracteres").nullable().optional(),
-);
+const notebookEmojiSchema = z
+  .string()
+  .max(16, "El emoji no puede superar los 16 caracteres")
+  .nullable()
+  .optional();
 
 export const notebookCreateSchema = z.object({
   title: z
@@ -39,8 +34,5 @@ export const notebookUpdateSchema = z.object({
 
 export type NotebookCreateSchema = z.infer<typeof notebookCreateSchema>;
 export type NotebookUpdateSchema = z.infer<typeof notebookUpdateSchema>;
-export type NotebookCreateInput = NotebookCreate;
-export type NotebookUpdateInput = {
-  title: string;
-  description?: string | null;
-};
+export type NotebookCreateInput = z.infer<typeof notebookCreateSchema>;
+export type NotebookUpdateInput = z.infer<typeof notebookUpdateSchema>;

@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "../../../shared/ui/Button";
 import type { QuickstartTopic } from "../types/quickstart.types";
@@ -16,13 +16,15 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
   const { expansion, isLoading, error, expand, clearError } =
     useQuickstartExpansion(notebookId, topic.id);
 
-  const sourceNames = useMemo(() => {
-    if (!expansion?.sources?.length) return [];
-    const names = expansion.sources
-      .map((source) => source.file_name)
-      .filter((name): name is string => Boolean(name));
-    return Array.from(new Set(names));
-  }, [expansion?.sources]);
+  const sourceNames = expansion?.sources?.length
+    ? Array.from(
+        new Set(
+          expansion.sources
+            .map((source) => source.file_name)
+            .filter((name): name is string => Boolean(name)),
+        ),
+      )
+    : [];
 
   const handleToggle = async () => {
     if (isOpen) {

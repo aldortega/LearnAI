@@ -68,12 +68,14 @@ export function RoadmapView({
                 const isSelected = selectedLevelId === level.id;
                 const questionsStatus = level.questions_status ?? "idle";
                 const isLocked = level.status === "locked";
-                const hasScore = typeof level.best_score === "number";
+                const bestScore =
+                  typeof level.best_score === "number" ? level.best_score : null;
+                const hasScore = bestScore !== null;
                 const isFailed =
                   !isLocked &&
                   level.status !== "passed" &&
                   hasScore &&
-                  level.best_score < level.passing_score;
+                  bestScore < level.passing_score;
                 const questionStatusLabel = getQuestionStatusLabel(questionsStatus);
                 const availabilityLabel = (() => {
                   if (level.status === "locked") return "Bloqueado";
