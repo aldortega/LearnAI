@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+﻿import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "../../../shared/ui/Button";
@@ -39,13 +39,13 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          <h3 className="text-base font-semibold text-foreground">
             {topic.title}
           </h3>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             {topic.summary}
           </p>
         </div>
@@ -63,10 +63,10 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
       </div>
 
       <div className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Puntos clave
         </p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           {topic.key_points.map((point, index) => (
             <li key={`${topic.id}-point-${index}`}>{point}</li>
           ))}
@@ -74,27 +74,27 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
       </div>
 
       {isStale ? (
-        <p className="mt-3 text-xs text-amber-600 dark:text-amber-300" role="alert">
+        <p className="mt-3 text-xs text-warning" role="alert">
           Este inicio rapido esta desactualizado. Regenera para ver mas detalle.
         </p>
       ) : null}
 
       {isOpen ? (
-        <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+        <div className="mt-4 border-t border-border pt-4">
           {isLoading ? (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-muted-foreground">
               Cargando detalle...
             </p>
           ) : null}
 
           {error ? (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-300" role="alert">
+            <p className="mt-2 text-sm text-error" role="alert">
               {error}
             </p>
           ) : null}
 
           {expansion ? (
-            <div className="space-y-4 text-sm text-zinc-700 dark:text-zinc-300">
+            <div className="space-y-4 text-sm text-muted-foreground">
               <div className="space-y-3">
                 {expansion.content
                   .split(/\n+/)
@@ -107,7 +107,7 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
 
               {expansion.key_points.length > 0 ? (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Puntos adicionales
                   </p>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -120,7 +120,7 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
 
               {expansion.example_questions.length > 0 ? (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Preguntas sugeridas
                   </p>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -133,14 +133,14 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
 
               {sourceNames.length > 0 ? (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Fuentes
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {sourceNames.map((name) => (
                       <span
                         key={`${topic.id}-source-${name}`}
-                        className="rounded-full bg-green-50 px-3 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-200"
+                        className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary"
                       >
                         {name}
                       </span>
@@ -155,3 +155,4 @@ export function QuickstartTopicCard({ topic, notebookId, isStale }: Props) {
     </div>
   );
 }
+

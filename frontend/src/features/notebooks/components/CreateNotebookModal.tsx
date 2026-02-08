@@ -1,4 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+﻿import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -71,7 +71,7 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
         {error ? (
           <div
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300"
+            className="rounded-lg border border-error bg-error/10 px-4 py-3 text-sm text-error"
           >
             {error}
           </div>
@@ -122,3 +122,4 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
     </Modal>
   );
 }
+

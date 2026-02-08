@@ -1,4 +1,4 @@
-import {
+﻿import {
   AlertTriangle,
   CheckCircle,
   ChevronLeft,
@@ -49,37 +49,37 @@ export function SourcesSidebar({
 
   const renderStatusIcon = (status: DocumentStatus) => {
     if (status === "done") {
-      return <CheckCircle className="h-4 w-4 text-green-600" />;
+      return <CheckCircle className="h-4 w-4 text-primary" />;
     }
     if (status === "error" || status === "failed") {
-      return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      return <AlertTriangle className="h-4 w-4 text-error" />;
     }
-    return <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />;
+    return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
   };
 
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col overflow-hidden border-r border-zinc-200 bg-zinc-50 transition-all duration-300 ease-in-out",
-        "dark:border-zinc-800 dark:bg-zinc-900",
-        isOpen ? "w-72" : "w-12",
+        "relative flex h-full flex-col overflow-hidden border-r border-border bg-muted transition-all duration-300 ease-in-out",
+        "dark:border-border",
+        isOpen ? "w-64" : "w-12",
       )}
     >
       <div
         className={cn(
-          "flex h-[45px] items-center border-b border-zinc-200",
-          "dark:border-zinc-800",
+          "flex h-[45px] items-center border-b border-border",
+          "dark:border-border",
           isOpen ? "justify-between px-4" : "justify-center",
         )}
       >
         {isOpen && (
-            <h2 className="text-sm font-semibold text-zinc-900 whitespace-nowrap dark:text-zinc-100">
+            <h2 className="text-sm font-semibold text-foreground whitespace-nowrap">
               Fuentes
             </h2>
           )}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="rounded-md p-2 text-zinc-500 hover:bg-zinc-200"
+          className="rounded-md p-2 text-muted-foreground hover:bg-muted-hover"
         >
           {isOpen ? (
             <ChevronLeft className="h-4 w-4" />
@@ -103,13 +103,13 @@ export function SourcesSidebar({
 
             {documents.length === 0 ? (
               <div className="mt-10 flex flex-col items-center justify-center text-center">
-                <div className="mb-3 rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-800">
-                  <FileText className="h-6 w-6 text-zinc-400 dark:text-zinc-500" />
+                <div className="mb-3 rounded-2xl bg-muted p-3">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="w-full truncate text-sm text-zinc-500 dark:text-zinc-400">
+                <p className="w-full truncate text-sm text-muted-foreground">
                   Las fuentes guardadas aparecerán aquí.
                 </p>
-                <p className="mt-1 w-full truncate text-xs text-zinc-400 dark:text-zinc-500">
+                <p className="mt-1 w-full truncate text-xs text-muted-foreground">
                   Haz clic en el botón Añadir fuente de arriba para añadir PDFs.
                 </p>
               </div>
@@ -121,7 +121,7 @@ export function SourcesSidebar({
                   return (
                       <li
                         key={document.id}
-                        className="group flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-950"
+                        className="group flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2"
                       >
 
                       <div className="relative flex h-4 w-4 items-center justify-center">
@@ -139,18 +139,18 @@ export function SourcesSidebar({
                           disabled={isDeleting}
                         >
                           {isDeleting ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                           ) : (
-                             <Trash2 className="h-4 w-4 text-zinc-500 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400" />
+                             <Trash2 className="h-4 w-4 text-muted-foreground hover:text-error" />
 
                           )}
                         </button>
                       </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-zinc-900 whitespace-nowrap dark:text-zinc-100">
+                      <p className="truncate text-sm font-medium text-foreground whitespace-nowrap">
                         {document.file_name}
                       </p>
-                      {/* <p className="text-xs text-zinc-400">
+                      {/* <p className="text-xs text-muted-foreground">
                         {statusLabels[document.status] ?? "Procesando"}
                       </p> */}
                     </div>
@@ -163,7 +163,7 @@ export function SourcesSidebar({
         ) : (
           <div className="flex flex-col items-center gap-4 pt-4">
             <button
-              className="rounded-md p-2 bg-green-900 text-white shadow-sm transition-colors hover:bg-green-800 dark:bg-green-400 dark:text-green-950 dark:hover:bg-green-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md p-2 bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               title="Añadir fuente"
               onClick={onAddSource}
               disabled={isUploading}
@@ -176,3 +176,5 @@ export function SourcesSidebar({
     </div>
   );
 }
+
+

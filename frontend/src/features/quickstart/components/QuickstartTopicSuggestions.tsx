@@ -1,4 +1,4 @@
-import { RefreshCw } from "lucide-react";
+﻿import { RefreshCw } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 
 import { Button } from "../../../shared/ui/Button";
@@ -44,13 +44,13 @@ export function QuickstartTopicSuggestions({
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-sm font-semibold text-foreground">
           Temas sugeridos
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs text-muted-foreground">
             {topicCount}/{topicLimit} temas
           </span>
           <button
@@ -61,7 +61,7 @@ export function QuickstartTopicSuggestions({
               void onRefresh();
             }}
             disabled={isDisabled || isLoading}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
@@ -69,19 +69,19 @@ export function QuickstartTopicSuggestions({
       </div>
 
       {isStale ? (
-        <p className="text-xs text-amber-700 dark:text-amber-300" role="alert">
+        <p className="text-xs text-warning" role="alert">
           Regenera el inicio rapido para agregar nuevos temas.
         </p>
       ) : null}
 
       {!isStale && remaining <= 0 ? (
-        <p className="text-xs text-zinc-600 dark:text-zinc-300" role="alert">
+        <p className="text-xs text-muted-foreground" role="alert">
           Alcanzaste el limite de temas para esta notebook.
         </p>
       ) : null}
 
       {error ? (
-        <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+        <p className="text-sm text-error" role="alert">
           {error}
         </p>
       ) : null}
@@ -95,13 +95,13 @@ export function QuickstartTopicSuggestions({
               void onAddTopic(suggestion, "suggestion");
             }}
             disabled={isDisabled}
-            className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
             {suggestion}
           </button>
         ))}
         {isLoading ? (
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs text-muted-foreground">
             Cargando sugerencias...
           </span>
         ) : null}
@@ -115,7 +115,7 @@ export function QuickstartTopicSuggestions({
           maxLength={120}
           placeholder="Escribe un tema para agregar"
           disabled={isDisabled}
-          className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus-visible:ring-2 focus-visible:ring-green-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-full rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
         />
         <Button
           type="submit"
@@ -129,3 +129,4 @@ export function QuickstartTopicSuggestions({
     </section>
   );
 }
+

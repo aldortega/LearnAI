@@ -1,4 +1,4 @@
-import { Lightbulb } from "lucide-react";
+﻿import { Lightbulb } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "../../../shared/lib/cn";
@@ -44,11 +44,11 @@ export function QuestionView({
           disabled={isAnswered}
           className={cn(
             "w-full rounded-xl border px-4 py-3 text-left transition",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             isAnswered && "cursor-not-allowed opacity-80",
             isSelected
-              ? "border-green-300 bg-green-50 text-green-950 dark:border-green-500/40 dark:bg-green-500/10 dark:text-green-100"
-              : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900",
+              ? "border-primary/40 bg-primary/10 text-primary"
+              : "border-border bg-surface text-foreground hover:bg-muted",
           )}
         >
           <div className="flex items-start gap-3">
@@ -56,8 +56,8 @@ export function QuestionView({
               className={cn(
                 "grid h-7 w-7 flex-none place-items-center rounded-lg text-xs font-semibold",
                 isSelected
-                  ? "bg-green-900 text-white dark:bg-green-300 dark:text-green-950"
-                  : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground",
               )}
             >
               {option.id}
@@ -73,7 +73,7 @@ export function QuestionView({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           Pregunta <span className="font-semibold">{index + 1}</span> / {total}
         </span>
@@ -81,7 +81,7 @@ export function QuestionView({
           <button
             type="button"
             onClick={() => setHintOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <Lightbulb className="h-4 w-4" />
             Pista
@@ -89,14 +89,14 @@ export function QuestionView({
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <h3 className="text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-100">
+      <div className="rounded-2xl border border-border bg-surface p-5">
+        <h3 className="text-base font-semibold leading-snug text-foreground">
           {question.question}
         </h3>
 
         {hintOpen && question.hint ? (
           <div
-            className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+            className="mt-3 rounded-xl border border-warning bg-warning/10 px-4 py-3 text-sm text-warning"
             role="note"
           >
             {question.hint}
@@ -112,10 +112,10 @@ export function QuestionView({
             disabled={!canSubmit || isSubmitting}
             className={cn(
               "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               !canSubmit || isSubmitting
-                ? "cursor-not-allowed bg-green-900/40 text-white/70 dark:bg-green-400/40 dark:text-green-950/70"
-                : "bg-green-900 text-white hover:bg-green-800 active:bg-green-950 dark:bg-green-400 dark:text-green-950 dark:hover:bg-green-300 dark:active:bg-green-500",
+                ? "cursor-not-allowed bg-primary/40 text-primary-foreground/70"
+                : "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-hover",
             )}
           >
             {isSubmitting ? "Enviando..." : "Responder"}
@@ -125,3 +125,5 @@ export function QuestionView({
     </div>
   );
 }
+
+

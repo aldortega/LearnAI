@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -57,7 +57,7 @@ export function CompleteProfilePage() {
         {formError ? (
           <div
             role="alert"
-            className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+            className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground"
           >
             {formError}
           </div>
@@ -95,3 +95,5 @@ export function CompleteProfilePage() {
     </AuthShell>
   );
 }
+
+

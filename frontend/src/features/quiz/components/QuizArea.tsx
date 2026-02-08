@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "../../../shared/ui/Button";
@@ -166,10 +166,10 @@ export function QuizArea({
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
                 {levelTitle}
               </h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Avanza por las lecciones y desbloquea el examen final.
               </p>
             </div>
@@ -184,7 +184,7 @@ export function QuizArea({
 
           {quizErrorText ? (
             <div
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
+              className="rounded-xl border border-error bg-error/10 px-4 py-3 text-sm text-error"
               role="alert"
             >
               {quizErrorText}
@@ -193,7 +193,7 @@ export function QuizArea({
 
           <div>
             {isQuestionsLoading || isAttemptsLoading ? (
-              <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+              <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
                 Cargando preguntas…
               </div>
             ) : currentQuestion ? (
@@ -241,7 +241,7 @@ export function QuizArea({
                 ) : null}
               </div>
             ) : (
-              <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+              <div className="rounded-2xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">
                 No hay preguntas para este nivel.
               </div>
             )}
@@ -251,3 +251,5 @@ export function QuizArea({
     </div>
   );
 }
+
+

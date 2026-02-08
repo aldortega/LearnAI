@@ -1,4 +1,4 @@
-import { Button } from "../../../shared/ui/Button";
+﻿import { Button } from "../../../shared/ui/Button";
 import { Modal } from "../../../shared/ui/Modal";
 
 type Props = {
@@ -17,10 +17,10 @@ export function ClearChatModal({
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title="Limpiar chat">
       <div className="space-y-4">
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+        <p className="text-sm text-muted-foreground">
           Esto eliminará todo el historial de conversación de este notebook.
         </p>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           Esta acción no se puede deshacer.
         </p>
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -35,3 +35,5 @@ export function ClearChatModal({
     </Modal>
   );
 }
+
+

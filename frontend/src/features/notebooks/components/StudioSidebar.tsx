@@ -1,4 +1,4 @@
-import {
+﻿import {
   BookOpenCheck,
   ChevronLeft,
   ChevronRight,
@@ -45,27 +45,27 @@ export function StudioSidebar({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col overflow-hidden border-l border-zinc-200 bg-zinc-50 transition-all duration-300 ease-in-out",
-        "dark:border-zinc-800 dark:bg-zinc-900",
-        isOpen ? "w-72" : "w-12",
+        "relative flex h-full flex-col overflow-hidden border-l border-border bg-muted transition-all duration-300 ease-in-out",
+        "dark:border-border",
+        isOpen ? "w-64" : "w-12",
       )}
     >
       <div
         className={cn(
-          "flex h-[45px] items-center border-b border-zinc-200",
-          "dark:border-zinc-800",
+          "flex h-[45px] items-center border-b border-border",
+          "dark:border-border",
           isOpen ? "justify-between px-4" : "justify-center",
         )}
       >
         {isOpen ? (
-          <h2 className="text-sm font-semibold text-zinc-900 whitespace-nowrap dark:text-zinc-100">
+          <h2 className="text-sm font-semibold text-foreground whitespace-nowrap">
             Estudio
           </h2>
         ) : null}
 
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="rounded-md p-2 text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          className="rounded-md p-2 text-muted-foreground hover:bg-muted-hover"
           aria-label={isOpen ? "Cerrar panel" : "Abrir panel"}
         >
           {isOpen ? (
@@ -79,7 +79,7 @@ export function StudioSidebar({
       <div className={cn("flex-1 overflow-y-auto p-4", !isOpen && "px-2")}>
         {isOpen ? (
           <div className="space-y-4">
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
               <div className="grid gap-2">
                 <Button
                   variant={mode === "quickstart" ? "primary" : "ghost"}
@@ -114,13 +114,13 @@ export function StudioSidebar({
               </div>
 
               {!canStartQuickstart ? (
-                <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400" role="alert">
+                <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar el inicio rapido.
                 </p>
               ) : null}
 
               {!canStartQuiz ? (
-                <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400" role="alert">
+                <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar el quiz.
                 </p>
               ) : null}
@@ -133,8 +133,8 @@ export function StudioSidebar({
               className={cn(
                 "rounded-md p-2 transition-colors",
                 mode === "quickstart"
-                  ? "bg-green-900 text-white shadow-sm dark:bg-green-400 dark:text-green-950"
-                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover",
                 (!canStartQuickstart || isGeneratingQuickstart) &&
                   "cursor-not-allowed opacity-50",
               )}
@@ -150,8 +150,8 @@ export function StudioSidebar({
               className={cn(
                 "rounded-md p-2 transition-colors",
                 mode === "chat"
-                  ? "bg-green-900 text-white shadow-sm dark:bg-green-400 dark:text-green-950"
-                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover",
               )}
               onClick={onGoChat}
               title="Chat"
@@ -164,8 +164,8 @@ export function StudioSidebar({
               className={cn(
                 "rounded-md p-2 transition-colors",
                 mode === "quiz"
-                  ? "bg-green-900 text-white shadow-sm dark:bg-green-400 dark:text-green-950"
-                  : "text-zinc-500 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800",
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover",
                 (!canStartQuiz || isGeneratingQuiz) && "cursor-not-allowed opacity-50",
               )}
               onClick={onGoQuiz}
@@ -181,3 +181,4 @@ export function StudioSidebar({
     </div>
   );
 }
+

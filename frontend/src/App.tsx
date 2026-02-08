@@ -1,4 +1,4 @@
-import {
+﻿import {
   BrowserRouter,
   Routes,
   Route,
@@ -20,9 +20,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isBootstrapping) {
     return (
-      <div className="min-h-screen bg-green-50 dark:bg-zinc-950">
+      <div className="min-h-screen bg-primary/10">
         <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4">
-          <div className="rounded-3xl bg-white/70 px-6 py-5 text-sm font-semibold text-green-700 ring-1 ring-green-100 backdrop-blur-xl dark:bg-zinc-900/70 dark:text-green-200 dark:ring-green-500/30">
+          <div className="rounded-3xl bg-surface/70 px-6 py-5 text-sm font-semibold text-primary ring-1 ring-border backdrop-blur-xl dark:ring-primary/30">
             Cargando…
           </div>
         </div>
@@ -107,3 +107,6 @@ function App() {
 }
 
 export default App;
+
+
+

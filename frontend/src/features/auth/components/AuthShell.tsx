@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 import { GraduationCap } from "lucide-react";
 
@@ -54,19 +54,7 @@ export function AuthShell({ children, title, topSlot }: Props) {
             excelencia.
           </p>
 
-          <div className="mt-12 flex items-center gap-4">
-            <div className="flex -space-x-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-10 w-10 rounded-full border-2 border-green-900 bg-green-700"
-                />
-              ))}
-            </div>
-            <div className="text-sm font-medium text-white">
-              Usado por +10k estudiantes
-            </div>
-          </div>
+          
         </div>
 
         <div className="relative z-10 text-xs text-green-400">

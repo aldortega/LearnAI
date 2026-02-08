@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail } from "lucide-react";
@@ -53,7 +53,7 @@ export function LoginForm() {
       {formError ? (
         <div
           role="alert"
-          className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground"
         >
           {formError}
         </div>
@@ -81,15 +81,15 @@ export function LoginForm() {
       />
 
         <div className="flex items-center justify-between gap-4">
-          <label className="inline-flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+          <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
 
           <input
             type="checkbox"
             {...register("rememberMe")}
             className={cn(
-              "h-4 w-4 rounded border-zinc-300 text-green-700 dark:border-zinc-700 dark:bg-zinc-900",
-              "focus:ring-green-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
-              "dark:focus:ring-green-400 dark:focus:ring-offset-zinc-950",
+              "h-4 w-4 rounded border-border-strong text-primary",
+              "focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
+              "dark:focus:ring-primary",
             )}
           />
           Recordarme
@@ -97,7 +97,7 @@ export function LoginForm() {
 
         <button
           type="button"
-          className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
           onClick={() => setFormError("Recuperación de contraseña: pendiente")}
         >
           ¿Olvidaste tu contraseña?
@@ -115,10 +115,10 @@ export function LoginForm() {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+          <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-white px-3 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
+          <span className="bg-surface px-3 text-muted-foreground">
             o continuar con
           </span>
         </div>
@@ -130,3 +130,6 @@ export function LoginForm() {
     </form>
   );
 }
+
+
+

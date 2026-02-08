@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 
 import type { QuickstartOut } from "../types/quickstart.types";
 import { useAddQuickstartTopic } from "../hooks/useAddQuickstartTopic";
@@ -67,16 +67,16 @@ export function QuickstartOverview({
   return (
     <div className="flex h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
-        <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div>
-            <h2 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+            <h2 className="mt-2 text-xl font-semibold text-foreground">
               De que trata esta notebook
             </h2>
           </div>
 
           {isStale ? (
             <div
-              className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+              className="rounded-xl border border-warning bg-warning/10 px-4 py-3 text-sm text-warning"
               role="alert"
             >
               Se detectaron cambios en tus fuentes. Regenera para mantener el inicio
@@ -86,7 +86,7 @@ export function QuickstartOverview({
 
           {error ? (
             <div
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
+              className="rounded-xl border border-error bg-error/10 px-4 py-3 text-sm text-error"
               role="alert"
             >
               {error}
@@ -97,7 +97,7 @@ export function QuickstartOverview({
             {displaySummaryParagraphs.map((paragraph, index) => (
               <p
                 key={`summary-${index}`}
-                className="text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+                className="text-sm leading-6 text-muted-foreground"
               >
                 {paragraph}
               </p>
@@ -106,11 +106,11 @@ export function QuickstartOverview({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <div className="h-px flex-1 bg-muted-hover" />
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Temas principales
           </p>
-          <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+          <div className="h-px flex-1 bg-muted-hover" />
         </div>
 
         <QuickstartTopicsList
@@ -137,3 +137,4 @@ export function QuickstartOverview({
     </div>
   );
 }
+

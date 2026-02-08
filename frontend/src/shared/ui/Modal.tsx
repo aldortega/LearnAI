@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+﻿import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -56,17 +56,17 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
       <div
         ref={contentRef}
         className={cn(
-          "relative w-full max-w-md rounded-xl bg-white shadow-xl ring-1 ring-zinc-200 transition-all",
+          "relative w-full max-w-md rounded-xl bg-surface shadow-xl ring-1 ring-border transition-all",
           "animate-in fade-in zoom-in-95 duration-200",
-          "dark:bg-zinc-900 dark:ring-zinc-800",
+          "bg-surface ring-border",
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4 dark:border-zinc-800">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-green-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             aria-label="Cerrar"
           >
             <X className="h-5 w-5" />
@@ -79,3 +79,5 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
     document.body,
   );
 }
+
+

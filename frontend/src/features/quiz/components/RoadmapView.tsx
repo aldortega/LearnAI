@@ -1,4 +1,4 @@
-import { Lock, ShieldCheck, Unlock } from "lucide-react";
+﻿import { Lock, ShieldCheck, Unlock } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
 import type {
@@ -48,11 +48,11 @@ export function RoadmapView({
           <header>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                <h3 className="text-sm font-semibold text-foreground">
                   {unit.order}. {unit.title}
                 </h3>
                 {unit.description ? (
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {unit.description}
                   </p>
                 ) : null}
@@ -97,13 +97,13 @@ export function RoadmapView({
                     onClick={() => onSelectLevel(level.id)}
                     className={cn(
                       "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                       isLocked
-                        ? "cursor-not-allowed border-zinc-200 bg-zinc-50 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-600"
-                        : "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900",
+                        ? "cursor-not-allowed border-border bg-muted text-muted-foreground"
+                        : "border-border bg-surface text-foreground hover:bg-muted",
                       isSelected &&
                         !isLocked &&
-                        "border-green-300 bg-green-50 dark:border-green-500/40 dark:bg-green-500/10",
+                        "border-primary/40 bg-primary/10",
                     )}
                   >
                     <div className="flex min-w-0 items-center gap-3">
@@ -111,19 +111,19 @@ export function RoadmapView({
                         className={cn(
                           "grid h-8 w-8 flex-none place-items-center rounded-lg",
                           isLocked
-                            ? "bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                            ? "bg-muted-hover text-muted-foreground"
                             : level.status === "passed"
-                              ? "bg-green-900 text-white dark:bg-green-300 dark:text-green-950"
-                              : "bg-green-200 text-green-900 dark:bg-green-500/20 dark:text-green-200",
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-primary/20 text-primary",
                         )}
                       >
                         {getLevelIcon(level)}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{level.title}</p>
-                        <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                          {level.type === "exam" ? "Examen" : "Leccion"} ·
-                          Aprobacion {level.passing_score}% · {questionStatusLabel}
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {level.type === "exam" ? "Examen" : "Lección"} ·
+                          Aprobación {level.passing_score}% · {questionStatusLabel}
                         </p>
                       </div>
                     </div>
@@ -134,8 +134,8 @@ export function RoadmapView({
                           className={cn(
                             "rounded-full px-2.5 py-1 text-xs font-semibold",
                             level.status === "passed"
-                              ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200"
-                              : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted text-muted-foreground",
                           )}
                         >
                           {level.best_score}%
@@ -145,16 +145,16 @@ export function RoadmapView({
                         <span
                           className={
                             "group/failed relative inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold " +
-                            "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-200"
+                            "bg-error/10 text-error"
                           }
                         >
                           <span>Reprobado</span>
                           <span
                             className={cn(
                               "absolute left-full ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                              "bg-rose-200/80 text-rose-900 transition group-hover/failed:opacity-100",
+                              "bg-error/20 text-error transition group-hover/failed:opacity-100",
                               "pointer-events-none group-hover/failed:pointer-events-auto",
-                              "dark:bg-rose-400/30 dark:text-rose-100",
+                              "dark:bg-error/20",
                               canRetry
                                 ? "cursor-pointer opacity-0"
                                 : "cursor-not-allowed opacity-0",
@@ -176,10 +176,10 @@ export function RoadmapView({
                           className={cn(
                             "rounded-full px-2.5 py-1 text-xs font-semibold",
                             isLocked
-                              ? "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                              ? "bg-muted-hover text-muted-foreground"
                               : level.status === "passed"
-                                ? "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200"
-                                : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200",
+                                ? "bg-primary/15 text-primary"
+                                : "bg-warning/15 text-warning",
                           )}
                         >
                           {availabilityLabel}
@@ -195,3 +195,5 @@ export function RoadmapView({
     </div>
   );
 }
+
+

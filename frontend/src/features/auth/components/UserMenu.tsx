@@ -1,4 +1,4 @@
-import { LogOut, Monitor, Moon, Sun, User } from "lucide-react";
+﻿import { LogOut, Monitor, Moon, Sun, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
@@ -24,21 +24,21 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-700 ring-2 ring-transparent transition-all hover:bg-green-200 focus:outline-none focus:ring-green-200 dark:bg-green-500/20 dark:text-green-200 dark:hover:bg-green-500/30"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary ring-2 ring-transparent transition-all hover:bg-primary/20 focus:outline-none focus:ring-primary/30"
         aria-label="User menu"
       >
         <User className="h-5 w-5" />
       </button>
 
       {isMenuOpen && (
-        <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-lg border border-zinc-100 bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="border-b border-zinc-100 px-4 py-2 dark:border-zinc-800">
-            <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
+          <div className="border-b border-border px-4 py-2">
+            <p className="truncate text-sm font-medium text-foreground">
               {user?.email || "Usuario"}
             </p>
           </div>
-          <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
-            <p className="px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          <div className="border-b border-border px-3 py-2">
+            <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Tema
             </p>
             <div className="mt-2 space-y-1">
@@ -48,8 +48,8 @@ export function UserMenu() {
                 className={
                   "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "system"
-                    ? "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300"
-                    : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted")
                 }
               >
                 <span className="flex items-center gap-2">
@@ -66,8 +66,8 @@ export function UserMenu() {
                 className={
                   "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "light"
-                    ? "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300"
-                    : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted")
                 }
               >
                 <span className="flex items-center gap-2">
@@ -81,8 +81,8 @@ export function UserMenu() {
                 className={
                   "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "dark"
-                    ? "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-300"
-                    : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/60")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted")
                 }
               >
                 <span className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export function UserMenu() {
               logout();
               setIsMenuOpen(false);
             }}
-            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-zinc-50 dark:text-red-400 dark:hover:bg-zinc-800/60"
+            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted"
           >
             <LogOut className="h-4 w-4" />
             Salir
@@ -107,3 +107,5 @@ export function UserMenu() {
     </div>
   );
 }
+
+

@@ -11,8 +11,7 @@ export function Card({ children, className }: Props) {
   return (
     <div
       className={cn(
-        "rounded-3xl bg-white/80 p-6 shadow-[0_18px_55px_-35px_rgba(13,32,21,0.45)] ring-1 ring-green-100 backdrop-blur-xl",
-        "dark:bg-zinc-900/70 dark:ring-green-500/20",
+        "rounded-3xl bg-surface/90 p-6 shadow-[0_18px_55px_-35px_rgba(13,32,21,0.45)] ring-1 ring-border backdrop-blur-xl",
         className,
       )}
     >

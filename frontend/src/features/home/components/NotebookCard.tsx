@@ -1,4 +1,4 @@
-import { Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
+﻿import { Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -47,7 +47,7 @@ export function NotebookCard({
   return (
     <div
       onClick={handleNavigate}
-      className="group relative flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+      className="group relative flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-border bg-surface p-5 transition-shadow hover:shadow-md"
     >
       <div className="absolute right-3 top-3" ref={menuRef}>
         <button
@@ -56,7 +56,7 @@ export function NotebookCard({
             event.stopPropagation();
             setIsMenuOpen((prev) => !prev);
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-300 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:focus-visible:ring-green-500"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="Opciones del notebook"
           aria-expanded={isMenuOpen}
         >
@@ -64,7 +64,7 @@ export function NotebookCard({
         </button>
 
         {isMenuOpen ? (
-          <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-lg border border-zinc-100 bg-white py-1 shadow-lg ring-1 ring-black/5 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
             <button
               type="button"
               onClick={(event) => {
@@ -72,7 +72,7 @@ export function NotebookCard({
                 setIsMenuOpen(false);
                 onEdit();
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800/60"
+              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted"
             >
               <Pencil className="h-4 w-4" />
               Editar
@@ -84,7 +84,7 @@ export function NotebookCard({
                 setIsMenuOpen(false);
                 onDelete();
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-zinc-50 dark:text-red-400 dark:hover:bg-zinc-800/60"
+              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted"
             >
               <Trash2 className="h-4 w-4" />
               Eliminar
@@ -103,12 +103,12 @@ export function NotebookCard({
             {emoji ?? DEFAULT_NOTEBOOK_EMOJI}
           </span>
         </div>
-        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-zinc-900 group-hover:text-green-700 dark:text-zinc-100 dark:group-hover:text-green-300">
+        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-foreground group-hover:text-primary">
           {title}
         </h3>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           {sourceCount} {sourceCount === 1 ? "fuente" : "fuentes"}
         </span>
@@ -120,3 +120,4 @@ export function NotebookCard({
     </div>
   );
 }
+

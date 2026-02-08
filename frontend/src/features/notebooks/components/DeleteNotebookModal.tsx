@@ -1,4 +1,4 @@
-import { Modal } from "../../../shared/ui/Modal";
+﻿import { Modal } from "../../../shared/ui/Modal";
 import { Button } from "../../../shared/ui/Button";
 
 type Props = {
@@ -24,17 +24,17 @@ export function DeleteNotebookModal({
         {error ? (
           <div
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300"
+            className="rounded-lg border border-error bg-error/10 px-4 py-3 text-sm text-error"
           >
             {error}
           </div>
         ) : null}
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
+        <p className="text-sm text-muted-foreground">
           ¿Seguro que quieres eliminar este notebook? También se eliminarán sus
           fuentes.
         </p>
         {notebookName ? (
-          <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+          <p className="truncate text-sm font-medium text-foreground">
             {notebookName}
           </p>
         ) : null}
@@ -50,3 +50,5 @@ export function DeleteNotebookModal({
     </Modal>
   );
 }
+
+

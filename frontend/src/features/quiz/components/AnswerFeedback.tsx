@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle } from "lucide-react";
+﻿import { CheckCircle2, XCircle } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
 
@@ -24,8 +24,8 @@ export function AnswerFeedback({
       className={cn(
         "rounded-xl border p-4",
         isCorrect
-          ? "border-green-200 bg-green-50 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-200"
-          : "border-red-200 bg-red-50 text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200",
+          ? "border-primary/40 bg-primary/10 text-primary"
+          : "border-error bg-error/10 text-error",
       )}
       role="status"
       aria-live="polite"
@@ -42,18 +42,18 @@ export function AnswerFeedback({
           <p className="text-sm font-semibold">
             {isCorrect ? "Correcto" : "Incorrecto"}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-200">
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {explanation}
           </p>
 
           {!isCorrect && showCorrectOption ? (
-            <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-300">
+            <p className="mt-2 text-xs text-muted-foreground">
               Respuesta correcta: <span className="font-semibold">{correctOptionId}</span>
             </p>
           ) : null}
 
           {typeof levelScore === "number" ? (
-            <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-300">
+            <p className="mt-2 text-xs text-muted-foreground">
               Puntaje del nivel: <span className="font-semibold">{levelScore}%</span>
               {typeof passed === "boolean" ? (
                 <>
@@ -68,3 +68,5 @@ export function AnswerFeedback({
     </div>
   );
 }
+
+

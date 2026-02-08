@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 
 import { Header } from "../../home/components/Header";
 import { StudioSidebar } from "./StudioSidebar";
@@ -47,7 +47,7 @@ export function NotebookShell({
   footer,
 }: Props) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-white dark:bg-zinc-950">
+    <div className="flex h-screen flex-col overflow-hidden bg-surface">
       <Header title={title} className="flex-none" />
       {beforeMain}
 
@@ -75,3 +75,4 @@ export function NotebookShell({
     </div>
   );
 }
+

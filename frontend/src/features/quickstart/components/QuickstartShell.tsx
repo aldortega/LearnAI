@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import { RefreshCcw } from "lucide-react";
 
 type Props = {
@@ -22,15 +22,15 @@ export function QuickstartShell({
   };
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-zinc-950">
-      <div className="flex h-[45px] items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+    <div className="flex h-full flex-col bg-surface">
+      <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
+        <h2 className="text-sm font-semibold text-foreground">
           Inicio rapido
         </h2>
         {showRefreshAction ? (
           <button
             type="button"
-            className="rounded-md p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             onClick={handleRefresh}
             disabled={!canRefresh || isRefreshing}
             aria-label="Actualizar inicio rapido"
@@ -46,3 +46,4 @@ export function QuickstartShell({
     </div>
   );
 }
+
