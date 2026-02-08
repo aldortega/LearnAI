@@ -76,29 +76,14 @@ export function StudioSidebar({
         </button>
       </div>
 
-      <div className={cn("flex-1 p-4", !isOpen && "px-2")}>
+      <div className={cn("flex-1 overflow-y-auto p-4", !isOpen && "px-2")}>
         {isOpen ? (
           <div className="space-y-4">
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Modo
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {mode === "quiz"
-                      ? "Quiz activo"
-                      : mode === "quickstart"
-                        ? "Inicio rapido activo"
-                        : "Chat activo"}
-                  </p>
-                </div>
-              </div>
-
               <div className="grid gap-2">
                 <Button
                   variant={mode === "quickstart" ? "primary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<Sparkles className="h-4 w-4" />}
                   onClick={onGoQuickstart}
                   disabled={!canStartQuickstart}
@@ -109,7 +94,7 @@ export function StudioSidebar({
 
                 <Button
                   variant={mode === "chat" ? "primary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<MessageSquare className="h-4 w-4" />}
                   onClick={onGoChat}
                 >
@@ -118,7 +103,7 @@ export function StudioSidebar({
 
                 <Button
                   variant={mode === "quiz" ? "primary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<BookOpenCheck className="h-4 w-4" />}
                   onClick={onGoQuiz}
                   disabled={!canStartQuiz}
