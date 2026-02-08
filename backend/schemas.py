@@ -148,6 +148,17 @@ class QuickstartExpansionOut(BaseModel):
     sources: list[QuickstartSourceRef] = Field(default_factory=list)
 
 
+class QuickstartAddTopicRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+
+
+class QuickstartSuggestionsOut(BaseModel):
+    suggestions: list[str] = Field(default_factory=list)
+    topic_count: int
+    topic_limit: int
+    can_add_topics: bool
+
+
 class ConversationOut(BaseModel):
     id: str
     owner_id: str

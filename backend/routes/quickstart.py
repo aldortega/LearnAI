@@ -14,10 +14,12 @@ from ..config import settings
 from ..db import db
 from ..rq_queue import quickstart_queue
 from ..schemas import (
+    QuickstartAddTopicRequest,
     QuickstartExpansionOut,
     QuickstartGenerationJobOut,
     QuickstartOut,
     QuickstartSourceRef,
+    QuickstartSuggestionsOut,
     QuickstartTopicOut,
     RagSource,
 )
@@ -29,6 +31,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notebooks", tags=["quickstart"])
 
 TOPIC_COUNT = 6
+TOPIC_LIMIT = 12
+SUGGESTION_COUNT = 8
 TOPIC_MIN_KEY_POINTS = 3
 TOPIC_MAX_KEY_POINTS = 5
 EXPANSION_MIN_KEY_POINTS = 3
@@ -72,6 +76,20 @@ EXPANSION_SCHEMA = (
     "}\n"
 )
 
+SUGGESTIONS_SCHEMA = (
+    "{\n"
+    '  "suggestions": ["string"]\n'
+    "}\n"
+)
+
+SINGLE_TOPIC_SCHEMA = (
+    "{\n"
+    '  "title": "string",\n'
+    '  "summary": "string",\n'
+    '  "key_points": ["string"]\n'
+    "}\n"
+)
+
 
 class QuickstartTopicLLM(BaseModel):
     title: str
@@ -88,6 +106,16 @@ class QuickstartExpansionLLM(BaseModel):
     content: str
     key_points: list[str] = Field(min_length=1, max_length=10)
     example_questions: list[str] = Field(min_length=1, max_length=8)
+
+
+class QuickstartSuggestionsLLM(BaseModel):
+    suggestions: list[str] = Field(min_length=1, max_length=20)
+
+
+class QuickstartSingleTopicLLM(BaseModel):
+    title: str
+    summary: str
+    key_points: list[str] = Field(min_length=1, max_length=8)
 
 
 def coerce_text(value: object | None) -> str:
@@ -174,6 +202,30 @@ def normalize_topics(payload: dict, title: str) -> list[dict]:
             )
 
     return normalized
+
+
+def normalize_topic_title(title: str) -> str:
+    return " ".join(title.split()).strip()
+
+
+def build_existing_topic_title_keys(topics: list[dict]) -> set[str]:
+    title_keys: set[str] = set()
+    for topic in topics:
+        topic_title = normalize_topic_title(coerce_text(topic.get("title")))
+        if topic_title:
+            title_keys.add(topic_title.lower())
+    return title_keys
+
+
+def build_next_topic_id(topics: list[dict]) -> str:
+    max_id = 0
+    for topic in topics:
+        raw_id = coerce_text(topic.get("id")).strip().lower()
+        if raw_id.startswith("t"):
+            maybe_number = raw_id[1:]
+            if maybe_number.isdigit():
+                max_id = max(max_id, int(maybe_number))
+    return f"t{max_id + 1}"
 
 
 def build_notebook_summary_fallback(title: str, topics: list[dict]) -> str:
@@ -280,6 +332,87 @@ def build_expansion_prompt(
         "puntos clave adicionales y preguntas sugeridas."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def build_suggestions_prompt(
+    notebook_title: str,
+    existing_titles: list[str],
+    context_text: str,
+) -> tuple[SystemMessage, HumanMessage]:
+    system_prompt = (
+        "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
+        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        f"{SUGGESTIONS_SCHEMA}"
+    )
+    existing_titles_text = "\n".join(f"- {title}" for title in existing_titles)
+    user_prompt = (
+        f"Tema general (usa exactamente este tema): {notebook_title}\n\n"
+        "Temas ya existentes:\n"
+        f"{existing_titles_text or '- (sin temas)'}\n\n"
+        f"Contexto:\n{context_text}\n\n"
+        f"Sugiere exactamente {SUGGESTION_COUNT} temas complementarios para estudiar "
+        "despues, sin repetir ni reformular los ya existentes. Entrega solo los titulos."
+    )
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def build_single_topic_prompt(
+    notebook_title: str,
+    requested_title: str,
+    existing_titles: list[str],
+    context_text: str,
+) -> tuple[SystemMessage, HumanMessage]:
+    system_prompt = (
+        "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
+        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        f"{SINGLE_TOPIC_SCHEMA}"
+    )
+    existing_titles_text = "\n".join(f"- {title}" for title in existing_titles)
+    user_prompt = (
+        f"Tema general (usa exactamente este tema): {notebook_title}\n"
+        f"Tema nuevo solicitado (usa exactamente este titulo): {requested_title}\n\n"
+        "Temas ya existentes:\n"
+        f"{existing_titles_text or '- (sin temas)'}\n\n"
+        f"Contexto:\n{context_text}\n\n"
+        "Genera un unico tema nuevo con ese titulo exacto, un resumen breve y 3 a 5 "
+        "puntos clave concretos. No repitas temas existentes."
+    )
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def normalize_suggestions(payload: dict, existing_title_keys: set[str]) -> list[str]:
+    raw_suggestions = payload.get("suggestions") if isinstance(payload, dict) else None
+    if not isinstance(raw_suggestions, list):
+        return []
+
+    normalized: list[str] = []
+    seen_lower: set[str] = set()
+    for suggestion in raw_suggestions:
+        value = normalize_topic_title(coerce_text(suggestion))
+        value_key = value.lower()
+        if not value or value_key in seen_lower or value_key in existing_title_keys:
+            continue
+        seen_lower.add(value_key)
+        normalized.append(value)
+        if len(normalized) >= SUGGESTION_COUNT:
+            break
+    return normalized
+
+
+def normalize_single_topic(payload: dict, requested_title: str) -> dict:
+    title = normalize_topic_title(coerce_text(payload.get("title")) or requested_title)
+    if not title:
+        title = requested_title
+    summary = coerce_text(payload.get("summary")).strip()
+    if not summary:
+        summary = f"Aspectos clave de {title}."
+    key_points = normalize_list(
+        payload.get("key_points", []),
+        TOPIC_MIN_KEY_POINTS,
+        TOPIC_MAX_KEY_POINTS,
+        DEFAULT_TOPIC_KEY_POINTS,
+    )
+    return {"title": title, "summary": summary, "key_points": key_points}
 
 
 def coerce_payload(payload: object, model: type[BaseModel]) -> dict:
@@ -436,6 +569,67 @@ async def generate_topic_expansion(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="No se pudo expandir el tema",
+        ) from exc
+
+
+async def generate_quickstart_suggestions(
+    notebook_title: str,
+    existing_titles: list[str],
+    notebook_object_id: ObjectId,
+    user: dict,
+) -> list[str]:
+    context_lines, _, _, _ = await retrieve_context(
+        f"Temas complementarios sobre {notebook_title}", notebook_object_id, user
+    )
+    context_text = compact_context(context_lines)
+    system_message, user_message = build_suggestions_prompt(
+        notebook_title, existing_titles, context_text
+    )
+    llm = create_llm()
+    structured_llm = llm.with_structured_output(
+        schema=QuickstartSuggestionsLLM.model_json_schema(), method="json_schema"
+    )
+    try:
+        payload = await asyncio.to_thread(
+            structured_llm.invoke, [system_message, user_message]
+        )
+        payload_data = coerce_payload(payload, QuickstartSuggestionsLLM)
+        existing_title_keys = {title.lower() for title in existing_titles}
+        return normalize_suggestions(payload_data, existing_title_keys)
+    except Exception as exc:
+        logger.exception("Quickstart sugerencias invalidas", extra={"error": str(exc)})
+        return []
+
+
+async def generate_single_quickstart_topic(
+    notebook_title: str,
+    requested_title: str,
+    existing_titles: list[str],
+    notebook_object_id: ObjectId,
+    user: dict,
+) -> dict:
+    context_lines, _, _, _ = await retrieve_context(
+        f"Conceptos clave y aplicaciones de {requested_title}", notebook_object_id, user
+    )
+    context_text = compact_context(context_lines)
+    system_message, user_message = build_single_topic_prompt(
+        notebook_title, requested_title, existing_titles, context_text
+    )
+    llm = create_llm()
+    structured_llm = llm.with_structured_output(
+        schema=QuickstartSingleTopicLLM.model_json_schema(), method="json_schema"
+    )
+    try:
+        payload = await asyncio.to_thread(
+            structured_llm.invoke, [system_message, user_message]
+        )
+        payload_data = coerce_payload(payload, QuickstartSingleTopicLLM)
+        return normalize_single_topic(payload_data, requested_title)
+    except Exception as exc:
+        logger.exception("Quickstart tema unico invalido", extra={"error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No se pudo generar el tema",
         ) from exc
 
 
@@ -614,6 +808,147 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
         notebook_summary=notebook_summary,
         topics=topics_out,
     )
+
+
+@router.get(
+    "/{notebook_id}/quickstart/suggestions",
+    response_model=QuickstartSuggestionsOut,
+)
+async def get_quickstart_suggestions(
+    notebook_id: str, request: Request
+) -> QuickstartSuggestionsOut:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+
+    summary = await db.quickstart_summaries.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Inicio rapido no encontrado",
+        )
+
+    topics = summary.get("topics", [])
+    topics_list = topics if isinstance(topics, list) else []
+    topic_count = len(topics_list)
+    fingerprint, ready_count = await compute_sources_fingerprint(
+        notebook["title"], notebook["_id"], user["_id"]
+    )
+    has_ready_sources = ready_count > 0
+    is_stale = summary.get("sources_fingerprint") != fingerprint
+
+    can_add_topics = has_ready_sources and not is_stale and topic_count < TOPIC_LIMIT
+    if not can_add_topics:
+        return QuickstartSuggestionsOut(
+            suggestions=[],
+            topic_count=topic_count,
+            topic_limit=TOPIC_LIMIT,
+            can_add_topics=False,
+        )
+
+    existing_titles = [
+        normalize_topic_title(coerce_text(topic.get("title")))
+        for topic in topics_list
+        if normalize_topic_title(coerce_text(topic.get("title")))
+    ]
+    suggestions = await generate_quickstart_suggestions(
+        notebook["title"], existing_titles, notebook["_id"], user
+    )
+    return QuickstartSuggestionsOut(
+        suggestions=suggestions,
+        topic_count=topic_count,
+        topic_limit=TOPIC_LIMIT,
+        can_add_topics=True,
+    )
+
+
+@router.post(
+    "/{notebook_id}/quickstart/topics",
+    response_model=QuickstartTopicOut,
+)
+async def add_quickstart_topic(
+    notebook_id: str,
+    payload: QuickstartAddTopicRequest,
+    request: Request,
+) -> QuickstartTopicOut:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+
+    summary = await db.quickstart_summaries.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Inicio rapido no encontrado",
+        )
+
+    fingerprint, ready_count = await compute_sources_fingerprint(
+        notebook["title"], notebook["_id"], user["_id"]
+    )
+    if ready_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Necesitas al menos una fuente lista para agregar temas",
+        )
+    if summary.get("sources_fingerprint") != fingerprint:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El inicio rapido esta desactualizado. Regeneralo para continuar.",
+        )
+
+    topics = summary.get("topics", [])
+    topics_list = topics if isinstance(topics, list) else []
+    if len(topics_list) >= TOPIC_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Llegaste al limite de {TOPIC_LIMIT} temas",
+        )
+
+    requested_title = normalize_topic_title(payload.title)
+    if not requested_title:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El tema es obligatorio",
+        )
+
+    existing_title_keys = build_existing_topic_title_keys(topics_list)
+    if requested_title.lower() in existing_title_keys:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ese tema ya existe en tu inicio rapido",
+        )
+
+    existing_titles = [
+        normalize_topic_title(coerce_text(topic.get("title")))
+        for topic in topics_list
+        if normalize_topic_title(coerce_text(topic.get("title")))
+    ]
+    generated_topic = await generate_single_quickstart_topic(
+        notebook["title"], requested_title, existing_titles, notebook["_id"], user
+    )
+    final_title = normalize_topic_title(generated_topic["title"])
+    if final_title.lower() in existing_title_keys:
+        final_title = requested_title
+
+    new_topic = {
+        "id": build_next_topic_id(topics_list),
+        "title": final_title,
+        "summary": generated_topic["summary"],
+        "key_points": generated_topic["key_points"],
+    }
+
+    now = datetime.now(timezone.utc)
+    await db.quickstart_summaries.update_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]},
+        {
+            "$push": {"topics": new_topic},
+            "$set": {"updated_at": now},
+        },
+    )
+
+    return topic_to_out(new_topic)
 
 
 @router.post(
