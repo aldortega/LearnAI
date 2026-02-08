@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 Guía para agentes que trabajan en este repositorio (backend + frontend).
 Prioridad: cambios mínimos, tipado estricto, y coherencia con el stack actual.
@@ -7,10 +7,37 @@ Prioridad: cambios mínimos, tipado estricto, y coherencia con el stack actual.
 
 Plataforma de aprendizaje impulsada por IA sobre un sistema RAG (Retrieval-Augmented Generation). Permite estudiar cualquier tema a partir de fuentes personalizadas proporcionadas por el usuario.
 
-- El usuario sube contenido propio (PDFs, enlaces web, documentos).
+- El usuario sube contenido propio (PDFs, DOCX, TXT).
 - El contenido se procesa, indexa y se usa como base de conocimiento.
 - Se generan respuestas, evaluaciones y contenido educativo contextual y confiable.
 - Combina IA generativa, recuperación semántica y gamificación para una experiencia interactiva y personalizada.
+
+## Novedades actuales del proyecto
+
+Estas capacidades ya están implementadas y deben considerarse parte del comportamiento vigente:
+
+- `quickstart` por notebook:
+  - Generación asíncrona de resumen y temas iniciales.
+  - Estado `missing | ready | stale` según huella (`sources_fingerprint`) de fuentes listas.
+  - Expansión por tema con cache y referencias de fuentes.
+- Quiz por roadmap (asíncrono):
+  - Generación de roadmap por job (`queued/running/done/failed`) con `length` (`short|medium|long`) y `difficulty` (`basic|intermediate|advanced`).
+  - Generación de preguntas por nivel bajo demanda.
+  - Seguimiento de progreso por nivel, intentos, envío de respuestas y reset de intentos.
+- Chat RAG con conversación persistente:
+  - Historial por notebook.
+  - Endpoint de respuesta en streaming.
+  - Respuestas con fuentes y fallback controlado cuando no hay contexto suficiente.
+- Ingesta de documentos en background:
+  - Cola RQ para procesamiento (`ingestion`).
+  - Streaming SSE de estados de documentos.
+- Autenticación ampliada:
+  - Login con Google.
+  - Flujo de `complete-profile` para usuarios OAuth incompletos.
+  - Sesiones con cookie y soporte `remember_me`.
+- Frontend con modo studio por notebook:
+  - Rutas protegidas para `chat`, `quiz`, `quickstart`.
+  - Redirección por defecto de `/notebook/:id` hacia `quickstart`.
 
 ---
 
@@ -38,10 +65,11 @@ Plataforma de aprendizaje impulsada por IA sobre un sistema RAG (Retrieval-Augme
 - Tests: **no hay suite configurada actualmente**
 - Single test: **no aplica** (no hay framework de tests instalado)
 
-### Backend (FastAPI + Motor)
+### Backend (FastAPI + Motor + RQ)
 
 - Instalar deps: `pip install -r requirements.txt`
 - Run API (dev): `uvicorn backend.main:app --reload`
+- Run worker RQ: `python -m backend.worker`
 - Tests: **no hay suite configurada actualmente**
 - Lint/format: **no hay herramientas configuradas**
 - Single test: **no aplica** (no hay framework de tests instalado)
@@ -51,7 +79,10 @@ Plataforma de aprendizaje impulsada por IA sobre un sistema RAG (Retrieval-Augme
 ## Estructura del repo
 
 - `backend/`: API FastAPI + MongoDB (Motor)
+- `backend/routes/`: rutas de auth, notebooks, documents, rag, quiz y quickstart
+- `backend/worker.py`: worker RQ para colas `ingestion`, `quiz`, `quickstart`
 - `frontend/`: React + TypeScript + Tailwind v4
+- `frontend/src/features/`: módulos feature-first (`auth`, `notebooks`, `notebook-chat`, `quiz`, `quickstart`, `home`)
 - `frontend/AGENTS.md`: reglas detalladas de UI/feature-first
 
 ---
@@ -97,6 +128,12 @@ Plataforma de aprendizaje impulsada por IA sobre un sistema RAG (Retrieval-Augme
 - No hagas llamadas de DB dentro de modelos Pydantic.
 - Maneja `DuplicateKeyError` y otros errores de DB explícitamente.
 
+### Jobs y procesamiento asíncrono
+
+- Para tareas pesadas (ingesta, quiz, quickstart), conserva el patrón API + cola RQ + polling/estado.
+- Si agregas nuevos estados de jobs, mantén consistencia entre backend y frontend (`queued/running/done/failed` o equivalentes del dominio).
+- Evita bloquear requests esperando generación larga; prioriza respuestas `202` con seguimiento de estado.
+
 ---
 
 ## Frontend (React/TypeScript/Tailwind)
@@ -133,6 +170,11 @@ Plataforma de aprendizaje impulsada por IA sobre un sistema RAG (Retrieval-Augme
 - Estados de error visibles y accesibles (`role="alert"`).
 - No silenciar errores; propaga o muestra UI de error.
 
+### Flujos de notebook
+
+- Mantén coherencia entre los tres modos del studio: `chat`, `quiz`, `quickstart`.
+- Si cambias contratos de jobs/estado en backend, actualiza hooks y store del feature correspondiente.
+
 ---
 
 ## Tailwind CSS v4
@@ -157,6 +199,7 @@ Plataforma de aprendizaje impulsada por IA sobre un sistema RAG (Retrieval-Augme
 - `npm run lint` (frontend) si modificaste UI.
 - Build `npm run build` si tocaste configuración o bundling.
 - Verificar que rutas/DTOs del backend no rompen contratos.
+- Si tocaste jobs/colas, validar impacto en worker (`ingestion`, `quiz`, `quickstart`).
 - Confirmar que los cambios siguen `frontend/AGENTS.md`.
 
 ---
