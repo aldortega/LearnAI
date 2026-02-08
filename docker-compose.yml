@@ -40,3 +40,18 @@ services:
       - redis
       - qdrant
     command: ["python", "-m", "backend.worker"]
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
