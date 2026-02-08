@@ -33,6 +33,7 @@ class UserOut(BaseModel):
     name: str
     last_name: str
     email: EmailStr
+    avatar_url: Optional[str] = None
     username: Optional[str] = None
     birthdate: Optional[date] = None
     profile_complete: bool = True

@@ -8,7 +8,11 @@ export function UserMenu() {
   const { user, logout } = useAuth();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const avatarUrl = user?.avatar_url ?? null;
+  const showAvatarPhoto = Boolean(avatarUrl) && avatarUrl !== failedAvatarUrl;
+  const displayName = `${user?.name ?? ""} ${user?.last_name ?? ""}`.trim() || user?.email || "Usuario";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -24,17 +28,27 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary ring-2 ring-transparent transition-all hover:bg-primary/20 focus:outline-none focus:ring-primary/30"
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-primary ring-2 ring-transparent transition-all hover:bg-primary/20 focus:outline-none focus:ring-primary/30"
         aria-label="User menu"
       >
-        <User className="h-5 w-5" />
+        {showAvatarPhoto ? (
+          <img
+            src={avatarUrl ?? undefined}
+            alt={`Avatar de ${user?.email ?? "usuario"}`}
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={() => setFailedAvatarUrl(avatarUrl)}
+          />
+        ) : (
+          <User className="h-5 w-5" />
+        )}
       </button>
 
       {isMenuOpen && (
         <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-50">
           <div className="border-b border-border px-4 py-2">
             <p className="truncate text-sm font-medium text-foreground">
-              {user?.email || "Usuario"}
+              {displayName}
             </p>
           </div>
           <div className="border-b border-border px-3 py-2">

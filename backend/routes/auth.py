@@ -44,6 +44,7 @@ def user_to_out(user: dict) -> UserOut:
         name=user["name"],
         last_name=user["last_name"],
         email=user["email"],
+        avatar_url=user.get("avatar_url"),
         username=username,
         birthdate=birthdate,
         profile_complete=profile_complete,
@@ -207,6 +208,7 @@ async def google_login(
         ) from None
 
     email = idinfo.get("email", "").strip().lower()
+    avatar_url = idinfo.get("picture")
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -216,13 +218,18 @@ async def google_login(
     user = await db.users.find_one({"email_normalized": email})
 
     if user:
-        # Existing user - link Google if not already linked
+        # Existing user - link Google and refresh avatar data
+        update_fields = {"updated_at": datetime.now(timezone.utc)}
         if not user.get("google_sub"):
-            await db.users.update_one(
-                {"_id": user["_id"]},
-                {"$set": {"google_sub": idinfo["sub"], "updated_at": datetime.now(timezone.utc)}},
-            )
+            update_fields["google_sub"] = idinfo["sub"]
             user["google_sub"] = idinfo["sub"]
+        if avatar_url:
+            update_fields["avatar_url"] = avatar_url
+            user["avatar_url"] = avatar_url
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": update_fields},
+        )
     else:
         # New user from Google
         given_name = idinfo.get("given_name", "")
@@ -236,6 +243,7 @@ async def google_login(
             "birthdate": None,
             "password_hash": None,
             "google_sub": idinfo["sub"],
+            "avatar_url": avatar_url,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
