@@ -37,3 +37,10 @@ export type QuickstartExpansionOut = {
   example_questions: string[];
   sources: QuickstartSourceRef[];
 };
+
+export type QuickstartSuggestionsOut = {
+  suggestions: string[];
+  topic_count: number;
+  topic_limit: number;
+  can_add_topics: boolean;
+};

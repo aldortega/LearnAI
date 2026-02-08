@@ -1,4 +1,10 @@
+import { useEffect } from "react";
+
 import type { QuickstartOut } from "../types/quickstart.types";
+import { useAddQuickstartTopic } from "../hooks/useAddQuickstartTopic";
+import { useQuickstartSuggestions } from "../hooks/useQuickstartSuggestions";
+import { appendQuickstartTopic } from "../hooks/useQuickstartStore";
+import { QuickstartTopicSuggestions } from "./QuickstartTopicSuggestions";
 import { QuickstartTopicsList } from "./QuickstartTopicsList";
 
 type Props = {
@@ -13,6 +19,21 @@ export function QuickstartOverview({
   error,
 }: Props) {
   const isStale = quickstart.status === "stale";
+  const {
+    suggestions,
+    isLoading,
+    error: suggestionsError,
+    loadIfMissing,
+    reload,
+    removeSuggestion,
+  } =
+    useQuickstartSuggestions(notebookId, Boolean(notebookId));
+  const {
+    addTopic,
+    isAdding,
+    error: addTopicError,
+    clearError: clearAddTopicError,
+  } = useAddQuickstartTopic(notebookId);
   const summaryParagraphs = quickstart.notebook_summary
     .split(/\n\s*\n+/)
     .map((paragraph) => paragraph.trim())
@@ -25,9 +46,27 @@ export function QuickstartOverview({
           .filter(Boolean)
           .slice(0, 2);
 
+  useEffect(() => {
+    void loadIfMissing();
+  }, [loadIfMissing]);
+
+  const handleAddTopic = async (
+    title: string,
+    source: "suggestion" | "custom",
+  ) => {
+    if (!notebookId) return;
+    clearAddTopicError();
+    const newTopic = await addTopic(title);
+    if (!newTopic) return;
+    appendQuickstartTopic(notebookId, newTopic);
+    if (source === "suggestion") {
+      removeSuggestion(title);
+    }
+  };
+
   return (
     <div className="flex h-full overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
         <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div>
             <h2 className="mt-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
@@ -79,6 +118,21 @@ export function QuickstartOverview({
           notebookId={notebookId}
           isStale={isStale}
         />
+
+        <QuickstartTopicSuggestions
+          suggestions={suggestions?.suggestions ?? []}
+          topicCount={quickstart.topics.length}
+          topicLimit={suggestions?.topic_limit ?? 12}
+          canAddTopics={suggestions?.can_add_topics ?? false}
+          isLoading={isLoading}
+          isAdding={isAdding}
+          error={addTopicError ?? suggestionsError}
+          isStale={isStale}
+          onRefresh={reload}
+          onAddTopic={handleAddTopic}
+        />
+
+        <div className="h-[calc(1rem+env(safe-area-inset-bottom))] shrink-0" />
       </div>
     </div>
   );

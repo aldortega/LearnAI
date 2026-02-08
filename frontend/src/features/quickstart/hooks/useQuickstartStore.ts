@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-import type { QuickstartOut } from "../types/quickstart.types";
+import type { QuickstartOut, QuickstartTopic } from "../types/quickstart.types";
 
 type StoreState = {
   quickstartByNotebookId: Map<string, QuickstartOut>;
@@ -40,6 +40,21 @@ export function setQuickstart(notebookId: string, quickstart: QuickstartOut) {
 
 export function clearQuickstart(notebookId: string) {
   storeState.quickstartByNotebookId.delete(notebookId);
+  snapshotCache.delete(notebookId);
+  emitChange();
+}
+
+export function appendQuickstartTopic(notebookId: string, topic: QuickstartTopic) {
+  const current = storeState.quickstartByNotebookId.get(notebookId);
+  if (!current) return;
+
+  const hasTopic = current.topics.some((item) => item.id === topic.id);
+  if (hasTopic) return;
+
+  storeState.quickstartByNotebookId.set(notebookId, {
+    ...current,
+    topics: [...current.topics, topic],
+  });
   snapshotCache.delete(notebookId);
   emitChange();
 }

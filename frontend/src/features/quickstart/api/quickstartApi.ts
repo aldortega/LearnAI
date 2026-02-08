@@ -3,6 +3,8 @@ import type {
   QuickstartExpansionOut,
   QuickstartGenerationJobOut,
   QuickstartOut,
+  QuickstartSuggestionsOut,
+  QuickstartTopic,
 } from "../types/quickstart.types";
 
 export const quickstartApi = {
@@ -56,5 +58,23 @@ export const quickstartApi = {
         method: "POST",
       },
     );
+  },
+
+  getSuggestions: async (
+    notebookId: string,
+  ): Promise<QuickstartSuggestionsOut> => {
+    return apiRequest<QuickstartSuggestionsOut>(
+      `/notebooks/${notebookId}/quickstart/suggestions`,
+      {
+        method: "GET",
+      },
+    );
+  },
+
+  addTopic: async (notebookId: string, title: string): Promise<QuickstartTopic> => {
+    return apiRequest<QuickstartTopic>(`/notebooks/${notebookId}/quickstart/topics`, {
+      method: "POST",
+      body: { title },
+    });
   },
 };
