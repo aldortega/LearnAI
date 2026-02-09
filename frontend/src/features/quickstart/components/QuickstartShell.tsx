@@ -1,5 +1,7 @@
-﻿import type { ReactNode } from "react";
 import { RefreshCcw } from "lucide-react";
+import { useState, type ReactNode } from "react";
+
+import { RegenerateQuickstartModal } from "./RegenerateQuickstartModal";
 
 type Props = {
   children: ReactNode;
@@ -16,22 +18,33 @@ export function QuickstartShell({
   isRefreshing = false,
   onRefresh,
 }: Props) {
-  const handleRefresh = () => {
+  const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
+
+  const handleRefreshRequest = () => {
     if (!onRefresh || !canRefresh || isRefreshing) return;
+    setIsRegenerateModalOpen(true);
+  };
+
+  const handleRefreshCancel = () => {
+    if (isRefreshing) return;
+    setIsRegenerateModalOpen(false);
+  };
+
+  const handleRefreshConfirm = () => {
+    if (!onRefresh || !canRefresh || isRefreshing) return;
+    setIsRegenerateModalOpen(false);
     onRefresh();
   };
 
   return (
     <div className="flex h-full flex-col bg-surface">
       <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
-        <h2 className="text-sm font-semibold text-foreground">
-          Inicio rapido
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Inicio rapido</h2>
         {showRefreshAction ? (
           <button
             type="button"
             className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={handleRefresh}
+            onClick={handleRefreshRequest}
             disabled={!canRefresh || isRefreshing}
             aria-label="Actualizar inicio rapido"
             title="Actualizar inicio rapido"
@@ -43,7 +56,12 @@ export function QuickstartShell({
         ) : null}
       </div>
       <div className="flex-1 min-h-0">{children}</div>
+      <RegenerateQuickstartModal
+        isOpen={isRegenerateModalOpen}
+        isRegenerating={isRefreshing}
+        onCancel={handleRefreshCancel}
+        onConfirm={handleRefreshConfirm}
+      />
     </div>
   );
 }
-
