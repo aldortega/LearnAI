@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from langchain_core.messages import HumanMessage, SystemMessage
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
@@ -19,6 +19,7 @@ from ..schemas import (
     QuickstartExpansionOut,
     QuickstartGenerationJobOut,
     QuickstartOut,
+    QuickstartReorderTopicsRequest,
     QuickstartSourceRef,
     QuickstartSuggestionsOut,
     QuickstartTopicDetailOut,
@@ -1206,6 +1207,139 @@ async def add_quickstart_topic(
     )
 
     return topic_to_out(new_topic)
+
+
+@router.delete(
+    "/{notebook_id}/quickstart/topics/{topic_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_quickstart_topic(
+    notebook_id: str,
+    topic_id: str,
+    request: Request,
+) -> Response:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+
+    summary = await db.quickstart_summaries.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Inicio rapido no encontrado",
+        )
+
+    topics = summary.get("topics", [])
+    topics_list = topics if isinstance(topics, list) else []
+    topic_exists = any(
+        isinstance(topic, dict) and coerce_text(topic.get("id")) == topic_id
+        for topic in topics_list
+    )
+    if not topic_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tema no encontrado"
+        )
+
+    now = datetime.now(timezone.utc)
+    await db.quickstart_summaries.update_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]},
+        {
+            "$pull": {"topics": {"id": topic_id}},
+            "$set": {"updated_at": now},
+        },
+    )
+    await db.quickstart_expansions.delete_many(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"], "topic_id": topic_id}
+    )
+    await db.quickstart_topic_details.delete_many(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"], "topic_id": topic_id}
+    )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.patch(
+    "/{notebook_id}/quickstart/topics/reorder",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def reorder_quickstart_topics(
+    notebook_id: str,
+    payload: QuickstartReorderTopicsRequest,
+    request: Request,
+) -> Response:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+
+    summary = await db.quickstart_summaries.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Inicio rapido no encontrado",
+        )
+
+    topics = summary.get("topics", [])
+    topics_list = topics if isinstance(topics, list) else []
+    if not topics_list:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No hay temas para reordenar",
+        )
+
+    requested_topic_ids = [
+        coerce_text(topic_id).strip() for topic_id in payload.topic_ids
+    ]
+    if not all(requested_topic_ids):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Todos los ids de temas son obligatorios",
+        )
+
+    if len(requested_topic_ids) != len(topics_list):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debes enviar todos los temas para reordenar",
+        )
+
+    if len(set(requested_topic_ids)) != len(requested_topic_ids):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La lista de temas no puede tener ids repetidos",
+        )
+
+    existing_topic_ids = [
+        coerce_text(topic.get("id")).strip()
+        for topic in topics_list
+        if isinstance(topic, dict) and coerce_text(topic.get("id")).strip()
+    ]
+    if len(existing_topic_ids) != len(topics_list):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Hay temas con ids invalidos en el inicio rapido",
+        )
+
+    if set(requested_topic_ids) != set(existing_topic_ids):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La lista de temas no coincide con los temas actuales",
+        )
+
+    topic_by_id = {
+        coerce_text(topic.get("id")).strip(): topic
+        for topic in topics_list
+        if isinstance(topic, dict)
+    }
+    reordered_topics = [topic_by_id[topic_id] for topic_id in requested_topic_ids]
+
+    now = datetime.now(timezone.utc)
+    await db.quickstart_summaries.update_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]},
+        {"$set": {"topics": reordered_topics, "updated_at": now}},
+    )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

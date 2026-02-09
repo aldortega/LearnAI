@@ -1,9 +1,12 @@
-﻿import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import type { QuickstartOut } from "../types/quickstart.types";
+import type { QuickstartOut, QuickstartTopic } from "../types/quickstart.types";
 import { useAddQuickstartTopic } from "../hooks/useAddQuickstartTopic";
+import { useDeleteQuickstartTopic } from "../hooks/useDeleteQuickstartTopic";
+import { useReorderQuickstartTopics } from "../hooks/useReorderQuickstartTopics";
 import { useQuickstartSuggestions } from "../hooks/useQuickstartSuggestions";
-import { appendQuickstartTopic } from "../hooks/useQuickstartStore";
+import { appendQuickstartTopic, removeQuickstartTopic } from "../hooks/useQuickstartStore";
+import { DeleteQuickstartTopicModal } from "./DeleteQuickstartTopicModal";
 import { QuickstartTopicSuggestions } from "./QuickstartTopicSuggestions";
 import { QuickstartTopicsList } from "./QuickstartTopicsList";
 
@@ -18,6 +21,7 @@ export function QuickstartOverview({
   notebookId,
   error,
 }: Props) {
+  const [deleteTarget, setDeleteTarget] = useState<QuickstartTopic | null>(null);
   const isStale = quickstart.status === "stale";
   const {
     suggestions,
@@ -34,6 +38,19 @@ export function QuickstartOverview({
     error: addTopicError,
     clearError: clearAddTopicError,
   } = useAddQuickstartTopic(notebookId);
+  const {
+    deleteTopic,
+    deletingTopicId,
+    error: deleteTopicError,
+    clearError: clearDeleteTopicError,
+  } = useDeleteQuickstartTopic(notebookId);
+  const {
+    reorderTopics,
+    isReordering,
+    error: reorderTopicError,
+    clearError: clearReorderTopicError,
+  } = useReorderQuickstartTopics(notebookId, quickstart);
+
   const summaryParagraphs = quickstart.notebook_summary
     .split(/\n\s*\n+/)
     .map((paragraph) => paragraph.trim())
@@ -62,6 +79,35 @@ export function QuickstartOverview({
     if (source === "suggestion") {
       removeSuggestion(title);
     }
+  };
+
+  const handleDeleteRequest = (topic: QuickstartTopic) => {
+    clearDeleteTopicError();
+    clearReorderTopicError();
+    setDeleteTarget(topic);
+  };
+
+  const handleDeleteCancel = () => {
+    clearDeleteTopicError();
+    setDeleteTarget(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!notebookId || !deleteTarget) return;
+
+    clearDeleteTopicError();
+    const deleted = await deleteTopic(deleteTarget.id);
+    if (!deleted) return;
+
+    removeQuickstartTopic(notebookId, deleteTarget.id);
+    setDeleteTarget(null);
+    await reload();
+  };
+
+  const handleReorderTopics = async (topicIds: string[]) => {
+    clearDeleteTopicError();
+    clearReorderTopicError();
+    await reorderTopics(topicIds);
   };
 
   return (
@@ -117,6 +163,12 @@ export function QuickstartOverview({
           topics={quickstart.topics}
           notebookId={notebookId}
           isStale={isStale}
+          canDelete={Boolean(notebookId)}
+          canReorder={Boolean(notebookId)}
+          isReordering={isReordering}
+          deletingTopicId={deletingTopicId}
+          onDeleteTopic={handleDeleteRequest}
+          onReorderTopics={handleReorderTopics}
         />
 
         <QuickstartTopicSuggestions
@@ -125,11 +177,20 @@ export function QuickstartOverview({
           topicLimit={suggestions?.topic_limit ?? 12}
           canAddTopics={suggestions?.can_add_topics ?? false}
           isLoading={isLoading}
-          isAdding={isAdding}
-          error={addTopicError ?? suggestionsError}
+          isAdding={isAdding || isReordering}
+          error={addTopicError ?? deleteTopicError ?? reorderTopicError ?? suggestionsError}
           isStale={isStale}
           onRefresh={reload}
           onAddTopic={handleAddTopic}
+        />
+
+        <DeleteQuickstartTopicModal
+          isOpen={Boolean(deleteTarget)}
+          topicTitle={deleteTarget?.title}
+          error={deleteTopicError}
+          isDeleting={Boolean(deleteTarget) && deletingTopicId === deleteTarget?.id}
+          onCancel={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
         />
 
         <div className="h-[calc(1rem+env(safe-area-inset-bottom))] shrink-0" />
@@ -137,4 +198,3 @@ export function QuickstartOverview({
     </div>
   );
 }
-

@@ -5,6 +5,7 @@ import type {
   QuickstartTopicDetailIn,
   QuickstartTopicDetailOut,
   QuickstartOut,
+  QuickstartReorderTopicsIn,
   QuickstartSuggestionsOut,
   QuickstartTopic,
 } from "../types/quickstart.types";
@@ -91,6 +92,22 @@ export const quickstartApi = {
     return apiRequest<QuickstartTopic>(`/notebooks/${notebookId}/quickstart/topics`, {
       method: "POST",
       body: { title },
+    });
+  },
+
+  deleteTopic: async (notebookId: string, topicId: string): Promise<void> => {
+    return apiRequest<void>(`/notebooks/${notebookId}/quickstart/topics/${topicId}`, {
+      method: "DELETE",
+    });
+  },
+
+  reorderTopics: async (
+    notebookId: string,
+    payload: QuickstartReorderTopicsIn,
+  ): Promise<void> => {
+    return apiRequest<void>(`/notebooks/${notebookId}/quickstart/topics/reorder`, {
+      method: "PATCH",
+      body: payload,
     });
   },
 };

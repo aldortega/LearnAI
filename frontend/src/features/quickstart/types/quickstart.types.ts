@@ -58,3 +58,7 @@ export type QuickstartSuggestionsOut = {
   topic_limit: number;
   can_add_topics: boolean;
 };
+
+export type QuickstartReorderTopicsIn = {
+  topic_ids: string[];
+};

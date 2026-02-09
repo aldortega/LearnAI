@@ -153,6 +153,10 @@ class QuickstartAddTopicRequest(BaseModel):
     title: str = Field(min_length=1, max_length=120)
 
 
+class QuickstartReorderTopicsRequest(BaseModel):
+    topic_ids: list[str] = Field(min_length=1, max_length=50)
+
+
 QuickstartDetailItemType = Literal["additional_key_point", "question"]
 
 

@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
     "@react-oauth/google": "^0.13.4",

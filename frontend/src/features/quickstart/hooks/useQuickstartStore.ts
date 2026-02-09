@@ -59,6 +59,47 @@ export function appendQuickstartTopic(notebookId: string, topic: QuickstartTopic
   emitChange();
 }
 
+export function removeQuickstartTopic(notebookId: string, topicId: string) {
+  const current = storeState.quickstartByNotebookId.get(notebookId);
+  if (!current) return;
+
+  const nextTopics = current.topics.filter((topic) => topic.id !== topicId);
+  if (nextTopics.length === current.topics.length) return;
+
+  storeState.quickstartByNotebookId.set(notebookId, {
+    ...current,
+    topics: nextTopics,
+  });
+  snapshotCache.delete(notebookId);
+  emitChange();
+}
+
+export function reorderQuickstartTopics(notebookId: string, orderedTopicIds: string[]) {
+  const current = storeState.quickstartByNotebookId.get(notebookId);
+  if (!current) return;
+
+  if (orderedTopicIds.length !== current.topics.length) return;
+
+  const topicById = new Map(current.topics.map((topic) => [topic.id, topic]));
+  const reorderedTopics = orderedTopicIds
+    .map((topicId) => topicById.get(topicId))
+    .filter((topic): topic is QuickstartTopic => Boolean(topic));
+
+  if (reorderedTopics.length !== current.topics.length) return;
+
+  const hasChanged = reorderedTopics.some(
+    (topic, index) => topic.id !== current.topics[index]?.id,
+  );
+  if (!hasChanged) return;
+
+  storeState.quickstartByNotebookId.set(notebookId, {
+    ...current,
+    topics: reorderedTopics,
+  });
+  snapshotCache.delete(notebookId);
+  emitChange();
+}
+
 export function useQuickstartStore(notebookId?: string): QuickstartOut | null {
   return useSyncExternalStore(
     (listener) => {
