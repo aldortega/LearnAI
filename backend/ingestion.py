@@ -15,6 +15,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pypdf import PdfReader
+from pptx import Presentation
 from rq import get_current_job
 from supabase import create_client
 
@@ -137,7 +138,7 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
 
 
 def load_documents(file_bytes: bytes, content_type: str) -> list[Document]:
-    suffix_map = {"pdf": ".pdf", "docx": ".docx", "txt": ".txt"}
+    suffix_map = {"pdf": ".pdf", "docx": ".docx", "txt": ".txt", "pptx": ".pptx"}
     suffix = suffix_map.get(content_type)
     if not suffix:
         raise RuntimeError("Tipo de archivo no soportado")
@@ -160,6 +161,38 @@ def load_documents(file_bytes: bytes, content_type: str) -> list[Document]:
         if content_type == "docx":
             text = docx2txt.process(tmp_path) or ""
             return [Document(page_content=text, metadata={})] if text.strip() else []
+        if content_type == "pptx":
+            presentation = Presentation(tmp_path)
+            documents: list[Document] = []
+            for index, slide in enumerate(presentation.slides, start=1):
+                slide_sections: list[str] = []
+                for shape in slide.shapes:
+                    if getattr(shape, "has_table", False):
+                        table_rows: list[str] = []
+                        for row in shape.table.rows:
+                            cells = [
+                                cell.text.strip()
+                                for cell in row.cells
+                                if cell.text and cell.text.strip()
+                            ]
+                            if cells:
+                                table_rows.append(" | ".join(cells))
+                        if table_rows:
+                            slide_sections.append("\n".join(table_rows))
+                        continue
+
+                    text = (getattr(shape, "text", "") or "").strip()
+                    if text:
+                        slide_sections.append(text)
+
+                if slide_sections:
+                    documents.append(
+                        Document(
+                            page_content="\n\n".join(slide_sections),
+                            metadata={"page": index},
+                        )
+                    )
+            return documents
         text = Path(tmp_path).read_text(encoding="utf-8", errors="ignore")
         return [Document(page_content=text, metadata={})] if text.strip() else []
     finally:

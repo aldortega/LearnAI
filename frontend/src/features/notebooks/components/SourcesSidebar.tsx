@@ -110,7 +110,7 @@ export function SourcesSidebar({
                   Las fuentes guardadas aparecerán aquí.
                 </p>
                 <p className="mt-1 w-full truncate text-xs text-muted-foreground">
-                  Haz clic en el botón Añadir fuente de arriba para añadir PDFs.
+                  Haz clic en el botón Añadir fuente de arriba para añadir PDF, DOCX, TXT o PPTX.
                 </p>
               </div>
             ) : (

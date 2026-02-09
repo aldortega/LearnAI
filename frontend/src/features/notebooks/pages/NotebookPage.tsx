@@ -8,7 +8,7 @@ import { NotebookShell } from "../components/NotebookShell";
 import type { Document } from "../types/documents.types";
 import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../index";
 
-const allowedExtensions = [".pdf", ".docx", ".txt"];
+const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 export function NotebookPage() {
   const { notebookId } = useParams();
@@ -173,7 +173,7 @@ export function NotebookPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }

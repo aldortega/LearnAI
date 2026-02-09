@@ -17,7 +17,7 @@ import { QuickstartShell } from "../components/QuickstartShell";
 import { useGenerateQuickstart } from "../hooks/useGenerateQuickstart";
 import { useQuickstart } from "../hooks/useQuickstart";
 
-const allowedExtensions = [".pdf", ".docx", ".txt"];
+const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 export function NotebookQuickstartPage() {
   const { notebookId } = useParams();
@@ -232,7 +232,7 @@ export function NotebookQuickstartPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }

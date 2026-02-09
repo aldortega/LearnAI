@@ -6,7 +6,7 @@ export type Document = {
   notebook_id: string;
   file_path: string;
   file_name: string;
-  content_type: "pdf" | "docx" | "txt";
+  content_type: "pdf" | "docx" | "txt" | "pptx";
   status: DocumentStatus;
   created_at: string;
   updated_at: string;

@@ -24,11 +24,13 @@ ALLOWED_EXTENSIONS = {
     ".pdf": "pdf",
     ".docx": "docx",
     ".txt": "txt",
+    ".pptx": "pptx",
 }
 MIME_TO_TYPE = {
     "application/pdf": "pdf",
     "text/plain": "txt",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
 }
 TYPE_TO_EXTENSION = {value: key for key, value in ALLOWED_EXTENSIONS.items()}
 

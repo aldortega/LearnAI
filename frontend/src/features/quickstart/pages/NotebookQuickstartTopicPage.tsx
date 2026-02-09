@@ -19,7 +19,7 @@ import { useQuickstart } from "../hooks/useQuickstart";
 import { useQuickstartExpansion } from "../hooks/useQuickstartExpansion";
 import { useQuickstartTopicDetail } from "../hooks/useQuickstartTopicDetail";
 
-const allowedExtensions = [".pdf", ".docx", ".txt"];
+const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 function normalizeDetailItem(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
@@ -245,7 +245,7 @@ export function NotebookQuickstartTopicPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }

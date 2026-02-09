@@ -153,7 +153,7 @@ export function ChatArea({
                 Comienza a chatear
               </h2>
               <p className="mb-6 text-muted-foreground">
-                Añade al menos una fuente (PDF, texto) para empezar a hacer
+                Añade al menos una fuente (PDF, DOCX, TXT o PPTX) para empezar a hacer
                 preguntas sobre tu material de estudio.
               </p>
               <div
@@ -170,7 +170,7 @@ export function ChatArea({
                 Arrastra y suelta un archivo aquí
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Formatos soportados: PDF, DOCX o TXT.
+                Formatos soportados: PDF, DOCX, TXT o PPTX.
               </p>
             </div>
           </div>

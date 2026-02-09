@@ -69,7 +69,7 @@ class NotebookOut(BaseModel):
 class DocumentCreate(BaseModel):
     file_path: str = Field(min_length=1, max_length=500)
     file_name: str = Field(min_length=1, max_length=200)
-    content_type: Literal["pdf", "docx", "txt"]
+    content_type: Literal["pdf", "docx", "txt", "pptx"]
 
 
 class DocumentOut(BaseModel):
@@ -78,7 +78,7 @@ class DocumentOut(BaseModel):
     notebook_id: str
     file_path: str
     file_name: str
-    content_type: Literal["pdf", "docx", "txt"]
+    content_type: Literal["pdf", "docx", "txt", "pptx"]
     status: str
     created_at: datetime
     updated_at: datetime

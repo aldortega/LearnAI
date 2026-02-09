@@ -18,7 +18,7 @@ import { useQuizRoadmap } from "../hooks/useQuizRoadmap";
 import { useResetQuizAttempts } from "../hooks/useResetQuizAttempts";
 import type { QuizGenerateRequest } from "../types/quiz.types";
 
-const allowedExtensions = [".pdf", ".docx", ".txt"];
+const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 export function NotebookQuizPage() {
   const { notebookId } = useParams();
@@ -298,7 +298,7 @@ export function NotebookQuizPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt"
+          accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }

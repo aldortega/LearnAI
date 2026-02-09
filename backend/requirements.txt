@@ -13,6 +13,7 @@ langchain-text-splitters
 langchain-google-genai
 pypdf
 docx2txt
+python-pptx
 supabase
 python-multipart
 google-auth
