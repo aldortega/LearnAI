@@ -18,6 +18,12 @@ export const quizApi = {
     });
   },
 
+  deleteRoadmap: async (notebookId: string): Promise<void> => {
+    await apiRequest<void>(`/notebooks/${notebookId}/roadmap`, {
+      method: "DELETE",
+    });
+  },
+
   generateRoadmap: async (
     notebookId: string,
     payload: QuizGenerateRequest,

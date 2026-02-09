@@ -8,9 +8,12 @@ import type { Document } from "../../notebooks/types/documents.types";
 import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../../notebooks";
 import { GenerateQuizCard } from "../components/GenerateQuizCard";
 import { QuizArea } from "../components/QuizArea";
+import { RegenerateQuizModal } from "../components/RegenerateQuizModal";
 import { RoadmapView } from "../components/RoadmapView";
 import { QuizShell } from "../components/QuizShell";
+import { useDeleteQuizRoadmap } from "../hooks/useDeleteQuizRoadmap";
 import { useGenerateQuizRoadmap } from "../hooks/useGenerateQuizRoadmap";
+import { clearRoadmap } from "../hooks/useRoadmapStore";
 import { useQuizRoadmap } from "../hooks/useQuizRoadmap";
 import { useResetQuizAttempts } from "../hooks/useResetQuizAttempts";
 import type { QuizGenerateRequest } from "../types/quiz.types";
@@ -30,6 +33,7 @@ export function NotebookQuizPage() {
     () => new Set(),
   );
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
+  const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
 
   const {
     documents: streamedDocuments,
@@ -79,6 +83,12 @@ export function NotebookQuizPage() {
   const { generate, resumeLatest, isGenerating, error: generateError } =
     useGenerateQuizRoadmap(notebookId);
   const { reset: resetAttempts } = useResetQuizAttempts(notebookId);
+  const {
+    deleteRoadmap: deleteQuizRoadmap,
+    isDeleting: isDeletingRoadmap,
+    error: deleteRoadmapError,
+    clearError: clearDeleteRoadmapError,
+  } = useDeleteQuizRoadmap(notebookId);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -188,6 +198,29 @@ export function NotebookQuizPage() {
     [generate, notebookId, reloadRoadmap],
   );
 
+  const handleRegenerateRequest = useCallback(() => {
+    clearDeleteRoadmapError();
+    setIsRegenerateModalOpen(true);
+  }, [clearDeleteRoadmapError]);
+
+  const handleRegenerateCancel = useCallback(() => {
+    if (isDeletingRoadmap) return;
+    clearDeleteRoadmapError();
+    setIsRegenerateModalOpen(false);
+  }, [clearDeleteRoadmapError, isDeletingRoadmap]);
+
+  const handleRegenerateConfirm = useCallback(async () => {
+    if (!notebookId) return;
+
+    const wasDeleted = await deleteQuizRoadmap();
+    if (!wasDeleted) return;
+
+    clearRoadmap(notebookId);
+    setIsRegenerateModalOpen(false);
+    navigate(`/notebook/${notebookId}/quiz`);
+    await reloadRoadmap();
+  }, [deleteQuizRoadmap, navigate, notebookId, reloadRoadmap]);
+
   const [retryingLevelId, setRetryingLevelId] = useState<string | null>(null);
 
   const handleRetryLevel = useCallback(
@@ -270,18 +303,32 @@ export function NotebookQuizPage() {
         />
       }
       footer={
-        <DeleteDocumentModal
-          isOpen={Boolean(deleteTarget)}
-          documentName={deleteTarget?.file_name}
-          isDeleting={
-            deleteTarget ? deletingDocumentIds.has(deleteTarget.id) : false
-          }
-          onCancel={handleDeleteCancel}
-          onConfirm={handleDeleteConfirm}
-        />
+        <>
+          <DeleteDocumentModal
+            isOpen={Boolean(deleteTarget)}
+            documentName={deleteTarget?.file_name}
+            isDeleting={
+              deleteTarget ? deletingDocumentIds.has(deleteTarget.id) : false
+            }
+            onCancel={handleDeleteCancel}
+            onConfirm={handleDeleteConfirm}
+          />
+          <RegenerateQuizModal
+            isOpen={isRegenerateModalOpen}
+            isDeleting={isDeletingRoadmap}
+            error={deleteRoadmapError}
+            onCancel={handleRegenerateCancel}
+            onConfirm={() => void handleRegenerateConfirm()}
+          />
+        </>
       }
     >
-      <QuizShell>
+      <QuizShell
+        showRegenerateAction={Boolean(roadmap)}
+        canRegenerate={Boolean(roadmap)}
+        isRegenerating={isGenerating || isDeletingRoadmap}
+        onRegenerate={handleRegenerateRequest}
+      >
         {roadmap && levelId ? (
           <QuizArea
             notebookId={notebookId ?? ""}

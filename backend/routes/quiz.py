@@ -1302,6 +1302,41 @@ async def get_roadmap(notebook_id: str, request: Request) -> RoadmapOut:
     return await build_roadmap_response(roadmap, user)
 
 
+@router.delete("/{notebook_id}/roadmap", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_roadmap(notebook_id: str, request: Request) -> None:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+
+    roadmap = await db.quiz_roadmaps.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+    if not roadmap:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Roadmap no encontrado"
+        )
+
+    active_job = await db.quiz_generation_jobs.find_one(
+        {
+            "owner_id": user["_id"],
+            "notebook_id": notebook["_id"],
+            "status": {"$in": ["queued", "processing"]},
+        }
+    )
+    if active_job:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede eliminar el quiz mientras se esta generando",
+        )
+
+    base_query = {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    await db.quiz_roadmaps.delete_many(base_query)
+    await db.quiz_questions.delete_many(base_query)
+    await db.quiz_attempts.delete_many(base_query)
+    await db.quiz_level_progress.delete_many(base_query)
+    await db.quiz_llm_payloads.delete_many(base_query)
+    await db.quiz_generation_jobs.delete_many(base_query)
+
+
 @router.get("/{notebook_id}/roadmap/levels/{level_id}", response_model=RoadmapLevelOut)
 async def get_level(
     notebook_id: str, level_id: str, request: Request

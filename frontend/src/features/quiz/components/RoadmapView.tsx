@@ -142,22 +142,32 @@ export function RoadmapView({
                         </span>
                       ) : null}
                       {isFailed ? (
-                        <span
-                          className={
-                            "group/failed relative inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold " +
-                            "bg-error/10 text-error"
-                          }
-                        >
-                          <span>Reprobado</span>
+                        <span className="group/failed relative inline-flex">
+                          <span className="invisible rounded-full px-2.5 py-1 text-xs font-semibold">
+                            Reintentando
+                          </span>
                           <span
                             className={cn(
-                              "absolute left-full ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                              "bg-error/20 text-error transition group-hover/failed:opacity-100",
-                              "pointer-events-none group-hover/failed:pointer-events-auto",
-                              "dark:bg-error/20",
-                              canRetry
-                                ? "cursor-pointer opacity-0"
-                                : "cursor-not-allowed opacity-0",
+                              "absolute inset-0 inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold transition-opacity",
+                              "bg-error/10 text-error",
+                              isRetrying
+                                ? "opacity-0"
+                                : "opacity-100 group-hover/failed:opacity-0",
+                            )}
+                          >
+                            Reprobado
+                          </span>
+                          <span
+                            className={cn(
+                              "absolute inset-0 inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold transition-opacity",
+                              "bg-error/20 text-error dark:bg-error/20",
+                              isRetrying && "cursor-wait opacity-100",
+                              !isRetrying &&
+                                canRetry &&
+                                "cursor-pointer opacity-0 pointer-events-none group-hover/failed:pointer-events-auto group-hover/failed:opacity-100",
+                              !isRetrying &&
+                                !canRetry &&
+                                "cursor-not-allowed opacity-0 pointer-events-none",
                             )}
                             onClick={(event) => {
                               if (!canRetry) return;
@@ -168,7 +178,7 @@ export function RoadmapView({
                             aria-label="Reintentar nivel"
                             title="Reintentar"
                           >
-                            {isRetrying ? "Reintentando" : "Reintento"}
+                            {isRetrying ? "Reintentando" : "Reintentar"}
                           </span>
                         </span>
                       ) : (
