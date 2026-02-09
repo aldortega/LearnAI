@@ -42,6 +42,7 @@ EXPANSION_MIN_KEY_POINTS = 3
 EXPANSION_MAX_KEY_POINTS = 6
 EXPANSION_MIN_QUESTIONS = 2
 EXPANSION_MAX_QUESTIONS = 5
+EXPANSION_MIN_CONTENT_CHARS = 80
 
 DEFAULT_TOPIC_KEY_POINTS = [
     "Definiciones y conceptos centrales",
@@ -287,10 +288,61 @@ def normalize_quickstart_payload(payload: dict, title: str) -> dict:
     return {"notebook_summary": notebook_summary, "topics": topics}
 
 
-def normalize_expansion(payload: dict, topic_title: str) -> dict:
-    content = coerce_text(payload.get("content")).strip()
+def build_expansion_content_fallback(topic_title: str, summary: str) -> str:
+    normalized_summary = normalize_item_text(summary)
+    base_summary = (
+        normalized_summary
+        if normalized_summary
+        else f"{topic_title} es un tema central para avanzar con esta notebook."
+    )
+    return (
+        f"{base_summary}\n\n"
+        f"Para profundizar en {topic_title}, conviene relacionar sus conceptos "
+        "fundamentales, entender como se conectan entre si y revisar ejemplos de "
+        "aplicacion practica para consolidar el aprendizaje."
+    )
+
+
+def build_expansion_additional_paragraph(topic_title: str) -> str:
+    return (
+        f"Tambien es util analizar {topic_title} en casos reales, identificar "
+        "errores frecuentes y definir criterios simples para evaluar si se esta "
+        "aplicando correctamente."
+    )
+
+
+def normalize_expansion_content(
+    raw_content: object, topic_title: str, summary: str
+) -> str:
+    content = coerce_text(raw_content).strip()
     if not content:
-        content = f"Detalles principales sobre {topic_title}."
+        return build_expansion_content_fallback(topic_title, summary)
+
+    paragraphs = [
+        normalize_item_text(paragraph)
+        for paragraph in content.split("\n\n")
+        if normalize_item_text(paragraph)
+    ]
+    if not paragraphs:
+        return build_expansion_content_fallback(topic_title, summary)
+
+    normalized_content = "\n\n".join(paragraphs)
+    summary_key = normalize_item_cache_key(summary)
+    content_key = normalize_item_cache_key(normalized_content)
+    content_is_summary = summary_key and summary_key == content_key
+    content_is_short = len(normalized_content) < EXPANSION_MIN_CONTENT_CHARS
+
+    if content_is_summary or content_is_short:
+        return build_expansion_content_fallback(topic_title, summary)
+
+    if len(paragraphs) == 1:
+        paragraphs.append(build_expansion_additional_paragraph(topic_title))
+
+    return "\n\n".join(paragraphs)
+
+
+def normalize_expansion(payload: dict, topic_title: str, summary: str) -> dict:
+    content = normalize_expansion_content(payload.get("content"), topic_title, summary)
 
     key_points = normalize_list(
         payload.get("key_points", []),
@@ -349,8 +401,10 @@ def build_expansion_prompt(
         f"Resumen actual: {summary}\n"
         f"Puntos clave:\n{key_points_text}\n\n"
         f"Contexto:\n{context_text}\n\n"
-        "Expande el tema en detalle. Entrega un contenido claro, "
-        "puntos clave adicionales y preguntas sugeridas."
+        "Expande el tema en detalle. En content entrega informacion general "
+        "adicional y util para estudio (no repitas literal el resumen actual), "
+        "en 1 a 3 parrafos claros. Incluye tambien puntos clave adicionales y "
+        "preguntas sugeridas."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
@@ -722,7 +776,11 @@ async def generate_topic_expansion(
             "Expansion quickstart:\n%s",
             json.dumps(payload_data, ensure_ascii=False),
         )
-        expansion = normalize_expansion(payload_data, coerce_text(topic.get("title")))
+        expansion = normalize_expansion(
+            payload_data,
+            coerce_text(topic.get("title")),
+            coerce_text(topic.get("summary")),
+        )
         return expansion, sources
     except Exception as exc:
         logger.exception("Expansion JSON invalido", extra={"error": str(exc)})
