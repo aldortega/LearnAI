@@ -15,11 +15,14 @@ from ..db import db
 from ..rq_queue import quickstart_queue
 from ..schemas import (
     QuickstartAddTopicRequest,
+    QuickstartDetailItemType,
     QuickstartExpansionOut,
     QuickstartGenerationJobOut,
     QuickstartOut,
     QuickstartSourceRef,
     QuickstartSuggestionsOut,
+    QuickstartTopicDetailOut,
+    QuickstartTopicDetailRequest,
     QuickstartTopicOut,
     RagSource,
 )
@@ -90,6 +93,12 @@ SINGLE_TOPIC_SCHEMA = (
     "}\n"
 )
 
+DETAIL_SCHEMA = (
+    "{\n"
+    '  "content": "string"\n'
+    "}\n"
+)
+
 
 class QuickstartTopicLLM(BaseModel):
     title: str
@@ -116,6 +125,10 @@ class QuickstartSingleTopicLLM(BaseModel):
     title: str
     summary: str
     key_points: list[str] = Field(min_length=1, max_length=8)
+
+
+class QuickstartTopicDetailLLM(BaseModel):
+    content: str
 
 
 def coerce_text(value: object | None) -> str:
@@ -206,6 +219,14 @@ def normalize_topics(payload: dict, title: str) -> list[dict]:
 
 def normalize_topic_title(title: str) -> str:
     return " ".join(title.split()).strip()
+
+
+def normalize_item_text(item_text: str) -> str:
+    return " ".join(item_text.split()).strip()
+
+
+def normalize_item_cache_key(item_text: str) -> str:
+    return normalize_item_text(item_text).lower()
 
 
 def build_existing_topic_title_keys(topics: list[dict]) -> set[str]:
@@ -334,6 +355,35 @@ def build_expansion_prompt(
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
 
+def build_topic_detail_prompt(
+    notebook_title: str,
+    topic_title: str,
+    item_type: QuickstartDetailItemType,
+    item_text: str,
+    context_text: str,
+) -> tuple[SystemMessage, HumanMessage]:
+    system_prompt = (
+        "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
+        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        f"{DETAIL_SCHEMA}"
+    )
+    item_label = (
+        "pregunta sugerida"
+        if item_type == "question"
+        else "punto clave adicional"
+    )
+    user_prompt = (
+        f"Tema general (usa exactamente este tema): {notebook_title}\n"
+        f"Tema principal: {topic_title}\n"
+        f"Tipo de item seleccionado: {item_label}\n"
+        f"Texto del item: {item_text}\n\n"
+        f"Contexto:\n{context_text}\n\n"
+        "Explica el item de forma clara y concreta para estudio autonomo. "
+        "Entrega 1 a 3 parrafos, con ejemplos breves cuando aporten valor."
+    )
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
 def build_suggestions_prompt(
     notebook_title: str,
     existing_titles: list[str],
@@ -442,6 +492,24 @@ def source_to_ref(source: RagSource) -> QuickstartSourceRef:
     )
 
 
+def expansion_to_out(topic_id: str, expansion_doc: dict) -> QuickstartExpansionOut:
+    sources_out = [
+        QuickstartSourceRef(**source)
+        for source in expansion_doc.get("sources", [])
+        if isinstance(source, dict)
+    ]
+    return QuickstartExpansionOut(
+        topic_id=topic_id,
+        content=coerce_text(expansion_doc.get("content")),
+        key_points=[coerce_text(point) for point in expansion_doc.get("key_points", [])],
+        example_questions=[
+            coerce_text(question)
+            for question in expansion_doc.get("example_questions", [])
+        ],
+        sources=sources_out,
+    )
+
+
 async def get_notebook_or_404(notebook_id: str, user: dict) -> dict:
     try:
         notebook_object_id = ObjectId(notebook_id)
@@ -497,6 +565,98 @@ async def compute_sources_fingerprint(
     )
     fingerprint = build_sources_fingerprint(title, documents)
     return fingerprint, len(documents)
+
+
+async def resolve_quickstart_topic_context(
+    notebook_id: str,
+    topic_id: str,
+    user: dict,
+) -> tuple[dict, dict, str]:
+    notebook = await get_notebook_or_404(notebook_id, user)
+    summary = await db.quickstart_summaries.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Inicio rapido no encontrado",
+        )
+
+    fingerprint, _ = await compute_sources_fingerprint(
+        notebook["title"], notebook["_id"], user["_id"]
+    )
+    if summary.get("sources_fingerprint") != fingerprint:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El inicio rapido esta desactualizado. Regeneralo para continuar.",
+        )
+
+    topics = summary.get("topics", [])
+    topics_list = topics if isinstance(topics, list) else []
+    topic = next(
+        (
+            item
+            for item in topics_list
+            if isinstance(item, dict) and coerce_text(item.get("id")) == topic_id
+        ),
+        None,
+    )
+    if not topic:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tema no encontrado"
+        )
+
+    return notebook, topic, fingerprint
+
+
+async def get_or_create_topic_expansion(
+    notebook: dict,
+    user: dict,
+    topic_id: str,
+    topic: dict,
+    fingerprint: str,
+) -> QuickstartExpansionOut:
+    expansion_filter = {
+        "owner_id": user["_id"],
+        "notebook_id": notebook["_id"],
+        "topic_id": topic_id,
+        "sources_fingerprint": fingerprint,
+    }
+    cached = await db.quickstart_expansions.find_one(expansion_filter)
+    if cached:
+        return expansion_to_out(topic_id, cached)
+
+    expansion, sources = await generate_topic_expansion(
+        notebook["title"], topic, notebook["_id"], user
+    )
+    sources_out = [source_to_ref(source) for source in sources]
+    now = datetime.now(timezone.utc)
+    await db.quickstart_expansions.update_one(
+        expansion_filter,
+        {
+            "$set": {
+                "owner_id": user["_id"],
+                "notebook_id": notebook["_id"],
+                "topic_id": topic_id,
+                "sources_fingerprint": fingerprint,
+                "content": expansion["content"],
+                "key_points": expansion["key_points"],
+                "example_questions": expansion["example_questions"],
+                "sources": [source.model_dump() for source in sources_out],
+                "updated_at": now,
+            },
+            "$setOnInsert": {"created_at": now},
+        },
+        upsert=True,
+    )
+
+    return QuickstartExpansionOut(
+        topic_id=topic_id,
+        content=expansion["content"],
+        key_points=expansion["key_points"],
+        example_questions=expansion["example_questions"],
+        sources=sources_out,
+    )
 
 
 async def generate_quickstart_topics(
@@ -569,6 +729,45 @@ async def generate_topic_expansion(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="No se pudo expandir el tema",
+        ) from exc
+
+
+async def generate_topic_item_detail(
+    notebook_title: str,
+    topic_title: str,
+    item_type: QuickstartDetailItemType,
+    item_text: str,
+    notebook_object_id: ObjectId,
+    user: dict,
+) -> str:
+    item_query = (
+        f"Responde esta pregunta del tema {topic_title}: {item_text}"
+        if item_type == "question"
+        else f"Explica en detalle este punto del tema {topic_title}: {item_text}"
+    )
+    context_lines, _, _, _ = await retrieve_context(item_query, notebook_object_id, user)
+    context_text = compact_context(context_lines, max_chars=4500)
+    system_message, user_message = build_topic_detail_prompt(
+        notebook_title, topic_title, item_type, item_text, context_text
+    )
+    llm = create_llm()
+    structured_llm = llm.with_structured_output(
+        schema=QuickstartTopicDetailLLM.model_json_schema(), method="json_schema"
+    )
+    try:
+        payload = await asyncio.to_thread(
+            structured_llm.invoke, [system_message, user_message]
+        )
+        payload_data = coerce_payload(payload, QuickstartTopicDetailLLM)
+        content = normalize_item_text(coerce_text(payload_data.get("content")))
+        if content:
+            return content
+        return f"Detalle adicional sobre {item_text}."
+    except Exception as exc:
+        logger.exception("Detalle quickstart invalido", extra={"error": str(exc)})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No se pudo generar el detalle del tema",
         ) from exc
 
 
@@ -1059,81 +1258,97 @@ async def expand_quickstart_topic(
     notebook_id: str, topic_id: str, request: Request
 ) -> QuickstartExpansionOut:
     user = await get_current_user(request)
-    notebook = await get_notebook_or_404(notebook_id, user)
-
-    summary = await db.quickstart_summaries.find_one(
-        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    notebook, topic, fingerprint = await resolve_quickstart_topic_context(
+        notebook_id, topic_id, user
     )
-    if not summary:
+    return await get_or_create_topic_expansion(
+        notebook, user, topic_id, topic, fingerprint
+    )
+
+
+@router.post(
+    "/{notebook_id}/quickstart/topics/{topic_id}/details",
+    response_model=QuickstartTopicDetailOut,
+)
+async def get_quickstart_topic_detail(
+    notebook_id: str,
+    topic_id: str,
+    payload: QuickstartTopicDetailRequest,
+    request: Request,
+) -> QuickstartTopicDetailOut:
+    user = await get_current_user(request)
+    notebook, topic, fingerprint = await resolve_quickstart_topic_context(
+        notebook_id, topic_id, user
+    )
+    expansion = await get_or_create_topic_expansion(
+        notebook, user, topic_id, topic, fingerprint
+    )
+
+    requested_item_text = normalize_item_text(payload.item_text)
+    if not requested_item_text:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Inicio rapido no encontrado",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El texto del item es obligatorio",
         )
 
-    fingerprint, _ = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+    valid_items = (
+        expansion.example_questions
+        if payload.item_type == "question"
+        else expansion.key_points
     )
-    if summary.get("sources_fingerprint") != fingerprint:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="El inicio rapido esta desactualizado. Regeneralo para continuar.",
+    valid_item_map = {
+        normalize_item_cache_key(item): normalize_item_text(item)
+        for item in valid_items
+        if normalize_item_text(item)
+    }
+    requested_item_key = normalize_item_cache_key(requested_item_text)
+    resolved_item_text = valid_item_map.get(requested_item_key)
+    if not resolved_item_text:
+        detail_message = (
+            "La pregunta seleccionada no pertenece a este tema"
+            if payload.item_type == "question"
+            else "El punto seleccionado no pertenece a este tema"
         )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail_message)
 
-    topics = summary.get("topics", [])
-    topic = next((item for item in topics if item.get("id") == topic_id), None)
-    if not topic:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Tema no encontrado"
-        )
-
-    cached = await db.quickstart_expansions.find_one(
-        {
-            "owner_id": user["_id"],
-            "notebook_id": notebook["_id"],
-            "topic_id": topic_id,
-            "sources_fingerprint": fingerprint,
-        }
-    )
-    if cached:
-        sources_out = [
-            QuickstartSourceRef(**source)
-            for source in cached.get("sources", [])
-        ]
-        return QuickstartExpansionOut(
+    detail_filter = {
+        "owner_id": user["_id"],
+        "notebook_id": notebook["_id"],
+        "topic_id": topic_id,
+        "item_type": payload.item_type,
+        "item_text_normalized": requested_item_key,
+        "sources_fingerprint": fingerprint,
+    }
+    cached_detail = await db.quickstart_topic_details.find_one(detail_filter)
+    if cached_detail:
+        return QuickstartTopicDetailOut(
             topic_id=topic_id,
-            content=coerce_text(cached.get("content")),
-            key_points=[
-                coerce_text(point) for point in cached.get("key_points", [])
-            ],
-            example_questions=[
-                coerce_text(question)
-                for question in cached.get("example_questions", [])
-            ],
-            sources=sources_out,
+            item_type=payload.item_type,
+            item_text=coerce_text(cached_detail.get("item_text")) or resolved_item_text,
+            content=coerce_text(cached_detail.get("content")),
         )
 
-    expansion, sources = await generate_topic_expansion(
-        notebook["title"], topic, notebook["_id"], user
+    content = await generate_topic_item_detail(
+        notebook_title=coerce_text(notebook.get("title")),
+        topic_title=coerce_text(topic.get("title")),
+        item_type=payload.item_type,
+        item_text=resolved_item_text,
+        notebook_object_id=notebook["_id"],
+        user=user,
     )
-    sources_out = [source_to_ref(source) for source in sources]
     now = datetime.now(timezone.utc)
-    await db.quickstart_expansions.update_one(
-        {
-            "owner_id": user["_id"],
-            "notebook_id": notebook["_id"],
-            "topic_id": topic_id,
-            "sources_fingerprint": fingerprint,
-        },
+    await db.quickstart_topic_details.update_one(
+        detail_filter,
         {
             "$set": {
                 "owner_id": user["_id"],
                 "notebook_id": notebook["_id"],
                 "topic_id": topic_id,
+                "item_type": payload.item_type,
+                "item_text_normalized": requested_item_key,
+                "item_text": resolved_item_text,
                 "sources_fingerprint": fingerprint,
-                "content": expansion["content"],
-                "key_points": expansion["key_points"],
-                "example_questions": expansion["example_questions"],
-                "sources": [source.model_dump() for source in sources_out],
+                "content": content,
                 "updated_at": now,
             },
             "$setOnInsert": {"created_at": now},
@@ -1141,10 +1356,9 @@ async def expand_quickstart_topic(
         upsert=True,
     )
 
-    return QuickstartExpansionOut(
+    return QuickstartTopicDetailOut(
         topic_id=topic_id,
-        content=expansion["content"],
-        key_points=expansion["key_points"],
-        example_questions=expansion["example_questions"],
-        sources=sources_out,
+        item_type=payload.item_type,
+        item_text=resolved_item_text,
+        content=content,
     )

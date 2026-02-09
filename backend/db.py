@@ -72,6 +72,18 @@ async def ensure_indexes() -> None:
         unique=True,
     )
     await db.quickstart_expansions.create_index("updated_at")
+    await db.quickstart_topic_details.create_index(
+        [
+            ("owner_id", 1),
+            ("notebook_id", 1),
+            ("topic_id", 1),
+            ("item_type", 1),
+            ("item_text_normalized", 1),
+            ("sources_fingerprint", 1),
+        ],
+        unique=True,
+    )
+    await db.quickstart_topic_details.create_index("updated_at")
     await db.quickstart_generation_jobs.create_index("job_id", unique=True)
     await db.quickstart_generation_jobs.create_index("owner_id")
     await db.quickstart_generation_jobs.create_index("notebook_id")

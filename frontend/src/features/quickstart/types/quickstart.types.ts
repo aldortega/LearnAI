@@ -38,6 +38,20 @@ export type QuickstartExpansionOut = {
   sources: QuickstartSourceRef[];
 };
 
+export type QuickstartDetailItemType = "additional_key_point" | "question";
+
+export type QuickstartTopicDetailIn = {
+  item_type: QuickstartDetailItemType;
+  item_text: string;
+};
+
+export type QuickstartTopicDetailOut = {
+  topic_id: string;
+  item_type: QuickstartDetailItemType;
+  item_text: string;
+  content: string;
+};
+
 export type QuickstartSuggestionsOut = {
   suggestions: string[];
   topic_count: number;

@@ -2,6 +2,8 @@ import { apiRequest } from "../../../shared/lib/apiClient";
 import type {
   QuickstartExpansionOut,
   QuickstartGenerationJobOut,
+  QuickstartTopicDetailIn,
+  QuickstartTopicDetailOut,
   QuickstartOut,
   QuickstartSuggestionsOut,
   QuickstartTopic,
@@ -56,6 +58,20 @@ export const quickstartApi = {
       `/notebooks/${notebookId}/quickstart/topics/${topicId}/expand`,
       {
         method: "POST",
+      },
+    );
+  },
+
+  getTopicDetail: async (
+    notebookId: string,
+    topicId: string,
+    payload: QuickstartTopicDetailIn,
+  ): Promise<QuickstartTopicDetailOut> => {
+    return apiRequest<QuickstartTopicDetailOut>(
+      `/notebooks/${notebookId}/quickstart/topics/${topicId}/details`,
+      {
+        method: "POST",
+        body: payload,
       },
     );
   },

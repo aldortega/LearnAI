@@ -12,6 +12,7 @@ import { CompleteProfilePage } from "./features/auth/pages/CompleteProfilePage";
 import { HomePage } from "./features/home/pages/HomePage";
 import { NotebookPage } from "./features/notebooks/pages/NotebookPage";
 import { NotebookQuickstartPage } from "./features/quickstart/pages/NotebookQuickstartPage";
+import { NotebookQuickstartTopicPage } from "./features/quickstart/pages/NotebookQuickstartTopicPage";
 import { NotebookQuizPage } from "./features/quiz/pages/NotebookQuizPage";
 import { useAuth } from "./shared/hooks/useAuth";
 
@@ -87,6 +88,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <NotebookQuickstartPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notebook/:notebookId/quickstart/topic/:topicId"
+              element={
+                <ProtectedRoute>
+                  <NotebookQuickstartTopicPage />
                 </ProtectedRoute>
               }
             />

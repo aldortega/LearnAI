@@ -153,6 +153,21 @@ class QuickstartAddTopicRequest(BaseModel):
     title: str = Field(min_length=1, max_length=120)
 
 
+QuickstartDetailItemType = Literal["additional_key_point", "question"]
+
+
+class QuickstartTopicDetailRequest(BaseModel):
+    item_type: QuickstartDetailItemType
+    item_text: str = Field(min_length=1, max_length=500)
+
+
+class QuickstartTopicDetailOut(BaseModel):
+    topic_id: str
+    item_type: QuickstartDetailItemType
+    item_text: str
+    content: str
+
+
 class QuickstartSuggestionsOut(BaseModel):
     suggestions: list[str] = Field(default_factory=list)
     topic_count: int
