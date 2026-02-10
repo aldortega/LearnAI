@@ -1,16 +1,17 @@
-﻿import {
+import {
   BookOpenCheck,
   ChevronLeft,
   ChevronRight,
+  FileText,
   MessageSquare,
   Sparkles,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 
-type Mode = "chat" | "quiz" | "quickstart";
+type Mode = "chat" | "quiz" | "quickstart" | "reports";
 
 type Props = {
   mode: Mode;
@@ -18,9 +19,12 @@ type Props = {
   isGeneratingQuiz: boolean;
   canStartQuickstart: boolean;
   isGeneratingQuickstart: boolean;
+  canStartReports: boolean;
+  isGeneratingReports: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
+  onGoReports: () => void;
 };
 
 export function StudioSidebar({
@@ -29,9 +33,12 @@ export function StudioSidebar({
   isGeneratingQuiz,
   canStartQuickstart,
   isGeneratingQuickstart,
+  canStartReports,
+  isGeneratingReports,
   onGoChat,
   onGoQuiz,
   onGoQuickstart,
+  onGoReports,
 }: Props) {
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem("studioSidebarOpen");
@@ -111,6 +118,17 @@ export function StudioSidebar({
                 >
                   Quiz
                 </Button>
+
+                <Button
+                  variant={mode === "reports" ? "primary" : "ghost"}
+                  className="w-full justify-start whitespace-nowrap transition-colors"
+                  leftIcon={<FileText className="h-4 w-4" />}
+                  onClick={onGoReports}
+                  disabled={!canStartReports}
+                  loading={isGeneratingReports}
+                >
+                  Informes
+                </Button>
               </div>
 
               {!canStartQuickstart ? (
@@ -122,6 +140,12 @@ export function StudioSidebar({
               {!canStartQuiz ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar el quiz.
+                </p>
+              ) : null}
+
+              {!canStartReports ? (
+                <p className="mt-3 text-xs text-muted-foreground" role="alert">
+                  Necesitas al menos una fuente lista para generar informes.
                 </p>
               ) : null}
             </div>
@@ -175,10 +199,26 @@ export function StudioSidebar({
             >
               <BookOpenCheck className="h-4 w-4" />
             </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-md p-2 transition-colors",
+                mode === "reports"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover",
+                (!canStartReports || isGeneratingReports) &&
+                  "cursor-not-allowed opacity-50",
+              )}
+              onClick={onGoReports}
+              disabled={!canStartReports || isGeneratingReports}
+              title="Informes"
+              aria-label="Informes"
+            >
+              <FileText className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>
     </div>
   );
 }
-

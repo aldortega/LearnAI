@@ -14,6 +14,7 @@ import { NotebookPage } from "./features/notebooks/pages/NotebookPage";
 import { NotebookQuickstartPage } from "./features/quickstart/pages/NotebookQuickstartPage";
 import { NotebookQuickstartTopicPage } from "./features/quickstart/pages/NotebookQuickstartTopicPage";
 import { NotebookQuizPage } from "./features/quiz/pages/NotebookQuizPage";
+import { NotebookReportsPage } from "./features/reports/pages/NotebookReportsPage";
 import { useAuth } from "./shared/hooks/useAuth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -104,6 +105,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <NotebookQuizPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notebook/:notebookId/reports"
+              element={
+                <ProtectedRoute>
+                  <NotebookReportsPage />
                 </ProtectedRoute>
               }
             />
