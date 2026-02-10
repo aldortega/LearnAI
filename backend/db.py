@@ -89,3 +89,18 @@ async def ensure_indexes() -> None:
     await db.quickstart_generation_jobs.create_index("notebook_id")
     await db.quickstart_generation_jobs.create_index("status")
     await db.quickstart_generation_jobs.create_index("created_at")
+    await db.reports.create_index([("owner_id", 1), ("notebook_id", 1), ("created_at", -1)])
+    await db.reports.create_index("owner_id")
+    await db.reports.create_index("notebook_id")
+    await db.reports.create_index("created_at")
+    await db.reports.create_index("sources_fingerprint")
+    await db.report_generation_jobs.create_index("job_id", unique=True)
+    await db.report_generation_jobs.create_index("owner_id")
+    await db.report_generation_jobs.create_index("notebook_id")
+    await db.report_generation_jobs.create_index("status")
+    await db.report_generation_jobs.create_index("created_at")
+    await db.report_suggestions.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.report_suggestions.create_index("sources_fingerprint")
+    await db.report_suggestions.create_index("updated_at")

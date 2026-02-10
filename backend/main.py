@@ -13,6 +13,7 @@ from .routes.documents import router as documents_router
 from .routes.notebooks import router as notebooks_router
 from .routes.quickstart import router as quickstart_router
 from .routes.rag import router as rag_router
+from .routes.reports import router as reports_router
 from .routes.quiz import router as quiz_router
 
 
@@ -41,6 +42,7 @@ app.include_router(documents_router)
 app.include_router(rag_router)
 app.include_router(quiz_router)
 app.include_router(quickstart_router)
+app.include_router(reports_router)
 
 
 @app.get("/health")
