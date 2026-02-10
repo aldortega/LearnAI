@@ -4,6 +4,8 @@ export type ApiError = {
   detail?: unknown;
 };
 
+const DAILY_API_LIMIT_MESSAGE = "Se ha terminado el limite diario de la API.";
+
 export function getApiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
   return raw.endsWith("/") ? raw.slice(0, -1) : raw;
@@ -20,7 +22,11 @@ async function parseJsonSafe(response: Response): Promise<unknown | null> {
   }
 }
 
-function extractMessage(payload: unknown): string {
+export function getApiErrorMessage(payload: unknown, status?: number): string {
+  if (status === 429) {
+    return DAILY_API_LIMIT_MESSAGE;
+  }
+
   if (!payload || typeof payload !== "object") return "Error de servidor";
 
   const detail = (payload as { detail?: unknown }).detail;
@@ -69,7 +75,7 @@ export async function apiRequest<T>(
   if (!response.ok) {
     const error: ApiError = {
       status: response.status,
-      message: extractMessage(payload),
+      message: getApiErrorMessage(payload, response.status),
       detail: payload,
     };
     throw error;
@@ -109,7 +115,7 @@ export async function apiRequestWithStatus<T>(
   if (!response.ok) {
     const error: ApiError = {
       status: response.status,
-      message: extractMessage(payload),
+      message: getApiErrorMessage(payload, response.status),
       detail: payload,
     };
     throw error;
@@ -141,7 +147,7 @@ export async function apiUploadRequest<T>(
   if (!response.ok) {
     const error: ApiError = {
       status: response.status,
-      message: extractMessage(payload),
+      message: getApiErrorMessage(payload, response.status),
       detail: payload,
     };
     throw error;

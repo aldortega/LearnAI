@@ -1,4 +1,9 @@
-import { apiRequest, getApiBaseUrl, type ApiError } from "../../../shared/lib/apiClient";
+import {
+  apiRequest,
+  getApiBaseUrl,
+  getApiErrorMessage,
+  type ApiError,
+} from "../../../shared/lib/apiClient";
 import type { ChatConversation, ChatMessage } from "../types/chat.types";
 
 type ChatMessageCreate = {
@@ -23,17 +28,10 @@ type StreamErrorPayload = {
   message: string;
 };
 
-function parseErrorMessage(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "Error de servidor";
-  const detail = (payload as { detail?: unknown }).detail;
-  if (typeof detail === "string" && detail.trim()) return detail;
-  return "Error de servidor";
-}
-
 function buildApiError(status: number, payload: unknown): ApiError {
   return {
     status,
-    message: parseErrorMessage(payload),
+    message: getApiErrorMessage(payload, status),
     detail: payload,
   };
 }
