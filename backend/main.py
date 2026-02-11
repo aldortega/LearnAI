@@ -10,6 +10,7 @@ from .db import ensure_indexes
 from .qdrant import ensure_qdrant_collection
 from .routes.auth import router as auth_router
 from .routes.documents import router as documents_router
+from .routes.mindmap import router as mindmap_router
 from .routes.notebooks import router as notebooks_router
 from .routes.quickstart import router as quickstart_router
 from .routes.rag import router as rag_router
@@ -43,6 +44,7 @@ app.include_router(rag_router)
 app.include_router(quiz_router)
 app.include_router(quickstart_router)
 app.include_router(reports_router)
+app.include_router(mindmap_router)
 
 
 @app.get("/health")

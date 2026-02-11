@@ -7,6 +7,12 @@ from .auth import (
     UserOut,
 )
 from .documents import DocumentCreate, DocumentCreateResponse, DocumentOut
+from .mindmap import (
+    MindmapGenerationJobOut,
+    MindmapNodeDetailOut,
+    MindmapNodeOut,
+    MindmapOut,
+)
 from .notebooks import NotebookCreate, NotebookOut, NotebookUpdate
 from .quickstart import (
     QuickstartAddTopicRequest,
