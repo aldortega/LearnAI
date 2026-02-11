@@ -4,6 +4,7 @@ import {
   ChevronRight,
   FileText,
   MessageSquare,
+  Network,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,7 +12,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 
-type Mode = "chat" | "quiz" | "quickstart" | "reports";
+type Mode = "chat" | "quiz" | "quickstart" | "reports" | "mindmap";
 
 type Props = {
   mode: Mode;
@@ -21,10 +22,13 @@ type Props = {
   isGeneratingQuickstart: boolean;
   canStartReports: boolean;
   isGeneratingReports: boolean;
+  canStartMindmap: boolean;
+  isGeneratingMindmap: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
   onGoReports: () => void;
+  onGoMindmap: () => void;
 };
 
 export function StudioSidebar({
@@ -35,10 +39,13 @@ export function StudioSidebar({
   isGeneratingQuickstart,
   canStartReports,
   isGeneratingReports,
+  canStartMindmap,
+  isGeneratingMindmap,
   onGoChat,
   onGoQuiz,
   onGoQuickstart,
   onGoReports,
+  onGoMindmap,
 }: Props) {
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem("studioSidebarOpen");
@@ -100,6 +107,17 @@ export function StudioSidebar({
                 </Button>
 
                 <Button
+                  variant={mode === "mindmap" ? "primary" : "ghost"}
+                  className="w-full justify-start whitespace-nowrap transition-colors"
+                  leftIcon={<Network className="h-4 w-4" />}
+                  onClick={onGoMindmap}
+                  disabled={!canStartMindmap}
+                  loading={isGeneratingMindmap}
+                >
+                  Mapa mental
+                </Button>
+
+                <Button
                   variant={mode === "chat" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<MessageSquare className="h-4 w-4" />}
@@ -148,6 +166,12 @@ export function StudioSidebar({
                   Necesitas al menos una fuente lista para generar informes.
                 </p>
               ) : null}
+
+              {!canStartMindmap ? (
+                <p className="mt-3 text-xs text-muted-foreground" role="alert">
+                  Necesitas al menos una fuente lista para generar el mapa mental.
+                </p>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -168,6 +192,23 @@ export function StudioSidebar({
               aria-label="Inicio rapido"
             >
               <Sparkles className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-md p-2 transition-colors",
+                mode === "mindmap"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover",
+                (!canStartMindmap || isGeneratingMindmap) &&
+                  "cursor-not-allowed opacity-50",
+              )}
+              onClick={onGoMindmap}
+              disabled={!canStartMindmap || isGeneratingMindmap}
+              title="Mapa mental"
+              aria-label="Mapa mental"
+            >
+              <Network className="h-4 w-4" />
             </button>
             <button
               type="button"

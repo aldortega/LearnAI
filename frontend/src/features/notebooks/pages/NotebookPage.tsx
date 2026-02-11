@@ -159,6 +159,8 @@ export function NotebookPage() {
       isGeneratingQuickstart={false}
       canStartReports={hasReadySources}
       isGeneratingReports={false}
+      canStartMindmap={hasReadySources}
+      isGeneratingMindmap={false}
       onGoChat={() => {
         // already on chat
       }}
@@ -173,6 +175,10 @@ export function NotebookPage() {
       onGoReports={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/reports`);
+      }}
+      onGoMindmap={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/mindmap`);
       }}
       beforeMain={
         <input

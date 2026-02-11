@@ -15,6 +15,7 @@ import { NotebookQuickstartPage } from "./features/quickstart/pages/NotebookQuic
 import { NotebookQuickstartTopicPage } from "./features/quickstart/pages/NotebookQuickstartTopicPage";
 import { NotebookQuizPage } from "./features/quiz/pages/NotebookQuizPage";
 import { NotebookReportsPage } from "./features/reports/pages/NotebookReportsPage";
+import { NotebookMindmapPage } from "./features/mindmap/pages/NotebookMindmapPage";
 import { useAuth } from "./shared/hooks/useAuth";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -113,6 +114,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <NotebookReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notebook/:notebookId/mindmap"
+              element={
+                <ProtectedRoute>
+                  <NotebookMindmapPage />
                 </ProtectedRoute>
               }
             />

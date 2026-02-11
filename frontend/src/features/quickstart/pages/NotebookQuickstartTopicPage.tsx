@@ -230,6 +230,8 @@ export function NotebookQuickstartTopicPage() {
       isGeneratingQuickstart={isGenerating}
       canStartReports={hasReadySources}
       isGeneratingReports={false}
+      canStartMindmap={hasReadySources}
+      isGeneratingMindmap={false}
       onGoChat={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/chat`);
@@ -245,6 +247,10 @@ export function NotebookQuickstartTopicPage() {
       onGoReports={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/reports`);
+      }}
+      onGoMindmap={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/mindmap`);
       }}
       beforeMain={
         <input
