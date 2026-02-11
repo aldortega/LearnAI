@@ -39,12 +39,6 @@ export function ReportViewer({ report, isLoading, error }: Props) {
 
   return (
     <section className="flex h-full flex-col rounded-2xl border border-border bg-surface shadow-sm">
-      <header className="border-b border-border px-5 py-4">
-        <h3 className="text-lg font-semibold text-foreground">{report.title}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Tipo: {report.format_type}
-        </p>
-      </header>
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
         <div
           className="

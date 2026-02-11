@@ -8,8 +8,17 @@ import type {
 } from "../types/reports.types";
 
 export const reportsApi = {
-  getConfig: async (notebookId: string): Promise<ReportConfigOut> => {
-    return apiRequest<ReportConfigOut>(`/notebooks/${notebookId}/reports/config`, {
+  getConfig: async (
+    notebookId: string,
+    options?: { refreshSuggestions?: boolean },
+  ): Promise<ReportConfigOut> => {
+    const searchParams = new URLSearchParams();
+    if (options?.refreshSuggestions) {
+      searchParams.set("refresh_suggestions", "true");
+    }
+    const query = searchParams.toString();
+    const url = `/notebooks/${notebookId}/reports/config${query ? `?${query}` : ""}`;
+    return apiRequest<ReportConfigOut>(url, {
       method: "GET",
     });
   },

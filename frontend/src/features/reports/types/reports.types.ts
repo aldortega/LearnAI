@@ -55,6 +55,7 @@ export type ReportOut = {
   owner_id: string;
   format_type: ReportFormatType;
   title: string;
+  description: string;
   prompt_used: string;
   content: string;
   sources_fingerprint: string;

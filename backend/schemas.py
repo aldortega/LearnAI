@@ -223,6 +223,7 @@ class ReportOut(BaseModel):
     owner_id: str
     format_type: ReportFormatType
     title: str
+    description: str = ""
     prompt_used: str
     content: str
     sources_fingerprint: str

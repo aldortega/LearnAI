@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "../../../shared/ui/Button";
+import { FileText, Plus } from "lucide-react";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import { useNotebook } from "../../notebooks";
@@ -18,6 +18,7 @@ import { useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
 import type { ReportFormatType, ReportOut, ReportPromptTemplate, ReportSuggestion } from "../types/reports.types";
 type ReportViewMode = "templates" | "history";
+type HistoryViewMode = "cards" | "detail";
 type EditTarget = { title: string; formatType: ReportFormatType; suggestionId: string | null };
 export function NotebookReportsPage() {
   const { notebookId } = useParams();
@@ -25,10 +26,12 @@ export function NotebookReportsPage() {
   const { notebook } = useNotebook(notebookId);
   const hasResolvedInitialViewRef = useRef(false);
   const [viewMode, setViewMode] = useState<ReportViewMode>("templates");
+  const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [deleteReportTarget, setDeleteReportTarget] = useState<ReportOut | null>(null);
+  const [isRefreshingSuggestions, setIsRefreshingSuggestions] = useState(false);
   const {
     fileInputRef,
     documents,
@@ -70,6 +73,7 @@ export function NotebookReportsPage() {
     queueMicrotask(() => {
       hasResolvedInitialViewRef.current = false;
       setViewMode("templates");
+      setHistoryView("cards");
       setEditTarget(null);
       setEditPrompt("");
       setSelectedReportId(null);
@@ -89,6 +93,7 @@ export function NotebookReportsPage() {
     queueMicrotask(() => {
       if (reports.length === 0) return setViewMode("templates");
       setViewMode("history");
+      setHistoryView("cards");
       setSelectedReportId((prev) =>
         prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
       );
@@ -110,11 +115,16 @@ export function NotebookReportsPage() {
       setSelectedReportId(updatedReports[0].id);
     }
     setViewMode("history");
+    setHistoryView("cards");
     setEditTarget(null);
     setEditPrompt("");
     return true;
   };
   const handleGenerateTemplate = (template: ReportPromptTemplate) => {
+    if (template.type === "freeform") {
+      handleEditTemplate(template);
+      return;
+    }
     void runGeneration(template.type, template.default_prompt, null);
   };
   const handleGenerateSuggestion = (suggestion: ReportSuggestion) => {
@@ -130,18 +140,39 @@ export function NotebookReportsPage() {
     setEditTarget({ title: suggestion.title, formatType: "ai_suggested", suggestionId: suggestion.id });
     setEditPrompt(suggestion.default_prompt);
   };
+  const handleRefreshSuggestions = async () => {
+    if (!notebookId || isRefreshingSuggestions) return;
+    setIsRefreshingSuggestions(true);
+    try {
+      await reloadConfig({ refreshSuggestions: true });
+    } finally {
+      setIsRefreshingSuggestions(false);
+    }
+  };
   const handleDeleteReportConfirm = async () => {
     if (!deleteReportTarget) return;
-    const deleted = await deleteReport(deleteReportTarget.id);
+    const deletedReportId = deleteReportTarget.id;
+    const shouldReturnToCards = historyView === "detail";
+    const deleted = await deleteReport(deletedReportId);
     if (!deleted) return;
-    removeReport(deleteReportTarget.id);
-    if (selectedReportId === deleteReportTarget.id) {
-      setSelectedReportId(null);
-    }
+    removeReport(deletedReportId);
     setDeleteReportTarget(null);
-    await reloadReports();
+    const updatedReports = await reloadReports();
+    if (updatedReports.length === 0) {
+      setSelectedReportId(null);
+      setHistoryView("cards");
+      setViewMode("templates");
+      return;
+    }
+    if (selectedReportId === deletedReportId) {
+      setSelectedReportId(updatedReports[0].id);
+    }
+    if (shouldReturnToCards) {
+      setHistoryView("cards");
+    }
   };
   const activeReport = reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null;
+  const canReturnToHistory = reports.length > 0;
   return (
     <NotebookShell
       title={notebook?.title}
@@ -215,7 +246,61 @@ export function NotebookReportsPage() {
         </>
       }
     >
-      <ReportsShell>
+      <ReportsShell
+        headerAction={
+          <button
+            type="button"
+            onClick={() => {
+              if (viewMode === "history" && historyView === "detail") {
+                setHistoryView("cards");
+                return;
+              }
+              if (viewMode === "history") {
+                setViewMode("templates");
+                clearGenerateError();
+                return;
+              }
+              if (!canReturnToHistory) return;
+              setViewMode("history");
+              setHistoryView("cards");
+              setSelectedReportId((prev) =>
+                prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
+              );
+              clearGenerateError();
+            }}
+            disabled={
+              viewMode === "history"
+                ? historyView === "detail"
+                  ? false
+                  : isGenerating || !canGenerateReports
+                : isGenerating || !canReturnToHistory
+            }
+            aria-label={
+              viewMode === "history"
+                ? historyView === "detail"
+                  ? "Ver lista de informes"
+                  : "Crear otro informe"
+                : "Volver al historial"
+            }
+            title={
+              viewMode === "history"
+                ? historyView === "detail"
+                  ? "Ver lista de informes"
+                  : "Crear otro informe"
+                : "Volver al historial"
+            }
+            className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {viewMode === "history" ? historyView === "detail" ? (
+              <FileText className="h-4 w-4" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+          </button>
+        }
+      >
         <div className="relative h-full overflow-y-auto p-6">
           <div className="mx-auto w-full max-w-6xl">
             {viewMode === "templates" ? (
@@ -224,10 +309,14 @@ export function NotebookReportsPage() {
                   templates={templates}
                   suggestions={suggestions}
                   disabled={!canGenerateReports || isGenerating}
+                  isRefreshingSuggestions={isRefreshingSuggestions}
                   onGenerateTemplate={handleGenerateTemplate}
                   onGenerateSuggestion={handleGenerateSuggestion}
                   onEditTemplate={handleEditTemplate}
                   onEditSuggestion={handleEditSuggestion}
+                  onRefreshSuggestions={() => {
+                    void handleRefreshSuggestions();
+                  }}
                 />
                 {!canGenerateReports ? (
                   <p className="text-sm text-muted-foreground" role="alert">
@@ -242,37 +331,34 @@ export function NotebookReportsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Informes generados
-                  </h3>
-                  <Button
-                    className="px-4 py-2"
-                    onClick={() => {
-                      setViewMode("templates");
-                      clearGenerateError();
-                    }}
-                    disabled={isGenerating}
-                  >
-                    Crear otro informe
-                  </Button>
-                </div>
                 {reportsError ? (
                   <p className="text-sm text-error" role="alert">
                     {reportsError}
                   </p>
                 ) : null}
-                <ReportsHistoryList
-                  reports={reports}
-                  selectedReportId={activeReport?.id ?? null}
-                  deletingReportId={deletingReportId}
-                  onSelectReport={setSelectedReportId}
-                  onDeleteReport={(report) => {
-                    clearDeleteReportError();
-                    setDeleteReportTarget(report);
-                  }}
-                />
-                <ReportViewer report={activeReport} isLoading={false} error={null} />
+                {historyView === "cards" ? (
+                  <>
+                    <ReportsHistoryList
+                      reports={reports}
+                      selectedReportId={activeReport?.id ?? null}
+                      deletingReportId={deletingReportId}
+                      onSelectReport={(reportId) => {
+                        setSelectedReportId(reportId);
+                        setHistoryView("detail");
+                      }}
+                      onDeleteReport={(report) => {
+                        clearDeleteReportError();
+                        setDeleteReportTarget(report);
+                      }}
+                    />
+                  </>
+                ) : (
+                  <ReportViewer
+                    report={activeReport}
+                    isLoading={false}
+                    error={null}
+                  />
+                )}
               </div>
             )}
           </div>

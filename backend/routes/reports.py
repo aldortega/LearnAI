@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timezone
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from langchain_core.messages import HumanMessage, SystemMessage
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
@@ -35,6 +35,8 @@ router = APIRouter(prefix="/notebooks", tags=["reports"])
 SUGGESTION_COUNT = 4
 MAX_CONTEXT_CHARS = 5500
 MAX_REPORT_TITLE_CHARS = 120
+MAX_REPORT_DESCRIPTION_CHARS = 120
+MAX_REPORT_INTRODUCTION_CHARS = 500
 
 REPORT_TEMPLATE_CONFIGS: dict[ReportFormatType, dict[str, str]] = {
     "freeform": {
@@ -106,14 +108,6 @@ REPORT_TEMPLATE_CONFIGS: dict[ReportFormatType, dict[str, str]] = {
     },
 }
 
-REPORT_LABEL_BY_TYPE: dict[ReportFormatType, str] = {
-    "freeform": "Informe libre",
-    "summary": "Resumen",
-    "study_guide": "Guia de estudio",
-    "blog_post": "Entrada de blog",
-    "ai_suggested": "Informe sugerido",
-}
-
 SUGGESTIONS_SCHEMA = (
     "{\n"
     '  "suggestions": [\n'
@@ -126,6 +120,15 @@ SUGGESTIONS_SCHEMA = (
     "}\n"
 )
 
+REPORT_GENERATION_SCHEMA = (
+    "{\n"
+    '  "title": "string",\n'
+    '  "description": "string",\n'
+    '  "introduction": "string",\n'
+    '  "content": "string"\n'
+    "}\n"
+)
+
 
 class ReportSuggestionLLM(BaseModel):
     title: str
@@ -135,6 +138,13 @@ class ReportSuggestionLLM(BaseModel):
 
 class ReportSuggestionsPayloadLLM(BaseModel):
     suggestions: list[ReportSuggestionLLM] = Field(min_length=1, max_length=20)
+
+
+class ReportGenerationPayloadLLM(BaseModel):
+    title: str = Field(min_length=1, max_length=MAX_REPORT_TITLE_CHARS)
+    description: str = Field(min_length=1, max_length=MAX_REPORT_DESCRIPTION_CHARS)
+    introduction: str = Field(min_length=1, max_length=MAX_REPORT_INTRODUCTION_CHARS)
+    content: str = Field(min_length=1)
 
 
 def coerce_text(value: object | None) -> str:
@@ -170,24 +180,6 @@ def source_to_ref(source: RagSource) -> ReportSourceRef:
         file_name=source.file_name,
         page=source.page,
     )
-
-
-def resolve_report_title(
-    format_type: ReportFormatType,
-    prompt: str,
-    suggestion_title: str | None = None,
-) -> str:
-    if format_type == "ai_suggested":
-        normalized_suggestion_title = normalize_title(coerce_text(suggestion_title))
-        if normalized_suggestion_title:
-            return normalized_suggestion_title[:MAX_REPORT_TITLE_CHARS]
-
-    first_sentence = prompt.split(".")[0].strip()
-    if first_sentence and format_type == "freeform":
-        return first_sentence[:MAX_REPORT_TITLE_CHARS]
-
-    label = REPORT_LABEL_BY_TYPE.get(format_type, "Informe")
-    return label[:MAX_REPORT_TITLE_CHARS]
 
 
 def build_templates() -> list[ReportPromptTemplateOut]:
@@ -424,15 +416,22 @@ def build_report_prompt(
     system_prompt = (
         "Eres un asistente de estudio. Usa primero el contexto de fuentes y complementa "
         "con conocimiento general cuando sea necesario. No inventes citas textuales. "
-        "Responde en espanol claro. Formatea en markdown simple.\n"
-        f"Directriz de formato: {format_guidance.get(format_type, format_guidance['freeform'])}"
+        "Responde solo con JSON valido en espanol y sin texto extra. "
+        "El campo `content` debe venir en markdown simple y contener solo el desarrollo "
+        "del informe (sin titulo principal ni introduccion).\n"
+        f"Sigue exactamente este esquema:\n{REPORT_GENERATION_SCHEMA}\n"
+        f"Directriz de formato del contenido: {format_guidance.get(format_type, format_guidance['freeform'])}"
     )
     user_prompt = (
         f"Notebook: {notebook_title}\n"
         f"Tipo de informe: {format_type}\n\n"
         f"Contexto:\n{context_text}\n\n"
         "Prompt del usuario (seguir al pie de la letra cuando no contradiga el contexto):\n"
-        f"{prompt}"
+        f"{prompt}\n\n"
+        f"Genera un titulo breve (max {MAX_REPORT_TITLE_CHARS} chars), "
+        f"una descripcion de preview muy breve (max {MAX_REPORT_DESCRIPTION_CHARS} chars), "
+        "una introduccion breve de apertura (2 a 3 oraciones) y el contenido completo "
+        "del informe sin repetir ni titulo ni introduccion."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
@@ -503,14 +502,20 @@ def report_doc_to_out(report_doc: dict, current_fingerprint: str) -> ReportOut:
         if isinstance(source_doc, dict)
     ]
     report_fingerprint = coerce_text(report_doc.get("sources_fingerprint"))
+    report_content = coerce_text(report_doc.get("content"))
+    report_description = normalize_prompt(coerce_text(report_doc.get("description")))
+    format_type = report_doc["format_type"]
+    prompt_used = coerce_text(report_doc.get("prompt_used"))
+    report_title = normalize_title(coerce_text(report_doc.get("title")))
     return ReportOut(
         id=str(report_doc["_id"]),
         notebook_id=str(report_doc["notebook_id"]),
         owner_id=str(report_doc["owner_id"]),
-        format_type=report_doc["format_type"],
-        title=coerce_text(report_doc.get("title")),
-        prompt_used=coerce_text(report_doc.get("prompt_used")),
-        content=coerce_text(report_doc.get("content")),
+        format_type=format_type,
+        title=report_title[:MAX_REPORT_TITLE_CHARS],
+        prompt_used=prompt_used,
+        description=report_description[:MAX_REPORT_DESCRIPTION_CHARS],
+        content=report_content,
         sources_fingerprint=report_fingerprint,
         is_stale=report_fingerprint != current_fingerprint,
         sources=sources,
@@ -581,13 +586,13 @@ async def generate_report_suggestions(
     return ensure_suggestion_count(notebook_title, normalized)
 
 
-async def generate_report_content(
+async def generate_report_payload(
     notebook_title: str,
     format_type: ReportFormatType,
     prompt: str,
     notebook_object_id: ObjectId,
     user: dict,
-) -> tuple[str, list[ReportSourceRef]]:
+) -> tuple[str, str, str, list[ReportSourceRef]]:
     context_lines, sources, _, _ = await retrieve_context(
         f"Informacion para informe de {notebook_title}",
         notebook_object_id,
@@ -598,14 +603,31 @@ async def generate_report_content(
         notebook_title, format_type, prompt, context_text
     )
     llm = create_llm()
-    answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
-    answer_text = coerce_text(getattr(answer, "content", answer)).strip()
-    if not answer_text:
+    structured_llm = llm.with_structured_output(
+        schema=ReportGenerationPayloadLLM.model_json_schema(),
+        method="json_schema",
+    )
+    payload = await asyncio.to_thread(structured_llm.invoke, [system_message, user_message])
+    payload_data = (
+        payload.model_dump()
+        if isinstance(payload, BaseModel)
+        else payload
+        if isinstance(payload, dict)
+        else ReportGenerationPayloadLLM.model_validate(payload).model_dump()
+    )
+    title = normalize_title(coerce_text(payload_data.get("title")))[:MAX_REPORT_TITLE_CHARS]
+    description = normalize_prompt(coerce_text(payload_data.get("description")))[:MAX_REPORT_DESCRIPTION_CHARS]
+    introduction = coerce_text(payload_data.get("introduction")).strip()[:MAX_REPORT_INTRODUCTION_CHARS]
+    content = coerce_text(payload_data.get("content")).strip()
+
+    if not title or not description or not introduction or not content:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="No se pudo generar el informe",
+            detail="No se pudo generar la metadata del informe",
         )
-    return answer_text, [source_to_ref(source) for source in sources]
+
+    full_content = f"# {title}\n\n{introduction}\n\n{content}"
+    return title, description, full_content, [source_to_ref(source) for source in sources]
 
 
 async def mark_report_job_processing(
@@ -722,24 +744,22 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             return
 
         try:
-            content, sources = await generate_report_content(
+            report_title, report_description, content, sources = await generate_report_payload(
                 notebook_title=coerce_text(notebook.get("title")),
                 format_type=format_type,
                 prompt=prompt,
                 notebook_object_id=notebook_object_id,
                 user={"_id": owner_object_id},
             )
-            report_title = resolve_report_title(
-                format_type,
-                prompt,
-                suggestion_title=coerce_text(job_doc.get("suggestion_title")) or None,
-            )
+            if not report_title or not report_description:
+                raise ValueError("No se pudo generar la metadata del informe")
             now = datetime.now(timezone.utc)
             report_doc = {
                 "owner_id": owner_object_id,
                 "notebook_id": notebook_object_id,
                 "format_type": format_type,
                 "title": report_title,
+                "description": report_description,
                 "prompt_used": prompt,
                 "content": content,
                 "sources_fingerprint": fingerprint,
@@ -758,7 +778,11 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
 
 
 @router.get("/{notebook_id}/reports/config", response_model=ReportConfigOut)
-async def get_reports_config(notebook_id: str, request: Request) -> ReportConfigOut:
+async def get_reports_config(
+    notebook_id: str,
+    request: Request,
+    refresh_suggestions: bool = Query(default=False),
+) -> ReportConfigOut:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
 
@@ -770,18 +794,19 @@ async def get_reports_config(notebook_id: str, request: Request) -> ReportConfig
     )
     has_ready_sources = ready_count > 0
 
-    cached_suggestions = await get_cached_report_suggestions(
-        notebook["_id"],
-        user["_id"],
-        notebook_title,
-        sources_fingerprint,
-    )
-    if cached_suggestions is not None:
-        return ReportConfigOut(
-            has_ready_sources=has_ready_sources,
-            templates=build_templates(),
-            suggestions=cached_suggestions,
+    if not refresh_suggestions:
+        cached_suggestions = await get_cached_report_suggestions(
+            notebook["_id"],
+            user["_id"],
+            notebook_title,
+            sources_fingerprint,
         )
+        if cached_suggestions is not None:
+            return ReportConfigOut(
+                has_ready_sources=has_ready_sources,
+                templates=build_templates(),
+                suggestions=cached_suggestions,
+            )
 
     suggestions: list[ReportSuggestionOut] = build_fallback_report_suggestions(
         notebook_title
@@ -851,12 +876,6 @@ async def generate_report(
             detail="Tipo de informe invalido",
         )
 
-    suggestion_title = (
-        resolve_report_title("ai_suggested", prompt)
-        if format_type == "ai_suggested"
-        else None
-    )
-
     job = reports_queue.enqueue(
         process_report_generation,
         str(notebook["_id"]),
@@ -874,7 +893,6 @@ async def generate_report(
             "format_type": format_type,
             "prompt": prompt,
             "suggestion_id": payload.suggestion_id,
-            "suggestion_title": suggestion_title,
             "created_at": now,
             "started_at": None,
             "finished_at": None,
