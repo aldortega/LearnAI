@@ -12,7 +12,6 @@ import { QuestionView } from "./QuestionView";
 type Props = {
   notebookId: string;
   levelId: string;
-  levelTitle: string;
   onReloadRoadmap: () => Promise<void>;
 };
 
@@ -27,7 +26,6 @@ type QuizFeedback = {
 export function QuizArea({
   notebookId,
   levelId,
-  levelTitle,
   onReloadRoadmap,
 }: Props) {
   const navigate = useNavigate();
@@ -126,6 +124,7 @@ export function QuizArea({
     const result = await submit(currentQuestion.id, selectedOptionId);
     if (!result) return;
 
+    setQuestionIndexState({ levelId, index: safeQuestionIndex });
     setAnswerState({
       questionId: currentQuestion.id,
       selectedOptionId,
@@ -164,24 +163,6 @@ export function QuizArea({
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">
-                {levelTitle}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Avanza por las lecciones y desbloquea el examen final.
-              </p>
-            </div>
-
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/notebook/${notebookId}/quiz`)}
-            >
-              Roadmap
-            </Button>
-          </div>
-
           {quizErrorText ? (
             <div
               className="rounded-xl border border-error bg-error/10 px-4 py-3 text-sm text-error"

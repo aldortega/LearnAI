@@ -271,6 +271,7 @@ export function NotebookQuizPage() {
   ]);
 
   const levelId = searchParams.get("level");
+  const isInLevel = Boolean(roadmap && levelId);
   const selectedLevelTitle = useMemo(() => {
     if (!roadmap || !levelId) return null;
 
@@ -332,16 +333,22 @@ export function NotebookQuizPage() {
       }
     >
       <QuizShell
-        showRegenerateAction={Boolean(roadmap)}
+        title="Quiz"
+        levelTitle={isInLevel ? (selectedLevelTitle ?? "Nivel") : undefined}
+        showRegenerateAction={Boolean(roadmap) && !isInLevel}
         canRegenerate={Boolean(roadmap)}
         isRegenerating={isGenerating || isDeletingRoadmap}
         onRegenerate={handleRegenerateRequest}
+        showBackToRoadmapAction={isInLevel}
+        onBackToRoadmap={() => {
+          if (!notebookId) return;
+          navigate(`/notebook/${notebookId}/quiz`);
+        }}
       >
         {roadmap && levelId ? (
           <QuizArea
             notebookId={notebookId ?? ""}
             levelId={levelId}
-            levelTitle={selectedLevelTitle ?? "Nivel"}
             onReloadRoadmap={async () => {
               await reloadRoadmap();
             }}
