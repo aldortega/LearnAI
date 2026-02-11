@@ -9,7 +9,7 @@ from supabase import create_client
 
 from ..config import settings
 from ..db import db
-from ..schemas import NotebookCreate, NotebookOut, NotebookUpdate
+from ..schemas.notebooks import NotebookCreate, NotebookOut, NotebookUpdate
 from .auth import get_current_user
 
 router = APIRouter(prefix="/notebooks", tags=["notebooks"])

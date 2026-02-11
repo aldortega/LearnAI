@@ -15,7 +15,7 @@ from ..config import settings
 from ..db import db
 from ..ingestion import process_document
 from ..rq_queue import queue
-from ..schemas import DocumentCreateResponse, DocumentOut
+from ..schemas.documents import DocumentCreateResponse, DocumentOut
 from .auth import get_current_user
 
 router = APIRouter(prefix="/notebooks", tags=["documents"])

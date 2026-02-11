@@ -8,7 +8,7 @@ from pymongo.errors import DuplicateKeyError
 
 from ..config import settings
 from ..db import db
-from ..schemas import (
+from ..schemas.auth import (
     AuthResponse,
     CompleteProfileRequest,
     GoogleLoginRequest,
