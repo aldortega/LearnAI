@@ -87,24 +87,34 @@ export function QuickstartTopicSuggestions({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        {suggestions.map((suggestion) => (
-          <button
-            key={suggestion}
-            type="button"
-            onClick={() => {
-              void onAddTopic(suggestion, "suggestion");
-            }}
-            disabled={isDisabled}
-            className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {suggestion}
-          </button>
-        ))}
         {isLoading ? (
-          <span className="text-xs text-muted-foreground">
-            Cargando sugerencias...
-          </span>
-        ) : null}
+          <>
+            {[1, 2, 3, 4].map((slot) => (
+              <span
+                key={`suggestion-skeleton-${slot}`}
+                aria-hidden
+                className="h-8 w-28 rounded-full border border-border bg-muted animate-pulse [animation-duration:1.2s]"
+              />
+            ))}
+            <span className="sr-only" aria-live="polite">
+              Cargando sugerencias...
+            </span>
+          </>
+        ) : (
+          suggestions.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => {
+                void onAddTopic(suggestion, "suggestion");
+              }}
+              disabled={isDisabled}
+              className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {suggestion}
+            </button>
+          ))
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
