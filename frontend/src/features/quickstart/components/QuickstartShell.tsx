@@ -37,7 +37,7 @@ export function QuickstartShell({
   };
 
   return (
-    <div className="flex h-full flex-col bg-surface">
+    <div className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
         <h2 className="text-sm font-semibold text-foreground">Inicio rapido</h2>
         {showRefreshAction ? (
@@ -55,7 +55,7 @@ export function QuickstartShell({
           </button>
         ) : null}
       </div>
-      <div className="flex-1 min-h-0">{children}</div>
+      <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
       <RegenerateQuickstartModal
         isOpen={isRegenerateModalOpen}
         isRegenerating={isRefreshing}

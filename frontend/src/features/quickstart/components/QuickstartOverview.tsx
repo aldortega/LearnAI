@@ -111,7 +111,7 @@ export function QuickstartOverview({
   };
 
   return (
-    <div className="flex h-full overflow-y-auto">
+    <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div>

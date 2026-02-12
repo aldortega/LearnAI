@@ -16,7 +16,7 @@ export function QuickstartEmptyState({
   onGenerate,
 }: Props) {
   return (
-    <div className="flex h-full overflow-y-auto">
+    <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-10 text-center">
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-primary/15 text-primary">
           <Sparkles className="h-6 w-6" />

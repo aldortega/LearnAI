@@ -59,11 +59,11 @@ export function NotebookShell({
   footer,
 }: Props) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface">
+    <div className="flex h-screen flex-col overflow-hidden overscroll-none bg-surface">
       <Header title={title} className="flex-none" />
       {beforeMain}
 
-      <main className="flex flex-1 overflow-hidden">
+      <main className="flex min-h-0 flex-1 overflow-hidden overscroll-none">
         <SourcesSidebar
           documents={documents}
           isUploading={isUploading}
@@ -71,7 +71,7 @@ export function NotebookShell({
           onAddSource={onAddSource}
           onDeleteDocument={onDeleteDocument}
         />
-        <div className="flex-1 min-w-0">{children}</div>
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">{children}</div>
         <StudioSidebar
           mode={mode}
           canStartQuiz={canStartQuiz}

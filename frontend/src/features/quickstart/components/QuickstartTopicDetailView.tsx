@@ -61,7 +61,7 @@ export function QuickstartTopicDetailView({
     isSelected(itemType, itemText);
 
   return (
-    <div className="flex h-full overflow-y-auto">
+    <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
         <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-foreground">{topic.title}</h2>
@@ -91,8 +91,44 @@ export function QuickstartTopicDetailView({
         {!isStale ? (
           <>
             {isExpansionLoading ? (
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-                <p className="text-sm text-muted-foreground">Cargando detalle del tema...</p>
+              <div className="space-y-4" aria-live="polite" aria-busy="true">
+                <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                  <span
+                    aria-hidden
+                    className="block h-3 w-32 rounded bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                  <span
+                    aria-hidden
+                    className="block h-3 w-full rounded bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                  <span
+                    aria-hidden
+                    className="block h-3 w-11/12 rounded bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                  <span
+                    aria-hidden
+                    className="block h-3 w-10/12 rounded bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                </div>
+                <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                  <span
+                    aria-hidden
+                    className="block h-3 w-40 rounded bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                  <span
+                    aria-hidden
+                    className="block h-10 w-full rounded-xl bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                  <span
+                    aria-hidden
+                    className="block h-10 w-full rounded-xl bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                  <span
+                    aria-hidden
+                    className="block h-10 w-full rounded-xl bg-muted animate-pulse [animation-duration:1.2s]"
+                  />
+                </div>
+                <span className="sr-only">Cargando detalle del tema...</span>
               </div>
             ) : null}
 
