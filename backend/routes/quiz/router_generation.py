@@ -67,18 +67,16 @@ async def generate_roadmap(
     return QuizGenerationJobOut(job_id=job.id, status="queued")
 
 
-@router.get("/{notebook_id}/roadmap/generate", response_model=QuizGenerationJobOut)
+@router.get("/{notebook_id}/roadmap/generate", response_model=QuizGenerationJobOut | None)
 async def get_latest_generate_status(
     notebook_id: str, request: Request
-) -> QuizGenerationJobOut:
+) -> QuizGenerationJobOut | None:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
 
     job_doc = await find_latest_quiz_generation_job(user["_id"], notebook["_id"])
     if not job_doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Job no encontrado"
-        )
+        return None
 
     return QuizGenerationJobOut(
         job_id=job_doc["job_id"],
@@ -114,16 +112,14 @@ async def get_generate_status(
     )
 
 
-@router.get("/{notebook_id}/roadmap", response_model=RoadmapOut)
-async def get_roadmap(notebook_id: str, request: Request) -> RoadmapOut:
+@router.get("/{notebook_id}/roadmap", response_model=RoadmapOut | None)
+async def get_roadmap(notebook_id: str, request: Request) -> RoadmapOut | None:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
 
     roadmap = await find_quiz_roadmap(user["_id"], notebook["_id"])
     if not roadmap:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Roadmap no encontrado"
-        )
+        return None
     return await build_roadmap_response(roadmap, user)
 
 

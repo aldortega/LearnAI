@@ -12,8 +12,8 @@ import type {
 } from "../types/quiz.types";
 
 export const quizApi = {
-  getRoadmap: async (notebookId: string): Promise<RoadmapOut> => {
-    return apiRequest<RoadmapOut>(`/notebooks/${notebookId}/roadmap`, {
+  getRoadmap: async (notebookId: string): Promise<RoadmapOut | null> => {
+    return apiRequest<RoadmapOut | null>(`/notebooks/${notebookId}/roadmap`, {
       method: "GET",
     });
   },
@@ -51,8 +51,8 @@ export const quizApi = {
 
   getLatestGeneration: async (
     notebookId: string,
-  ): Promise<QuizGenerationJobOut> => {
-    return apiRequest<QuizGenerationJobOut>(
+  ): Promise<QuizGenerationJobOut | null> => {
+    return apiRequest<QuizGenerationJobOut | null>(
       `/notebooks/${notebookId}/roadmap/generate`,
       {
         method: "GET",

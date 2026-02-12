@@ -45,6 +45,10 @@ export function useQuizRoadmap(notebookId?: string): Result {
 
     try {
       const data = await quizApi.getRoadmap(notebookId);
+      if (!data) {
+        setIsNotFound(true);
+        return null;
+      }
       setRoadmap(notebookId, data);
       return data;
     } catch (e) {

@@ -298,7 +298,7 @@ export function NotebookQuizPage() {
       onDeleteDocument={handleDeleteRequest}
       mode="quiz"
       canStartQuiz={hasReadySources}
-      isGeneratingQuiz={isGenerating || (isRoadmapLoading && !roadmap)}
+      isGeneratingQuiz={isGenerating}
       canStartQuickstart={hasReadySources}
       isGeneratingQuickstart={false}
       canStartReports={hasReadySources}
@@ -378,7 +378,7 @@ export function NotebookQuizPage() {
           </div>
         ) : (
           <GenerateQuizCard
-            isGenerating={isGenerating || isRoadmapLoading}
+            isGenerating={isGenerating}
             canStartQuiz={hasReadySources}
             error={generateError ?? roadmapError}
             onGenerate={(options) => void handleGenerateQuiz(options)}

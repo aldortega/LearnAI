@@ -83,11 +83,13 @@ export function useGenerateQuizRoadmap(notebookId?: string): Result {
   const resumeLatest = useCallback(async () => {
     if (!notebookId) return null;
 
-    setIsGenerating(true);
     setError(null);
 
     try {
       const job = await quizApi.getLatestGeneration(notebookId);
+      if (!job) {
+        return null;
+      }
       if (job.status === "done") {
         return job;
       }
