@@ -18,10 +18,10 @@ export function MindmapNode({
   return (
     <div
       className={cn(
-        "group relative min-w-[170px] max-w-[280px] rounded-xl border bg-surface px-3 py-2 shadow-sm transition",
+        "group relative min-w-[170px] max-w-[280px] rounded-xl border bg-muted px-3 py-2 shadow-sm transition",
         selected
-          ? "border-primary ring-2 ring-primary/25"
-          : "border-border hover:border-primary/60",
+          ? "border-primary bg-primary/10 ring-2 ring-primary/25"
+          : "border-border-strong hover:border-primary/60 hover:bg-muted-hover",
       )}
     >
       <Handle
