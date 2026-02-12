@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { mindmapApi } from "../api/mindmapApi";
@@ -15,11 +15,18 @@ export function useMindmap(notebookId?: string): Result {
   const [mindmap, setMindmap] = useState<MindmapOut | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const reload = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     if (!notebookId) {
-      setMindmap(null);
-      setError(null);
+      if (requestIdRef.current === requestId) {
+        setMindmap(null);
+        setError(null);
+        setIsLoading(false);
+      }
       return null;
     }
 
@@ -27,18 +34,25 @@ export function useMindmap(notebookId?: string): Result {
     setError(null);
     try {
       const data = await mindmapApi.getMindmap(notebookId);
-      setMindmap(data);
+      if (requestIdRef.current === requestId) {
+        setMindmap(data);
+      }
       return data;
     } catch (e) {
-      setError(toNotebookErrorMessage(e));
+      if (requestIdRef.current === requestId) {
+        setError(toNotebookErrorMessage(e));
+      }
       return null;
     } finally {
-      setIsLoading(false);
+      if (requestIdRef.current === requestId) {
+        setIsLoading(false);
+      }
     }
   }, [notebookId]);
 
   useEffect(() => {
     if (!notebookId) {
+      requestIdRef.current += 1;
       setMindmap(null);
       setError(null);
       setIsLoading(false);

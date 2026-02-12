@@ -22,10 +22,6 @@ type Props = {
   onToggleNode: (nodeId: string) => void;
 };
 
-const nodeTypes = {
-  mindmapNode: MindmapNode,
-};
-
 function buildChildrenByParent(nodes: MindmapNodeOut[]): Map<string, string[]> {
   const childrenByParent = new Map<string, string[]>();
   for (const node of nodes) {
@@ -172,6 +168,14 @@ export function MindmapCanvas({
   onSelectNode,
   onToggleNode,
 }: Props) {
+  const nodeTypes = useMemo(
+    () => ({
+      mindmapNode: MindmapNode,
+    }),
+    [],
+  );
+  const fitViewOptions = useMemo(() => ({ padding: 0.25 }), []);
+
   const nodeById = useMemo(() => {
     return new Map(nodes.map((node) => [node.id, node]));
   }, [nodes]);
@@ -274,7 +278,7 @@ export function MindmapCanvas({
         nodeTypes={nodeTypes}
         fitView
         onNodeClick={(_, node) => onSelectNode(node.id)}
-        fitViewOptions={{ padding: 0.25 }}
+        fitViewOptions={fitViewOptions}
         minZoom={0.35}
         maxZoom={1.6}
         attributionPosition="bottom-left"
