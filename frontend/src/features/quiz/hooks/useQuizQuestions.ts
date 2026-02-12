@@ -29,6 +29,7 @@ export function useQuizQuestions(
   const statusRef = useRef<RoadmapQuestionStatus>("idle");
   const hasTriggeredGenerationRef = useRef(false);
   const pollStartedAtRef = useRef<number | null>(null);
+  const isPollingRequestInFlightRef = useRef(false);
 
   useEffect(() => {
     statusRef.current = status;
@@ -41,6 +42,7 @@ export function useQuizQuestions(
       setStatus("idle");
       hasTriggeredGenerationRef.current = false;
       pollStartedAtRef.current = null;
+      isPollingRequestInFlightRef.current = false;
       setIsLoading(false);
       return;
     }
@@ -121,6 +123,7 @@ export function useQuizQuestions(
     if (!notebookId || !levelId) return;
     hasTriggeredGenerationRef.current = false;
     pollStartedAtRef.current = null;
+    isPollingRequestInFlightRef.current = false;
     setStatus("idle");
     void reload();
   }, [notebookId, levelId, reload]);
@@ -129,11 +132,16 @@ export function useQuizQuestions(
     if (!notebookId || !levelId) return;
     if (status !== "generating") return;
 
-    const timeoutId = window.setTimeout(() => {
-      void reload();
+    const intervalId = window.setInterval(() => {
+      if (isPollingRequestInFlightRef.current) return;
+      isPollingRequestInFlightRef.current = true;
+
+      void reload().finally(() => {
+        isPollingRequestInFlightRef.current = false;
+      });
     }, POLL_INTERVAL_MS);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => window.clearInterval(intervalId);
   }, [notebookId, levelId, reload, status]);
 
   return { questions, isLoading, error, reload };
