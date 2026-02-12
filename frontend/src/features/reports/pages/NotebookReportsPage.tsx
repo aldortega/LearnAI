@@ -15,7 +15,7 @@ import { useDeleteReport } from "../hooks/useDeleteReport";
 import { useGenerateReport } from "../hooks/useGenerateReport";
 import { useGenerateReportSuggestions } from "../hooks/useGenerateReportSuggestions";
 import { useReportsConfig } from "../hooks/useReportsConfig";
-import { useReportsHistory } from "../hooks/useReportsHistory";
+import { hasCachedReports, useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
 import type { ReportFormatType, ReportOut, ReportPromptTemplate, ReportSuggestion } from "../types/reports.types";
 type ReportViewMode = "templates" | "history";
@@ -27,7 +27,10 @@ export function NotebookReportsPage() {
   const { notebook } = useNotebook(notebookId);
   const hasResolvedInitialViewRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
-  const [viewMode, setViewMode] = useState<ReportViewMode>("templates");
+  const previousReadySignatureRef = useRef<string | null>(null);
+  const [viewMode, setViewMode] = useState<ReportViewMode>(() =>
+    hasCachedReports(notebookId) ? "history" : "templates",
+  );
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
@@ -91,23 +94,29 @@ export function NotebookReportsPage() {
     isGeneratingSuggestions ||
     suggestionsStatus === "generating";
   useEffect(() => {
-    queueMicrotask(() => {
-      hasResolvedInitialViewRef.current = false;
-      hasTriggeredAutoSuggestionsRef.current = false;
-      setViewMode("templates");
-      setHistoryView("cards");
-      setEditTarget(null);
-      setEditPrompt("");
-      setSelectedReportId(null);
-      setDeleteReportTarget(null);
-      clearGenerateSuggestionsError();
-    });
+    hasResolvedInitialViewRef.current = false;
+    hasTriggeredAutoSuggestionsRef.current = false;
+    previousReadySignatureRef.current = null;
+    setViewMode(hasCachedReports(notebookId) ? "history" : "templates");
+    setHistoryView("cards");
+    setEditTarget(null);
+    setEditPrompt("");
+    setSelectedReportId(null);
+    setDeleteReportTarget(null);
+    clearGenerateSuggestionsError();
   }, [notebookId, clearGenerateSuggestionsError]);
   useEffect(() => {
     hasTriggeredAutoSuggestionsRef.current = false;
   }, [notebookId, readySignature]);
   useEffect(() => {
     if (!notebookId) return;
+    if (previousReadySignatureRef.current === null) {
+      previousReadySignatureRef.current = readySignature;
+      return;
+    }
+    if (previousReadySignatureRef.current === readySignature) return;
+
+    previousReadySignatureRef.current = readySignature;
     void (async () => {
       await reloadConfig();
       await reloadReports();
@@ -140,14 +149,16 @@ export function NotebookReportsPage() {
   useEffect(() => {
     if (!notebookId || isReportsLoading || hasResolvedInitialViewRef.current) return;
     hasResolvedInitialViewRef.current = true;
-    queueMicrotask(() => {
-      if (reports.length === 0) return setViewMode("templates");
-      setViewMode("history");
-      setHistoryView("cards");
-      setSelectedReportId((prev) =>
-        prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
-      );
-    });
+    if (reports.length === 0) {
+      setViewMode("templates");
+      return;
+    }
+
+    setViewMode("history");
+    setHistoryView("cards");
+    setSelectedReportId((prev) =>
+      prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
+    );
   }, [notebookId, isReportsLoading, reports]);
   const runGeneration = async (formatType: ReportFormatType, prompt: string, suggestionId: string | null = null) => {
     if (!notebookId || !prompt.trim() || !canGenerateReports) return false;

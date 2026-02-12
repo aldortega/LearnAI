@@ -4,6 +4,8 @@ import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { reportsApi } from "../api/reportsApi";
 import type { ReportOut } from "../types/reports.types";
 
+const reportsHistoryCache = new Map<string, ReportOut[]>();
+
 type Result = {
   reports: ReportOut[];
   isLoading: boolean;
@@ -12,15 +14,26 @@ type Result = {
   removeReport: (reportId: string) => void;
 };
 
+export function hasCachedReports(notebookId?: string): boolean {
+  if (!notebookId) return false;
+  const cachedReports = reportsHistoryCache.get(notebookId);
+  return Boolean(cachedReports && cachedReports.length > 0);
+}
+
 export function useReportsHistory(notebookId?: string): Result {
-  const [reports, setReports] = useState<ReportOut[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [reports, setReports] = useState<ReportOut[]>(() =>
+    notebookId ? reportsHistoryCache.get(notebookId) ?? [] : [],
+  );
+  const [isLoading, setIsLoading] = useState(() =>
+    notebookId ? !reportsHistoryCache.has(notebookId) : false,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!notebookId) {
       setReports([]);
       setError(null);
+      setIsLoading(false);
       return [];
     }
 
@@ -28,6 +41,7 @@ export function useReportsHistory(notebookId?: string): Result {
     setError(null);
     try {
       const data = await reportsApi.listReports(notebookId);
+      reportsHistoryCache.set(notebookId, data.items);
       setReports(data.items);
       return data.items;
     } catch (e) {
@@ -43,7 +57,22 @@ export function useReportsHistory(notebookId?: string): Result {
   }, []);
 
   useEffect(() => {
-    if (!notebookId) return;
+    if (!notebookId) {
+      setReports([]);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const cachedReports = reportsHistoryCache.get(notebookId);
+    if (cachedReports) {
+      setReports(cachedReports);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setReports([]);
     void reload();
   }, [notebookId, reload]);
 

@@ -4,6 +4,8 @@ import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { reportsApi } from "../api/reportsApi";
 import type { ReportConfigOut } from "../types/reports.types";
 
+const reportsConfigCache = new Map<string, ReportConfigOut>();
+
 type Result = {
   config: ReportConfigOut | null;
   isLoading: boolean;
@@ -12,14 +14,19 @@ type Result = {
 };
 
 export function useReportsConfig(notebookId?: string): Result {
-  const [config, setConfig] = useState<ReportConfigOut | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [config, setConfig] = useState<ReportConfigOut | null>(() =>
+    notebookId ? reportsConfigCache.get(notebookId) ?? null : null,
+  );
+  const [isLoading, setIsLoading] = useState(() =>
+    notebookId ? !reportsConfigCache.has(notebookId) : false,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!notebookId) {
       setConfig(null);
       setError(null);
+      setIsLoading(false);
       return null;
     }
 
@@ -28,6 +35,7 @@ export function useReportsConfig(notebookId?: string): Result {
 
     try {
       const data = await reportsApi.getConfig(notebookId);
+      reportsConfigCache.set(notebookId, data);
       setConfig(data);
       return data;
     } catch (e) {
@@ -39,7 +47,22 @@ export function useReportsConfig(notebookId?: string): Result {
   }, [notebookId]);
 
   useEffect(() => {
-    if (!notebookId) return;
+    if (!notebookId) {
+      setConfig(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const cachedConfig = reportsConfigCache.get(notebookId);
+    if (cachedConfig) {
+      setConfig(cachedConfig);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setConfig(null);
     void reload();
   }, [notebookId, reload]);
 
