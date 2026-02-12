@@ -10,8 +10,6 @@ import httpx
 from bson import ObjectId
 import docx2txt
 from langchain_core.documents import Document
-from pydantic import SecretStr
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pypdf import PdfReader
@@ -20,6 +18,7 @@ from rq import get_current_job
 from supabase import create_client
 
 from .config import settings
+from .gemini import embed_documents_with_fallback, has_gemini_api_keys
 
 
 logger = logging.getLogger(__name__)
@@ -74,14 +73,14 @@ async def _process_document(document_id: str) -> None:
             texts = [chunk.page_content for chunk in filtered_chunks]
             if not texts:
                 raise RuntimeError("Documento sin texto utilizable")
-            if not settings.gemini_api_key:
+            if not has_gemini_api_keys():
                 raise RuntimeError("Gemini no está configurado")
-            embeddings = GoogleGenerativeAIEmbeddings(
-                model="models/gemini-embedding-001",
-                api_key=SecretStr(settings.gemini_api_key),
-                output_dimensionality=settings.qdrant_vector_size,
+            vectors = await asyncio.to_thread(
+                embed_documents_with_fallback,
+                texts,
+                "models/gemini-embedding-001",
+                settings.qdrant_vector_size,
             )
-            vectors = await asyncio.to_thread(embeddings.embed_documents, texts)
             await upsert_chunks(document, filtered_chunks, vectors)
         except Exception as exc:
             logger.exception(

@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from ...config import settings
+from ...gemini import has_gemini_api_keys
 from ..rag import create_llm, retrieve_context
 from .constants import (
     DIFFICULTY_LABELS,
@@ -112,7 +112,7 @@ def resolve_question_count(length: str, level_type: str) -> int:
 async def fetch_context_lines(
     title: str, notebook_object_id: ObjectId, user: dict
 ) -> list[str]:
-    if not settings.gemini_api_key:
+    if not has_gemini_api_keys():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Gemini no configurado"
         )

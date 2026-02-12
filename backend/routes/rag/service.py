@@ -6,13 +6,17 @@ import time
 import httpx
 from bson import ObjectId
 from fastapi import HTTPException, status
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import SecretStr
 from pymongo.errors import DuplicateKeyError
 
 from ...config import settings
 from ...db import db
+from ...gemini import (
+    GeminiChatWithFallback,
+    create_chat_model_with_fallback,
+    embed_query_with_fallback,
+    has_gemini_api_keys,
+)
 from ...schemas.rag import ChatMessageOut, ChatMessageSource, ConversationOut, RagSource
 
 logger = logging.getLogger(__name__)
@@ -100,10 +104,9 @@ def ensure_general_notice(answer_text: str) -> str:
     return f"{GENERAL_KNOWLEDGE_NOTICE}\n\n{trimmed}"
 
 
-def create_llm() -> ChatGoogleGenerativeAI:
-    return ChatGoogleGenerativeAI(
-        model=settings.gemini_chat_model,
-        api_key=SecretStr(settings.gemini_api_key),
+def create_llm() -> GeminiChatWithFallback:
+    return create_chat_model_with_fallback(
+        model_name=settings.gemini_chat_model,
         temperature=0.2,
     )
 
@@ -158,18 +161,18 @@ async def retrieve_context(
     user: dict,
     top_k: int | None = None,
 ) -> tuple[list[str], list[RagSource], list[str], int]:
-    if not settings.gemini_api_key:
+    if not has_gemini_api_keys():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Gemini no configurado"
         )
 
     selected_top_k = top_k or settings.rag_top_k
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/gemini-embedding-001",
-        api_key=SecretStr(settings.gemini_api_key),
-        output_dimensionality=settings.qdrant_vector_size,
+    query_vector = await asyncio.to_thread(
+        embed_query_with_fallback,
+        question,
+        "models/gemini-embedding-001",
+        settings.qdrant_vector_size,
     )
-    query_vector = await asyncio.to_thread(embeddings.embed_query, question)
 
     async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
         response = await client.post(
