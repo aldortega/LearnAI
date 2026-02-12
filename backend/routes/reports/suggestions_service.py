@@ -2,8 +2,10 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
 from ...db import db
@@ -142,23 +144,12 @@ def ensure_suggestion_count(
     ]
 
 
-async def get_cached_report_suggestions(
-    notebook_object_id: ObjectId,
-    owner_id: ObjectId,
+def parse_cached_report_suggestions(
+    raw_suggestions: Any,
     notebook_title: str,
-    sources_fingerprint: str,
-) -> list[ReportSuggestionOut] | None:
-    cache_doc = await db.report_suggestions.find_one(
-        {"owner_id": owner_id, "notebook_id": notebook_object_id}
-    )
-    if not cache_doc:
-        return None
-    if coerce_text(cache_doc.get("sources_fingerprint")) != sources_fingerprint:
-        return None
-
-    raw_suggestions = cache_doc.get("suggestions")
+) -> list[ReportSuggestionOut]:
     if not isinstance(raw_suggestions, list):
-        return None
+        return []
 
     parsed_suggestions: list[ReportSuggestionOut] = []
     for index, suggestion in enumerate(raw_suggestions, start=1):
@@ -179,9 +170,56 @@ async def get_cached_report_suggestions(
         )
 
     if not parsed_suggestions:
-        return None
+        return []
 
     return ensure_suggestion_count(notebook_title, parsed_suggestions)
+
+
+async def get_cached_report_suggestions(
+    notebook_object_id: ObjectId,
+    owner_id: ObjectId,
+    notebook_title: str,
+    sources_fingerprint: str,
+) -> list[ReportSuggestionOut] | None:
+    cache_doc = await db.report_suggestions.find_one(
+        {"owner_id": owner_id, "notebook_id": notebook_object_id}
+    )
+    if not cache_doc:
+        return None
+    if coerce_text(cache_doc.get("sources_fingerprint")) != sources_fingerprint:
+        return None
+
+    suggestions = parse_cached_report_suggestions(
+        cache_doc.get("suggestions"),
+        notebook_title,
+    )
+    if not suggestions:
+        return None
+
+    return suggestions
+
+
+async def get_report_suggestions_snapshot(
+    notebook_object_id: ObjectId,
+    owner_id: ObjectId,
+    notebook_title: str,
+    sources_fingerprint: str,
+) -> tuple[list[ReportSuggestionOut], bool]:
+    cache_doc = await db.report_suggestions.find_one(
+        {"owner_id": owner_id, "notebook_id": notebook_object_id}
+    )
+    if not cache_doc:
+        return [], False
+
+    suggestions = parse_cached_report_suggestions(
+        cache_doc.get("suggestions"),
+        notebook_title,
+    )
+    if not suggestions:
+        return [], False
+
+    cached_fingerprint = coerce_text(cache_doc.get("sources_fingerprint"))
+    return suggestions, cached_fingerprint != sources_fingerprint
 
 
 async def save_cached_report_suggestions(
@@ -189,9 +227,11 @@ async def save_cached_report_suggestions(
     owner_id: ObjectId,
     sources_fingerprint: str,
     suggestions: list[ReportSuggestionOut],
+    db_client: AsyncIOMotorDatabase | None = None,
 ) -> None:
+    db_ref = db if db_client is None else db_client
     now = datetime.now(timezone.utc)
-    await db.report_suggestions.update_one(
+    await db_ref.report_suggestions.update_one(
         {"owner_id": owner_id, "notebook_id": notebook_object_id},
         {
             "$set": {

@@ -12,6 +12,10 @@ from .constants import REPORT_TEMPLATE_CONFIGS
 from .generation_service import generate_report_payload
 from .normalization import coerce_text
 from .repository import compute_sources_fingerprint
+from .suggestions_service import (
+    generate_report_suggestions,
+    save_cached_report_suggestions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +65,62 @@ def resolve_report_error_message(exc: Exception) -> str:
     return "No se pudo generar el informe"
 
 
+def resolve_report_suggestions_error_message(exc: Exception) -> str:
+    if isinstance(exc, HTTPException) and isinstance(exc.detail, str):
+        return exc.detail
+    if isinstance(exc, ValueError):
+        return str(exc)
+    return "No se pudieron generar sugerencias de reportes"
+
+
 def process_report_generation(notebook_id: str, owner_id: str) -> None:
     asyncio.run(_process_report_generation(notebook_id, owner_id))
+
+
+async def mark_report_suggestions_job_processing(
+    job_id: str, db_client: AsyncIOMotorDatabase | None = None
+) -> None:
+    db_ref = db if db_client is None else db_client
+    now = datetime.now(timezone.utc)
+    await db_ref.report_suggestion_generation_jobs.update_one(
+        {"job_id": job_id},
+        {"$set": {"status": "processing", "started_at": now, "error": None}},
+    )
+
+
+async def mark_report_suggestions_job_failed(
+    job_id: str,
+    error: str,
+    db_client: AsyncIOMotorDatabase | None = None,
+) -> None:
+    db_ref = db if db_client is None else db_client
+    now = datetime.now(timezone.utc)
+    await db_ref.report_suggestion_generation_jobs.update_one(
+        {"job_id": job_id},
+        {"$set": {"status": "failed", "error": error, "finished_at": now}},
+    )
+
+
+async def mark_report_suggestions_job_done(
+    job_id: str,
+    db_client: AsyncIOMotorDatabase | None = None,
+) -> None:
+    db_ref = db if db_client is None else db_client
+    now = datetime.now(timezone.utc)
+    await db_ref.report_suggestion_generation_jobs.update_one(
+        {"job_id": job_id},
+        {"$set": {"status": "done", "finished_at": now, "error": None}},
+    )
+
+
+def process_report_suggestions_generation(
+    notebook_id: str, owner_id: str, fingerprint_at_enqueue: str
+) -> None:
+    asyncio.run(
+        _process_report_suggestions_generation(
+            notebook_id, owner_id, fingerprint_at_enqueue
+        )
+    )
 
 
 async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
@@ -159,5 +217,101 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             return
 
         await mark_report_job_done(job_id, str(report_result.inserted_id), db_client=worker_db)
+    finally:
+        worker_client.close()
+
+
+async def _process_report_suggestions_generation(
+    notebook_id: str,
+    owner_id: str,
+    fingerprint_at_enqueue: str,
+) -> None:
+    from rq import get_current_job
+
+    job = get_current_job()
+    job_id = job.id if job else None
+    if not job_id:
+        logger.error("Job de sugerencias de reportes sin id")
+        return
+
+    worker_client = AsyncIOMotorClient(settings.mongodb_uri)
+    worker_db = worker_client[settings.database_name]
+    try:
+        await mark_report_suggestions_job_processing(job_id, db_client=worker_db)
+
+        try:
+            notebook_object_id = ObjectId(notebook_id)
+            owner_object_id = ObjectId(owner_id)
+        except Exception as exc:
+            await mark_report_suggestions_job_failed(
+                job_id, "Identificador invalido", db_client=worker_db
+            )
+            logger.exception(
+                "Identificador invalido en sugerencias de reportes",
+                extra={"error": str(exc)},
+            )
+            return
+
+        notebook = await worker_db.notebooks.find_one(
+            {"_id": notebook_object_id, "owner_id": owner_object_id}
+        )
+        if not notebook:
+            await mark_report_suggestions_job_failed(
+                job_id, "Notebook no encontrado", db_client=worker_db
+            )
+            return
+
+        job_doc = await worker_db.report_suggestion_generation_jobs.find_one(
+            {"job_id": job_id, "owner_id": owner_object_id, "notebook_id": notebook_object_id}
+        )
+        if not job_doc:
+            await mark_report_suggestions_job_failed(
+                job_id, "Job no encontrado", db_client=worker_db
+            )
+            return
+
+        sources_fingerprint, ready_count = await compute_sources_fingerprint(
+            notebook["title"],
+            notebook_object_id,
+            owner_object_id,
+            db_client=worker_db,
+        )
+        if ready_count == 0:
+            await mark_report_suggestions_job_failed(
+                job_id,
+                "Necesitas al menos una fuente lista para generar sugerencias",
+                db_client=worker_db,
+            )
+            return
+
+        target_fingerprint = (
+            coerce_text(job_doc.get("sources_fingerprint")) or fingerprint_at_enqueue
+        )
+        if not target_fingerprint:
+            target_fingerprint = sources_fingerprint
+
+        try:
+            suggestions = await generate_report_suggestions(
+                notebook_title=coerce_text(notebook.get("title")),
+                notebook_object_id=notebook_object_id,
+                user={"_id": owner_object_id},
+            )
+            if not suggestions:
+                raise ValueError("No se pudieron generar sugerencias de reportes")
+            await save_cached_report_suggestions(
+                notebook_object_id=notebook_object_id,
+                owner_id=owner_object_id,
+                sources_fingerprint=target_fingerprint,
+                suggestions=suggestions,
+                db_client=worker_db,
+            )
+        except Exception as exc:
+            error_message = resolve_report_suggestions_error_message(exc)
+            await mark_report_suggestions_job_failed(
+                job_id, error_message, db_client=worker_db
+            )
+            return
+
+        await mark_report_suggestions_job_done(job_id, db_client=worker_db)
     finally:
         worker_client.close()

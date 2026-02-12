@@ -65,6 +65,10 @@ class ReportConfigOut(BaseModel):
     has_ready_sources: bool
     templates: list[ReportPromptTemplateOut] = Field(default_factory=list)
     suggestions: list[ReportSuggestionOut] = Field(default_factory=list)
+    suggestions_status: Literal["ready", "generating", "failed", "missing"] = "missing"
+    suggestions_is_stale: bool = False
+    suggestions_error: Optional[str] = None
+    suggestions_job_id: Optional[str] = None
 
 
 class ReportGenerationJobOut(BaseModel):
@@ -72,5 +76,13 @@ class ReportGenerationJobOut(BaseModel):
     status: Literal["queued", "processing", "done", "failed"]
     error: Optional[str] = None
     report_id: Optional[str] = None
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+
+
+class ReportSuggestionsJobOut(BaseModel):
+    job_id: str
+    status: Literal["queued", "processing", "done", "failed"]
+    error: Optional[str] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None

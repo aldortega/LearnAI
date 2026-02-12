@@ -61,4 +61,5 @@ from .reports import (
     ReportPromptTemplateOut,
     ReportSourceRef,
     ReportSuggestionOut,
+    ReportSuggestionsJobOut,
 )
