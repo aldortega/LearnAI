@@ -9,6 +9,7 @@ import ReactFlow, {
 
 import "reactflow/dist/style.css";
 
+import { useAnimatedNodeVisibility } from "../hooks/useAnimatedNodeVisibility";
 import { MindmapNode, type MindmapNodeData } from "./MindmapNode";
 import type { MindmapNodeOut } from "../types/mindmap.types";
 
@@ -181,21 +182,27 @@ export function MindmapCanvas({
     () => computeVisibleNodeIds(rootNodeId, childrenByParent, expandedNodeIds),
     [rootNodeId, childrenByParent, expandedNodeIds],
   );
+  const { displayedNodeIds, visibleNodeIdSet } = useAnimatedNodeVisibility(
+    rootNodeId,
+    visibleNodeIds,
+    240,
+  );
 
-  const visibleNodes = useMemo(() => {
-    return visibleNodeIds
+  const displayedNodes = useMemo(() => {
+    return displayedNodeIds
       .map((nodeId) => nodeById.get(nodeId))
       .filter((node): node is MindmapNodeOut => Boolean(node));
-  }, [nodeById, visibleNodeIds]);
+  }, [displayedNodeIds, nodeById]);
 
   const positions = useMemo(
-    () => buildPositions(rootNodeId, visibleNodeIds, childrenByParent),
-    [rootNodeId, visibleNodeIds, childrenByParent],
+    () => buildPositions(rootNodeId, displayedNodeIds, childrenByParent),
+    [rootNodeId, displayedNodeIds, childrenByParent],
   );
 
   const flowNodes: Node<MindmapNodeData>[] = useMemo(() => {
-    return visibleNodes.map((node) => {
+    return displayedNodes.map((node) => {
       const hasChildren = (childrenByParent.get(node.id)?.length ?? 0) > 0;
+      const isVisible = visibleNodeIdSet.has(node.id);
       return {
         id: node.id,
         type: "mindmapNode",
@@ -209,29 +216,47 @@ export function MindmapCanvas({
         selected: node.id === selectedNodeId,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
+        style: {
+          opacity: isVisible ? 1 : 0,
+          pointerEvents: isVisible ? "auto" : "none",
+          transition:
+            "transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
+        },
         draggable: false,
+        selectable: isVisible,
       };
     });
   }, [
     childrenByParent,
+    displayedNodes,
     expandedNodeIds,
     onToggleNode,
     positions,
     selectedNodeId,
-    visibleNodes,
+    visibleNodeIdSet,
   ]);
 
   const flowEdges: Edge[] = useMemo(() => {
-    const visibleSet = new Set(visibleNodeIds);
-    return visibleNodes
-      .filter((node) => node.parent_id && visibleSet.has(node.parent_id))
+    const displayedSet = new Set(displayedNodeIds);
+    return displayedNodes
+      .filter((node) => node.parent_id && displayedSet.has(node.parent_id))
       .map((node) => ({
         id: `${node.parent_id}-${node.id}`,
         source: node.parent_id!,
         target: node.id,
         animated: false,
+        style: {
+          opacity:
+            visibleNodeIdSet.has(node.id) &&
+            Boolean(node.parent_id) &&
+            visibleNodeIdSet.has(node.parent_id!)
+              ? 1
+              : 0,
+          transition: "opacity 220ms ease",
+          pointerEvents: "none",
+        },
       }));
-  }, [visibleNodeIds, visibleNodes]);
+  }, [displayedNodeIds, displayedNodes, visibleNodeIdSet]);
 
   if (!rootNodeId) {
     return (
