@@ -10,6 +10,8 @@ import {
   useChatStore,
 } from "./useChatStore";
 
+const hydratedNotebookIds = new Set<string>();
+
 type Result = {
   messages: ChatMessage[];
   streamingContent: string;
@@ -50,7 +52,7 @@ export function useNotebookChat(notebookId?: string): Result {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(!hydratedNotebookIds.has(notebookId));
 
     let isActive = true;
     const controller = new AbortController();
@@ -60,16 +62,13 @@ export function useNotebookChat(notebookId?: string): Result {
 
     const loadConversation = async () => {
       try {
-        const conversationData = await chatApi.getConversation(
-          notebookId,
-          controller.signal,
-        );
-        const messagesData = await chatApi.getMessages(
-          notebookId,
-          controller.signal,
-        );
+        const [conversationData, messagesData] = await Promise.all([
+          chatApi.getConversation(notebookId, controller.signal),
+          chatApi.getMessages(notebookId, controller.signal),
+        ]);
         if (!isActive) return;
         setChatData(notebookId, conversationData, messagesData);
+        hydratedNotebookIds.add(notebookId);
       } catch (err) {
         if (!isActive) return;
         if ((err as Error)?.name === "AbortError") {
