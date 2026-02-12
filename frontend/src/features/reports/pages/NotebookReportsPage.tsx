@@ -13,6 +13,7 @@ import { ReportTemplatesGrid } from "../components/ReportTemplatesGrid";
 import { ReportViewer } from "../components/ReportViewer";
 import { useDeleteReport } from "../hooks/useDeleteReport";
 import { useGenerateReport } from "../hooks/useGenerateReport";
+import { useGenerateReportSuggestions } from "../hooks/useGenerateReportSuggestions";
 import { useReportsConfig } from "../hooks/useReportsConfig";
 import { useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
@@ -25,6 +26,7 @@ export function NotebookReportsPage() {
   const navigate = useNavigate();
   const { notebook } = useNotebook(notebookId);
   const hasResolvedInitialViewRef = useRef(false);
+  const hasTriggeredAutoSuggestionsRef = useRef(false);
   const [viewMode, setViewMode] = useState<ReportViewMode>("templates");
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
@@ -45,7 +47,12 @@ export function NotebookReportsPage() {
     handleDeleteConfirm,
     pickFile,
   } = useReportsNotebookSources(notebookId);
-  const { config, error: configError, reload: reloadConfig } = useReportsConfig(notebookId);
+  const {
+    config,
+    isLoading: isConfigLoading,
+    error: configError,
+    reload: reloadConfig,
+  } = useReportsConfig(notebookId);
   const {
     reports,
     isLoading: isReportsLoading,
@@ -60,6 +67,12 @@ export function NotebookReportsPage() {
     clearError: clearGenerateError,
   } = useGenerateReport(notebookId);
   const {
+    generate: generateSuggestions,
+    isGenerating: isGeneratingSuggestions,
+    error: generateSuggestionsError,
+    clearError: clearGenerateSuggestionsError,
+  } = useGenerateReportSuggestions(notebookId);
+  const {
     deleteReport,
     deletingReportId,
     error: deleteReportError,
@@ -68,18 +81,31 @@ export function NotebookReportsPage() {
   const templates = (config?.templates ?? []).slice(0, 4);
   const suggestions = (config?.suggestions ?? []).slice(0, 4);
   const canGenerateReports = config?.has_ready_sources ?? hasReadySources;
+  const suggestionsStatus = config?.suggestions_status ?? "missing";
+  const suggestionsAreStale = config?.suggestions_is_stale ?? false;
   const generationError = generateError ?? configError;
+  const suggestionsError = generateSuggestionsError ?? config?.suggestions_error ?? null;
+  const isSuggestionsLoading =
+    isConfigLoading ||
+    isRefreshingSuggestions ||
+    isGeneratingSuggestions ||
+    suggestionsStatus === "generating";
   useEffect(() => {
     queueMicrotask(() => {
       hasResolvedInitialViewRef.current = false;
+      hasTriggeredAutoSuggestionsRef.current = false;
       setViewMode("templates");
       setHistoryView("cards");
       setEditTarget(null);
       setEditPrompt("");
       setSelectedReportId(null);
       setDeleteReportTarget(null);
+      clearGenerateSuggestionsError();
     });
-  }, [notebookId]);
+  }, [notebookId, clearGenerateSuggestionsError]);
+  useEffect(() => {
+    hasTriggeredAutoSuggestionsRef.current = false;
+  }, [notebookId, readySignature]);
   useEffect(() => {
     if (!notebookId) return;
     void (async () => {
@@ -87,6 +113,30 @@ export function NotebookReportsPage() {
       await reloadReports();
     })();
   }, [notebookId, readySignature, reloadConfig, reloadReports]);
+  useEffect(() => {
+    if (!notebookId || !config) return;
+    if (hasTriggeredAutoSuggestionsRef.current) return;
+    if (isConfigLoading || isGeneratingSuggestions || !canGenerateReports) return;
+    if (suggestionsStatus !== "missing" && !suggestionsAreStale) return;
+
+    hasTriggeredAutoSuggestionsRef.current = true;
+    void (async () => {
+      clearGenerateSuggestionsError();
+      await generateSuggestions();
+      await reloadConfig();
+    })();
+  }, [
+    notebookId,
+    config,
+    isConfigLoading,
+    isGeneratingSuggestions,
+    canGenerateReports,
+    suggestionsStatus,
+    suggestionsAreStale,
+    clearGenerateSuggestionsError,
+    generateSuggestions,
+    reloadConfig,
+  ]);
   useEffect(() => {
     if (!notebookId || isReportsLoading || hasResolvedInitialViewRef.current) return;
     hasResolvedInitialViewRef.current = true;
@@ -141,10 +191,12 @@ export function NotebookReportsPage() {
     setEditPrompt(suggestion.default_prompt);
   };
   const handleRefreshSuggestions = async () => {
-    if (!notebookId || isRefreshingSuggestions) return;
+    if (!notebookId || isRefreshingSuggestions || isGeneratingSuggestions) return;
     setIsRefreshingSuggestions(true);
     try {
-      await reloadConfig({ refreshSuggestions: true });
+      clearGenerateSuggestionsError();
+      await generateSuggestions();
+      await reloadConfig();
     } finally {
       setIsRefreshingSuggestions(false);
     }
@@ -312,7 +364,9 @@ export function NotebookReportsPage() {
                   templates={templates}
                   suggestions={suggestions}
                   disabled={!canGenerateReports || isGenerating}
-                  isRefreshingSuggestions={isRefreshingSuggestions}
+                  isRefreshingSuggestions={isRefreshingSuggestions || isGeneratingSuggestions}
+                  isSuggestionsLoading={isSuggestionsLoading}
+                  isSuggestionsStale={suggestionsAreStale && suggestions.length > 0}
                   onGenerateTemplate={handleGenerateTemplate}
                   onGenerateSuggestion={handleGenerateSuggestion}
                   onEditTemplate={handleEditTemplate}
@@ -321,6 +375,11 @@ export function NotebookReportsPage() {
                     void handleRefreshSuggestions();
                   }}
                 />
+                {suggestionsError ? (
+                  <p className="text-sm text-error" role="alert">
+                    {suggestionsError}
+                  </p>
+                ) : null}
                 {!canGenerateReports ? (
                   <p className="text-sm text-muted-foreground" role="alert">
                     Necesitas al menos una fuente lista para generar informes.

@@ -11,6 +11,8 @@ type Props = {
   suggestions: ReportSuggestion[];
   disabled: boolean;
   isRefreshingSuggestions: boolean;
+  isSuggestionsLoading: boolean;
+  isSuggestionsStale: boolean;
   onGenerateTemplate: (template: ReportPromptTemplate) => void;
   onGenerateSuggestion: (suggestion: ReportSuggestion) => void;
   onEditTemplate: (template: ReportPromptTemplate) => void;
@@ -90,11 +92,32 @@ function TemplateCard({
   );
 }
 
+function SuggestionSkeletonCard() {
+  return (
+    <div
+      aria-hidden
+      className="relative h-[168px] flex-1 basis-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 shadow-sm"
+    >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="h-full w-1/2 bg-gradient-to-r from-transparent via-background/60 to-transparent animate-[report-skeleton-shimmer_1.4s_ease-in-out_infinite]" />
+      </div>
+      <div className="relative space-y-3">
+        <div className="h-4 w-2/3 rounded bg-muted animate-pulse [animation-duration:1.2s]" />
+        <div className="h-3 w-full rounded bg-muted animate-pulse [animation-duration:1.2s] [animation-delay:120ms]" />
+        <div className="h-3 w-11/12 rounded bg-muted animate-pulse [animation-duration:1.2s] [animation-delay:220ms]" />
+        <div className="h-3 w-4/5 rounded bg-muted animate-pulse [animation-duration:1.2s] [animation-delay:320ms]" />
+      </div>
+    </div>
+  );
+}
+
 export function ReportTemplatesGrid({
   templates,
   suggestions,
   disabled,
   isRefreshingSuggestions,
+  isSuggestionsLoading,
+  isSuggestionsStale,
   onGenerateTemplate,
   onGenerateSuggestion,
   onEditTemplate,
@@ -147,17 +170,29 @@ export function ReportTemplatesGrid({
           </button>
         </div>
         <div className="flex gap-3">
-          {visibleSuggestions.map((suggestion) => (
-            <TemplateCard
-              key={suggestion.id}
-              title={suggestion.title}
-              description={suggestion.description}
-              disabled={disabled}
-              onGenerate={() => onGenerateSuggestion(suggestion)}
-              onEdit={() => onEditSuggestion(suggestion)}
-            />
-          ))}
+          {isSuggestionsLoading
+            ? [1, 2, 3, 4].map((slot) => <SuggestionSkeletonCard key={slot} />)
+            : visibleSuggestions.map((suggestion) => (
+                <TemplateCard
+                  key={suggestion.id}
+                  title={suggestion.title}
+                  description={suggestion.description}
+                  disabled={disabled}
+                  onGenerate={() => onGenerateSuggestion(suggestion)}
+                  onEdit={() => onEditSuggestion(suggestion)}
+                />
+              ))}
         </div>
+        {!isSuggestionsLoading && visibleSuggestions.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Todavia no hay sugerencias de IA para esta notebook.
+          </p>
+        ) : null}
+        {isSuggestionsStale ? (
+          <p className="text-xs text-muted-foreground">
+            Mostrando sugerencias previas mientras se actualizan.
+          </p>
+        ) : null}
       </section>
     </div>
   );

@@ -5,22 +5,46 @@ import type {
   ReportGenerationJobOut,
   ReportListOut,
   ReportOut,
+  ReportSuggestionsJobOut,
 } from "../types/reports.types";
 
 export const reportsApi = {
-  getConfig: async (
-    notebookId: string,
-    options?: { refreshSuggestions?: boolean },
-  ): Promise<ReportConfigOut> => {
-    const searchParams = new URLSearchParams();
-    if (options?.refreshSuggestions) {
-      searchParams.set("refresh_suggestions", "true");
-    }
-    const query = searchParams.toString();
-    const url = `/notebooks/${notebookId}/reports/config${query ? `?${query}` : ""}`;
-    return apiRequest<ReportConfigOut>(url, {
+  getConfig: async (notebookId: string): Promise<ReportConfigOut> => {
+    return apiRequest<ReportConfigOut>(`/notebooks/${notebookId}/reports/config`, {
       method: "GET",
     });
+  },
+
+  generateSuggestions: async (notebookId: string): Promise<ReportSuggestionsJobOut> => {
+    return apiRequest<ReportSuggestionsJobOut>(
+      `/notebooks/${notebookId}/reports/suggestions/generate`,
+      {
+        method: "POST",
+      },
+    );
+  },
+
+  getLatestSuggestionsGeneration: async (
+    notebookId: string,
+  ): Promise<ReportSuggestionsJobOut> => {
+    return apiRequest<ReportSuggestionsJobOut>(
+      `/notebooks/${notebookId}/reports/suggestions/generate`,
+      {
+        method: "GET",
+      },
+    );
+  },
+
+  getSuggestionsGenerationStatus: async (
+    notebookId: string,
+    jobId: string,
+  ): Promise<ReportSuggestionsJobOut> => {
+    return apiRequest<ReportSuggestionsJobOut>(
+      `/notebooks/${notebookId}/reports/suggestions/generate/${jobId}`,
+      {
+        method: "GET",
+      },
+    );
   },
 
   generate: async (

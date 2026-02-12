@@ -4,15 +4,11 @@ import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { reportsApi } from "../api/reportsApi";
 import type { ReportConfigOut } from "../types/reports.types";
 
-type ReloadOptions = {
-  refreshSuggestions?: boolean;
-};
-
 type Result = {
   config: ReportConfigOut | null;
   isLoading: boolean;
   error: string | null;
-  reload: (options?: ReloadOptions) => Promise<ReportConfigOut | null>;
+  reload: () => Promise<ReportConfigOut | null>;
 };
 
 export function useReportsConfig(notebookId?: string): Result {
@@ -20,7 +16,7 @@ export function useReportsConfig(notebookId?: string): Result {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(async (options?: ReloadOptions) => {
+  const reload = useCallback(async () => {
     if (!notebookId) {
       setConfig(null);
       setError(null);
@@ -31,7 +27,7 @@ export function useReportsConfig(notebookId?: string): Result {
     setError(null);
 
     try {
-      const data = await reportsApi.getConfig(notebookId, options);
+      const data = await reportsApi.getConfig(notebookId);
       setConfig(data);
       return data;
     } catch (e) {

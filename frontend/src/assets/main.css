@@ -208,6 +208,15 @@ body {
   }
 }
 
+@keyframes report-skeleton-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(220%);
+  }
+}
+
 :root {
   --ft-marker-animation: none;
 }

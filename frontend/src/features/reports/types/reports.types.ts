@@ -20,10 +20,16 @@ export type ReportSuggestion = {
   default_prompt: string;
 };
 
+export type ReportSuggestionsStatus = "ready" | "generating" | "failed" | "missing";
+
 export type ReportConfigOut = {
   has_ready_sources: boolean;
   templates: ReportPromptTemplate[];
   suggestions: ReportSuggestion[];
+  suggestions_status: ReportSuggestionsStatus;
+  suggestions_is_stale: boolean;
+  suggestions_error: string | null;
+  suggestions_job_id: string | null;
 };
 
 export type ReportGenerateRequest = {
@@ -37,6 +43,14 @@ export type ReportGenerationJobOut = {
   status: "queued" | "processing" | "done" | "failed";
   error?: string | null;
   report_id?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+};
+
+export type ReportSuggestionsJobOut = {
+  job_id: string;
+  status: "queued" | "processing" | "done" | "failed";
+  error?: string | null;
   started_at?: string | null;
   finished_at?: string | null;
 };
