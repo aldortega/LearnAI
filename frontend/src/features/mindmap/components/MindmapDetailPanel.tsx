@@ -35,7 +35,20 @@ export function MindmapDetailPanel({
         ) : null}
 
         {isLoading ? (
-          <p className="mt-4 text-sm text-muted-foreground">Cargando explicacion...</p>
+          <div className="mt-8 space-y-2" aria-hidden="true">
+            <div className="h-4 w-full animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[92%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[86%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[78%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[84%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[74%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[82%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[76%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[88%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[70%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[80%] animate-pulse rounded bg-muted" />
+            <div className="h-4 w-[66%] animate-pulse rounded bg-muted" />
+          </div>
         ) : null}
 
         {error ? (

@@ -19,7 +19,7 @@ export function NotebookMindmapPage() {
   const { notebook } = useNotebook(notebookId);
   const hasCheckedLatestJobRef = useRef(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isDetailPanelVisible, setIsDetailPanelVisible] = useState(true);
+  const [isDetailPanelVisible, setIsDetailPanelVisible] = useState(false);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -62,7 +62,7 @@ export function NotebookMindmapPage() {
   useEffect(() => {
     queueMicrotask(() => {
       setSelectedNodeId(null);
-      setIsDetailPanelVisible(true);
+      setIsDetailPanelVisible(false);
       setExpandedNodeIds(new Set());
     });
   }, [notebookId]);
@@ -238,6 +238,7 @@ export function NotebookMindmapPage() {
                   }}
                   onSelectNode={(nodeId) => {
                     setSelectedNodeId(nodeId);
+                    setIsDetailPanelVisible(true);
                     clearNodeError(nodeId);
                     if (mindmap.status === "stale") return;
                     void getDetail(nodeId);
