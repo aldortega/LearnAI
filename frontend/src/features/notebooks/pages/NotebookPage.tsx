@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+﻿import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import { ChatArea, useNotebookChat } from "../../notebook-chat";
@@ -14,6 +14,7 @@ export function NotebookPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook } = useNotebook(notebookId);
+  const canManageDocuments = notebook?.can_manage_documents ?? false;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
@@ -61,10 +62,12 @@ export function NotebookPage() {
   }, [streamError, documents.length]);
 
   const handlePickFile = () => {
+    if (!canManageDocuments) return;
     fileInputRef.current?.click();
   };
 
   const processFileUpload = async (file: File) => {
+    if (!canManageDocuments) return;
     const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
     if (!allowedExtensions.includes(extension)) {
       return;
@@ -95,6 +98,7 @@ export function NotebookPage() {
   };
 
   const handleDeleteRequest = (document: Document) => {
+    if (!canManageDocuments) return;
     setDeleteTarget(document);
   };
 
@@ -103,7 +107,7 @@ export function NotebookPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!notebookId || !deleteTarget) return;
+    if (!notebookId || !deleteTarget || !canManageDocuments) return;
 
     const documentId = deleteTarget.id;
 
@@ -148,6 +152,7 @@ export function NotebookPage() {
     <NotebookShell
       title={notebook?.title}
       documents={documents}
+      canManageDocuments={canManageDocuments}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}
@@ -216,3 +221,4 @@ export function NotebookPage() {
     </NotebookShell>
   );
 }
+

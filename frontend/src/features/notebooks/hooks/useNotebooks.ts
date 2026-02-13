@@ -34,5 +34,14 @@ export function useNotebooks(): Result {
     void reload();
   }, [reload]);
 
+  useEffect(() => {
+    const handleReload = () => {
+      void reload();
+    };
+    window.addEventListener("notebook-collaboration-changed", handleReload);
+    return () =>
+      window.removeEventListener("notebook-collaboration-changed", handleReload);
+  }, [reload]);
+
   return { notebooks, isLoading, error, reload };
 }

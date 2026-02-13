@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FileText, Plus } from "lucide-react";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
@@ -25,6 +25,7 @@ export function NotebookReportsPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook } = useNotebook(notebookId);
+  const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasResolvedInitialViewRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
@@ -364,10 +365,17 @@ export function NotebookReportsPage() {
     <NotebookShell
       title={notebook?.title}
       documents={documents}
+      canManageDocuments={canManageDocuments}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
-      onAddSource={pickFile}
-      onDeleteDocument={setDeleteTarget}
+      onAddSource={() => {
+        if (!canManageDocuments) return;
+        pickFile();
+      }}
+      onDeleteDocument={(document) => {
+        if (!canManageDocuments) return;
+        setDeleteTarget(document);
+      }}
       mode="reports"
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
@@ -507,3 +515,4 @@ export function NotebookReportsPage() {
     </NotebookShell>
   );
 }
+

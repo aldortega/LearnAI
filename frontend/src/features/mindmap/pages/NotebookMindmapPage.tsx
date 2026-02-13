@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+﻿import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useNotebook } from "../../notebooks";
@@ -17,6 +17,7 @@ export function NotebookMindmapPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook } = useNotebook(notebookId);
+  const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasCheckedLatestJobRef = useRef(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isDetailPanelVisible, setIsDetailPanelVisible] = useState(false);
@@ -147,10 +148,17 @@ export function NotebookMindmapPage() {
     <NotebookShell
       title={notebook?.title}
       documents={documents}
+      canManageDocuments={canManageDocuments}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
-      onAddSource={pickFile}
-      onDeleteDocument={setDeleteTarget}
+      onAddSource={() => {
+        if (!canManageDocuments) return;
+        pickFile();
+      }}
+      onDeleteDocument={(document) => {
+        if (!canManageDocuments) return;
+        setDeleteTarget(document);
+      }}
       mode="mindmap"
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
@@ -267,3 +275,4 @@ export function NotebookMindmapPage() {
     </NotebookShell>
   );
 }
+

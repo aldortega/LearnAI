@@ -10,6 +10,7 @@ export type NotebookShellMode = "chat" | "quiz" | "quickstart" | "reports" | "mi
 type Props = {
   title?: string;
   documents: Document[];
+  canManageDocuments: boolean;
   isUploading: boolean;
   deletingDocumentIds: Set<string>;
   onAddSource: () => void;
@@ -36,6 +37,7 @@ type Props = {
 export function NotebookShell({
   title,
   documents,
+  canManageDocuments,
   isUploading,
   deletingDocumentIds,
   onAddSource,
@@ -66,6 +68,7 @@ export function NotebookShell({
       <main className="flex min-h-0 flex-1 overflow-hidden overscroll-none">
         <SourcesSidebar
           documents={documents}
+          canManageDocuments={canManageDocuments}
           isUploading={isUploading}
           deletingDocumentIds={deletingDocumentIds}
           onAddSource={onAddSource}

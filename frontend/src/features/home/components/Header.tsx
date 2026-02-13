@@ -1,6 +1,7 @@
 ﻿import { GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { NotificationBell } from "../../notifications";
 import { UserMenu } from "../../auth/components/UserMenu";
 import { cn } from "../../../shared/lib/cn";
 
@@ -41,7 +42,10 @@ export function Header({ title, className }: Props) {
         ) : null}
       </div>
 
-      <UserMenu />
+      <div className="flex items-center gap-3">
+        <NotificationBell />
+        <UserMenu />
+      </div>
     </header>
   );
 }
