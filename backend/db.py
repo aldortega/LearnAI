@@ -16,6 +16,30 @@ async def ensure_indexes() -> None:
     await db.sessions.create_index("token_hash", unique=True)
     await db.notebooks.create_index("owner_id")
     await db.notebooks.create_index("created_at")
+    await db.notebook_memberships.create_index("member_id")
+    await db.notebook_memberships.create_index("owner_id")
+    await db.notebook_memberships.create_index("notebook_id")
+    await db.notebook_memberships.create_index(
+        [("notebook_id", 1), ("member_id", 1)],
+        unique=True,
+        partialFilterExpression={"revoked_at": None},
+    )
+    await db.notebook_invitations.create_index("notebook_id")
+    await db.notebook_invitations.create_index("owner_id")
+    await db.notebook_invitations.create_index("invitee_id")
+    await db.notebook_invitations.create_index("status")
+    await db.notebook_invitations.create_index("expires_at")
+    await db.notebook_invitations.create_index("created_at")
+    await db.notebook_invitations.create_index(
+        [("notebook_id", 1), ("invitee_id", 1)],
+        unique=True,
+        partialFilterExpression={"status": "pending"},
+    )
+    await db.notifications.create_index("user_id")
+    await db.notifications.create_index("created_at")
+    await db.notifications.create_index(
+        [("user_id", 1), ("is_read", 1), ("created_at", -1)]
+    )
     await db.documents.create_index("owner_id")
     await db.documents.create_index("notebook_id")
     await db.documents.create_index("status")

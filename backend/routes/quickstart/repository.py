@@ -2,29 +2,16 @@ import hashlib
 from datetime import datetime
 
 from bson import ObjectId
-from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import db
+from ..notebook_access import resolve_notebook_access
 from .normalization import coerce_text
 
 
 async def get_notebook_or_404(notebook_id: str, user: dict) -> dict:
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook invalido"
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
-        )
-    return notebook
+    access = await resolve_notebook_access(notebook_id, user)
+    return access.notebook
 
 
 async def fetch_ready_documents(
@@ -82,7 +69,7 @@ async def resolve_quickstart_topic_context(
         )
 
     fingerprint, _ = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     if summary.get("sources_fingerprint") != fingerprint:
         raise HTTPException(

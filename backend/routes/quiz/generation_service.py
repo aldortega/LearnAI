@@ -11,6 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import db
 from ...schemas.quiz import RoadmapOut
+from ..notebook_access import resolve_notebook_access
 from .constants import (
     PASSING_EXAM_SCORE,
     PASSING_LESSON_SCORE,
@@ -254,22 +255,8 @@ async def generate_questions_for_roadmap(
 
 
 async def get_notebook_or_404(notebook_id: str, user: dict) -> dict:
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook inválido"
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
-        )
-    return notebook
-
+    access = await resolve_notebook_access(notebook_id, user)
+    return access.notebook
 
 def build_level_doc(
     unit_id: str,
@@ -414,3 +401,4 @@ async def generate_quiz_for_notebook(
         await db_ref.quiz_level_progress.insert_many(progress_docs)
 
     return await build_roadmap_response(roadmap_doc, user, db_client=db_ref)
+

@@ -57,7 +57,7 @@ async def get_reports_config(
     sources_fingerprint, ready_count = await compute_sources_fingerprint(
         notebook_title,
         notebook["_id"],
-        user["_id"],
+        notebook["owner_id"],
     )
     has_ready_sources = ready_count > 0
 
@@ -117,7 +117,7 @@ async def generate_report_suggestions(
     sources_fingerprint, ready_count = await compute_sources_fingerprint(
         coerce_text(notebook.get("title")),
         notebook["_id"],
-        user["_id"],
+        notebook["owner_id"],
     )
     if ready_count == 0:
         raise HTTPException(
@@ -235,7 +235,7 @@ async def generate_report(
     _, ready_count = await compute_sources_fingerprint(
         coerce_text(notebook.get("title")),
         notebook["_id"],
-        user["_id"],
+        notebook["owner_id"],
     )
     if ready_count == 0:
         raise HTTPException(

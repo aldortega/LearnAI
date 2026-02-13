@@ -106,7 +106,7 @@ async def _process_quiz_questions_generation(notebook_id: str, owner_id: str) ->
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             logger.error("Notebook no encontrado en preguntas")
@@ -144,7 +144,7 @@ async def _process_quiz_level_questions_generation(
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             logger.error("Notebook no encontrado en preguntas de nivel")
@@ -262,7 +262,7 @@ async def _process_quiz_generation(
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             await mark_quiz_job_failed(

@@ -21,7 +21,7 @@ async def list_reports(notebook_id: str, request: Request) -> ReportListOut:
     current_fingerprint, _ = await compute_sources_fingerprint(
         coerce_text(notebook.get("title")),
         notebook["_id"],
-        user["_id"],
+        notebook["owner_id"],
     )
 
     cursor = db.reports.find(
@@ -64,7 +64,7 @@ async def get_report(
     current_fingerprint, _ = await compute_sources_fingerprint(
         coerce_text(notebook.get("title")),
         notebook["_id"],
-        user["_id"],
+        notebook["owner_id"],
     )
     return report_doc_to_out(report_doc, current_fingerprint)
 

@@ -146,7 +146,7 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             await mark_report_job_failed(job_id, "Notebook no encontrado", db_client=worker_db)
@@ -176,7 +176,7 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
         fingerprint, ready_count = await compute_sources_fingerprint(
             notebook["title"],
             notebook_object_id,
-            owner_object_id,
+            notebook["owner_id"],
             db_client=worker_db,
         )
         if ready_count == 0:
@@ -253,7 +253,7 @@ async def _process_report_suggestions_generation(
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             await mark_report_suggestions_job_failed(
@@ -273,7 +273,7 @@ async def _process_report_suggestions_generation(
         sources_fingerprint, ready_count = await compute_sources_fingerprint(
             notebook["title"],
             notebook_object_id,
-            owner_object_id,
+            notebook["owner_id"],
             db_client=worker_db,
         )
         if ready_count == 0:
@@ -315,3 +315,4 @@ async def _process_report_suggestions_generation(
         await mark_report_suggestions_job_done(job_id, db_client=worker_db)
     finally:
         worker_client.close()
+

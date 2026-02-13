@@ -19,6 +19,7 @@ from ...gemini import (
     has_gemini_api_keys,
 )
 from ...schemas.rag import ChatMessageOut, ChatMessageSource, ConversationOut, RagSource
+from ..notebook_access import resolve_notebook_access
 
 logger = logging.getLogger(__name__)
 
@@ -235,21 +236,8 @@ def create_llm() -> GeminiChatWithFallback:
 
 
 async def get_notebook_object_id(notebook_id: str, user: dict) -> ObjectId:
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook invalido"
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
-        )
-    return notebook_object_id
+    access = await resolve_notebook_access(notebook_id, user)
+    return access.notebook["_id"]
 
 
 async def ensure_conversation(notebook_object_id: ObjectId, user_id: ObjectId) -> dict:
@@ -293,6 +281,19 @@ async def retrieve_context(
     fetch_multiplier = max(1, settings.rag_fetch_k_multiplier)
     fetch_limit = max(selected_top_k, selected_top_k * fetch_multiplier)
     fetch_limit = min(fetch_limit, max(selected_top_k, settings.rag_fetch_k_max))
+    source_owner_id = user.get("_source_owner_id")
+    if not isinstance(source_owner_id, ObjectId):
+        notebook_doc = await db.notebooks.find_one(
+            {"_id": notebook_object_id},
+            {"owner_id": 1},
+        )
+        if not notebook_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notebook no encontrado",
+            )
+        source_owner_id = notebook_doc["owner_id"]
+
     query_vector = await asyncio.to_thread(
         embed_query_with_fallback,
         question,
@@ -314,7 +315,7 @@ async def retrieve_context(
                             "key": "notebook_id",
                             "match": {"value": str(notebook_object_id)},
                         },
-                        {"key": "owner_id", "match": {"value": str(user["_id"])}},
+                        {"key": "owner_id", "match": {"value": str(source_owner_id)}},
                     ]
                 },
             },
