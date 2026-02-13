@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 
 from ..rag import create_llm, retrieve_context
-from .constants import MindmapNodeDetailLLM, MindmapTitlesPayloadLLM
+from .constants import MindmapNodeDetailLLM, MindmapTreePayloadLLM
 from .normalization import (
     compact_context,
     coerce_payload,
@@ -61,7 +61,7 @@ async def generate_mindmap_tree(
     system_message, user_message = build_mindmap_tree_prompt(notebook_title, context_text)
     llm = create_llm()
     structured_llm = llm.with_structured_output(
-        schema=MindmapTitlesPayloadLLM.model_json_schema(),
+        schema=MindmapTreePayloadLLM.model_json_schema(),
         method="json_schema",
     )
 
@@ -70,8 +70,8 @@ async def generate_mindmap_tree(
             structured_llm.invoke,
             [system_message, user_message],
         )
-        payload_data = MindmapTitlesPayloadLLM.model_validate(
-            coerce_payload(payload, MindmapTitlesPayloadLLM)
+        payload_data = MindmapTreePayloadLLM.model_validate(
+            coerce_payload(payload, MindmapTreePayloadLLM)
         ).model_dump()
     except Exception as exc:
         logger.warning(
@@ -80,7 +80,7 @@ async def generate_mindmap_tree(
         )
         try:
             raw_response = await asyncio.to_thread(llm.invoke, [system_message, user_message])
-            payload_data = MindmapTitlesPayloadLLM.model_validate(
+            payload_data = MindmapTreePayloadLLM.model_validate(
                 _parse_json_object_from_response(raw_response)
             ).model_dump()
         except Exception as raw_exc:
@@ -106,14 +106,24 @@ async def generate_node_detail(
     node_title: str,
     notebook_object_id: ObjectId,
     user: dict,
+    lineage_titles: list[str],
+    children_titles: list[str],
 ) -> str:
-    question = f"Explica brevemente el concepto {node_title} en {notebook_title}"
+    lineage_path = " > ".join(
+        [title.strip() for title in lineage_titles if isinstance(title, str) and title.strip()]
+    )
+    question = (
+        f"Explica brevemente el concepto {node_title} en {notebook_title}. "
+        f"Ruta conceptual: {lineage_path or node_title}"
+    )
     context_lines, _, _, _ = await retrieve_context(question, notebook_object_id, user)
     context_text = compact_context(context_lines, max_chars=4200)
     system_message, user_message = build_node_detail_prompt(
         notebook_title,
         node_title,
         context_text,
+        lineage_titles=lineage_titles,
+        children_titles=children_titles,
     )
     llm = create_llm()
     structured_llm = llm.with_structured_output(

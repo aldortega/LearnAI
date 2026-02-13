@@ -1,14 +1,47 @@
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
+
 from pydantic import BaseModel
 
 from .constants import (
     DETAIL_MAX_CHARS,
-    FALLBACK_SECONDARY_TITLES,
-    FALLBACK_TERTIARY_TITLES,
-    SECONDARY_NODE_COUNT,
-    TERTIARY_NODE_COUNT_PER_SECONDARY,
+    FALLBACK_CHILD_TITLES,
+    TECHNICAL_MAX_CHILDREN_PER_NODE,
+    TECHNICAL_MAX_DEPTH,
+    TECHNICAL_MAX_NODES,
 )
+
+SPANISH_STOPWORDS = {
+    "ante",
+    "bajo",
+    "cada",
+    "como",
+    "con",
+    "contra",
+    "desde",
+    "donde",
+    "entre",
+    "esta",
+    "este",
+    "hacia",
+    "hasta",
+    "para",
+    "pero",
+    "por",
+    "que",
+    "sin",
+    "sobre",
+    "tema",
+    "una",
+    "uno",
+}
+
+
+@dataclass
+class TreeNormalizationState:
+    total_nodes: int = 1
 
 
 def coerce_text(value: object | None) -> str:
@@ -41,133 +74,149 @@ def compact_context(context_lines: list[str], max_chars: int = 5000) -> str:
     return context_text[:max_chars].rstrip() + "..."
 
 
-def _append_unique_title(
-    titles: list[str],
-    seen: set[str],
-    value: object,
-    max_count: int,
-) -> None:
-    if len(titles) >= max_count:
-        return
-    title = normalize_title(value, "")
+def _tokenize_title(value: str) -> set[str]:
+    tokens = re.findall(r"[0-9a-zA-Z]+", value.casefold())
+    return {
+        token
+        for token in tokens
+        if len(token) >= 3 and token not in SPANISH_STOPWORDS
+    }
+
+
+def strip_parent_prefix(parent_title: str, child_title: object | None) -> str:
+    parent = normalize_title(parent_title, "")
+    cleaned = normalize_title(child_title, "")
+    if not cleaned:
+        return ""
+
+    # Sanitizacion directa solicitada: conservar texto despues de ":".
+    for _ in range(3):
+        if ":" not in cleaned:
+            break
+        right_side = cleaned.split(":", 1)[1].strip()
+        if not right_side:
+            break
+        cleaned = right_side
+
+    if not parent:
+        return cleaned[:80]
+
+    parent_pattern = re.escape(parent)
+    prefix_pattern = re.compile(
+        rf"^{parent_pattern}\s*[:>\-–|/\\]+\s*(.+)$",
+        flags=re.IGNORECASE,
+    )
+    for _ in range(3):
+        match = prefix_pattern.match(cleaned)
+        if not match:
+            break
+        next_title = normalize_title(match.group(1), "")
+        if not next_title:
+            break
+        cleaned = next_title
+    return cleaned[:80]
+
+
+def _is_related_title(parent_title: str, child_title: str) -> bool:
+    parent_key = normalize_title(parent_title, "").casefold()
+    child_key = strip_parent_prefix(parent_title, child_title).casefold()
+    if not parent_key or not child_key:
+        return False
+    if parent_key == child_key:
+        return False
+    if child_key.startswith(parent_key) or parent_key in child_key:
+        return True
+
+    parent_tokens = _tokenize_title(parent_key)
+    child_tokens = _tokenize_title(child_key)
+    if not parent_tokens or not child_tokens:
+        return False
+    return len(parent_tokens.intersection(child_tokens)) > 0
+
+
+def _clean_related_title(parent_title: str, child_title: str) -> str:
+    title = strip_parent_prefix(parent_title, child_title)
     if not title:
-        return
-    key = title.casefold()
-    if key in seen:
-        return
-    seen.add(key)
-    titles.append(title[:80])
+        return ""
+    if not parent_title or _is_related_title(parent_title, title):
+        return title[:80]
+    return ""
 
 
-def _extract_title_pairs(payload: dict) -> list[tuple[str, str]]:
-    raw_pairs = payload.get("pairs")
-    if not isinstance(raw_pairs, list):
+def _normalize_children(
+    raw_children: object,
+    parent_title: str,
+    depth: int,
+    state: TreeNormalizationState,
+) -> list[dict]:
+    if depth > TECHNICAL_MAX_DEPTH:
+        return []
+    if not isinstance(raw_children, list):
         return []
 
-    pairs: list[tuple[str, str]] = []
-    for pair in raw_pairs[:40]:
-        if not isinstance(pair, dict):
-            continue
-        secondary_title = normalize_title(pair.get("secondary_title"), "")
-        tertiary_title = normalize_title(pair.get("tertiary_title"), "")
-        if not secondary_title or not tertiary_title:
-            continue
-        pairs.append((secondary_title[:80], tertiary_title[:80]))
-    return pairs
-
-
-def _build_secondary_titles(pairs: list[tuple[str, str]]) -> list[str]:
-    titles: list[str] = []
-    seen: set[str] = set()
-
-    for secondary_title, _ in pairs:
-        _append_unique_title(titles, seen, secondary_title, SECONDARY_NODE_COUNT)
-        if len(titles) >= SECONDARY_NODE_COUNT:
+    children: list[dict] = []
+    seen_titles: set[str] = set()
+    for raw_child in raw_children:
+        if len(children) >= TECHNICAL_MAX_CHILDREN_PER_NODE:
             break
-
-    for fallback in FALLBACK_SECONDARY_TITLES:
-        _append_unique_title(titles, seen, fallback, SECONDARY_NODE_COUNT)
-        if len(titles) >= SECONDARY_NODE_COUNT:
+        if state.total_nodes >= TECHNICAL_MAX_NODES:
             break
-
-    while len(titles) < SECONDARY_NODE_COUNT:
-        _append_unique_title(
-            titles,
-            seen,
-            f"Tema {len(titles) + 1}",
-            SECONDARY_NODE_COUNT,
-        )
-    return titles
-
-
-def _build_tertiary_titles(
-    secondary_title: str,
-    pairs: list[tuple[str, str]],
-) -> list[str]:
-    titles: list[str] = []
-    seen: set[str] = set()
-    secondary_key = secondary_title.casefold()
-
-    for raw_secondary_title, tertiary_title in pairs:
-        if raw_secondary_title.casefold() != secondary_key:
+        if not isinstance(raw_child, dict):
             continue
-        _append_unique_title(
-            titles,
-            seen,
-            tertiary_title,
-            TERTIARY_NODE_COUNT_PER_SECONDARY,
-        )
-        if len(titles) >= TERTIARY_NODE_COUNT_PER_SECONDARY:
-            return titles
 
-    for _, tertiary_title in pairs:
-        _append_unique_title(
-            titles,
-            seen,
-            tertiary_title,
-            TERTIARY_NODE_COUNT_PER_SECONDARY,
-        )
-        if len(titles) >= TERTIARY_NODE_COUNT_PER_SECONDARY:
-            return titles
+        raw_title = normalize_title(raw_child.get("title"), "")
+        title = _clean_related_title(parent_title, raw_title)
+        if not title:
+            continue
+        if title.casefold() == parent_title.casefold():
+            continue
 
-    for fallback in FALLBACK_TERTIARY_TITLES:
-        _append_unique_title(
-            titles,
-            seen,
-            fallback,
-            TERTIARY_NODE_COUNT_PER_SECONDARY,
-        )
-        if len(titles) >= TERTIARY_NODE_COUNT_PER_SECONDARY:
-            return titles
+        title_key = title.casefold()
+        if title_key in seen_titles:
+            continue
+        seen_titles.add(title_key)
 
-    while len(titles) < TERTIARY_NODE_COUNT_PER_SECONDARY:
-        _append_unique_title(
-            titles,
-            seen,
-            f"Subtema {len(titles) + 1}",
-            TERTIARY_NODE_COUNT_PER_SECONDARY,
+        state.total_nodes += 1
+        children.append(
+            {
+                "title": title,
+                "children": _normalize_children(
+                    raw_child.get("children"),
+                    title,
+                    depth + 1,
+                    state,
+                ),
+            }
         )
-    return titles
+    return children
+
+
+def _build_fallback_children(root_title: str, state: TreeNormalizationState) -> list[dict]:
+    children: list[dict] = []
+    seen_titles: set[str] = set()
+
+    for fallback_title in FALLBACK_CHILD_TITLES:
+        if state.total_nodes >= TECHNICAL_MAX_NODES:
+            break
+        title = normalize_title(f"{fallback_title} de {root_title}", "")[:80]
+        if not title:
+            continue
+        key = title.casefold()
+        if key in seen_titles:
+            continue
+        seen_titles.add(key)
+        state.total_nodes += 1
+        children.append({"title": title, "children": []})
+
+    return children
 
 
 def normalize_tree_payload(payload: dict, notebook_title: str) -> dict:
     root_title = normalize_title(notebook_title, "Mapa mental")
-    pairs = _extract_title_pairs(payload)
-    secondary_titles = _build_secondary_titles(pairs)
-
-    children: list[dict] = []
-    for secondary_title in secondary_titles:
-        tertiary_titles = _build_tertiary_titles(secondary_title, pairs)
-        children.append(
-            {
-                "title": secondary_title,
-                "children": [
-                    {"title": tertiary_title, "children": []}
-                    for tertiary_title in tertiary_titles
-                ],
-            }
-        )
-
+    state = TreeNormalizationState(total_nodes=1)
+    children = _normalize_children(payload.get("children"), root_title, 1, state)
+    if not children:
+        children = _build_fallback_children(root_title, state)
     return {"title": root_title, "children": children}
 
 
