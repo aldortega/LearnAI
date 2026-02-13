@@ -185,10 +185,69 @@ def _get_available_indices(total: int, excluded: set[int] | None = None) -> list
     ]
 
 
+def _rotation_mode() -> str:
+    raw_mode = (settings.gemini_rotation_mode or "failover").strip().lower()
+    if raw_mode == "per_call":
+        return "per_call"
+    return "failover"
+
+
+def _safe_parse_index(raw_value: str | None, total: int) -> int | None:
+    if raw_value is None:
+        return None
+    try:
+        parsed_index = int(raw_value)
+    except (TypeError, ValueError):
+        return None
+    if 0 <= parsed_index < total:
+        return parsed_index
+    return None
+
+
+def _next_available_index(available_indices: list[int], selected_index: int) -> int:
+    if not available_indices:
+        return selected_index
+    if selected_index not in available_indices:
+        return available_indices[0]
+    selected_position = available_indices.index(selected_index)
+    next_position = (selected_position + 1) % len(available_indices)
+    return available_indices[next_position]
+
+
+def _select_per_call_index(total: int, available_indices: list[int]) -> int:
+    selected_index = available_indices[0]
+    next_active_index = available_indices[0]
+
+    def mutator(client: Redis) -> None:
+        nonlocal selected_index, next_active_index
+        active_index = _safe_parse_index(client.get(_active_index_key()), total)
+        if active_index in available_indices:
+            selected_index = active_index
+        else:
+            selected_index = available_indices[0]
+        next_active_index = _next_available_index(available_indices, selected_index)
+        client.set(_active_index_key(), str(next_active_index))
+
+    _safe_mutate_failover_state(mutator)
+    logger.info(
+        "Gemini key seleccionada en round-robin",
+        extra={
+            "key_index": selected_index,
+            "next_active_index": next_active_index,
+            "total_keys": total,
+        },
+    )
+    return selected_index
+
+
 def _ordered_candidate_indices(total: int, tried: set[int]) -> list[int]:
     available_indices = _get_available_indices(total, excluded=tried)
     if not available_indices:
         return []
+
+    if _rotation_mode() == "per_call" and not tried:
+        selected_index = _select_per_call_index(total, available_indices)
+        return [selected_index] + [index for index in available_indices if index != selected_index]
 
     active_index = _safe_read_active_index(total)
     if active_index in available_indices:

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "documents"
     gemini_api_key: Optional[str] = None
     gemini_api_keys: Optional[str] = None
+    gemini_rotation_mode: Literal["failover", "per_call"] = "failover"
     gemini_chat_model: str = "gemini-2.5-flash-lite"
     gemini_failover_redis_prefix: str = "learnai:gemini:failover"
     gemini_failover_lock_seconds: int = 3
