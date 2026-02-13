@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 import logging
+import re
 import time
 
 import httpx
@@ -94,6 +95,128 @@ def coerce_text(value: object | None) -> str:
     return str(value)
 
 
+def coerce_int(value: object | None, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def tokenize_for_overlap(text: str) -> set[str]:
+    tokens = re.findall(r"[0-9a-zA-Záéíóúñü]+", text.lower())
+    return {token for token in tokens if len(token) >= 3}
+
+
+def lexical_overlap_score(query_tokens: set[str], chunk_text: str) -> float:
+    if not query_tokens:
+        return 0.0
+    chunk_tokens = tokenize_for_overlap(chunk_text)
+    if not chunk_tokens:
+        return 0.0
+    return len(query_tokens & chunk_tokens) / len(query_tokens)
+
+
+def rank_candidates(question: str, hits: list[dict]) -> list[dict]:
+    query_tokens = tokenize_for_overlap(question)
+    lexical_weight = settings.rag_lexical_weight
+    if lexical_weight < 0.0:
+        lexical_weight = 0.0
+    if lexical_weight > 1.0:
+        lexical_weight = 1.0
+    semantic_weight = 1.0 - lexical_weight
+
+    candidates: list[dict] = []
+    for hit in hits:
+        payload_data = hit.get("payload") or {}
+        text = coerce_text(payload_data.get("text")).strip()
+        if not text:
+            continue
+        semantic_score = float(hit.get("score", 0.0))
+        lexical_score = lexical_overlap_score(query_tokens, text)
+        combined_score = (semantic_score * semantic_weight) + (
+            lexical_score * lexical_weight
+        )
+        candidates.append(
+            {
+                "id": coerce_text(hit.get("id")),
+                "payload": payload_data,
+                "text": text,
+                "semantic_score": semantic_score,
+                "lexical_score": lexical_score,
+                "combined_score": combined_score,
+            }
+        )
+
+    candidates.sort(
+        key=lambda item: (
+            item["combined_score"],
+            item["semantic_score"],
+            item["lexical_score"],
+        ),
+        reverse=True,
+    )
+    return candidates
+
+
+def select_candidates(candidates: list[dict], selected_top_k: int) -> list[dict]:
+    min_semantic_score = max(0.0, settings.rag_min_score)
+    relaxed_semantic_floor = max(0.0, min_semantic_score - 0.2)
+    max_chunks_per_document = max(1, settings.rag_max_chunks_per_document)
+
+    selected: list[dict] = []
+    selected_ids: set[str] = set()
+    chunks_by_document: dict[str, int] = {}
+
+    def add_candidate(candidate: dict, ignore_document_cap: bool = False) -> bool:
+        candidate_id = coerce_text(candidate.get("id"))
+        if candidate_id and candidate_id in selected_ids:
+            return False
+
+        payload_data = candidate.get("payload", {})
+        document_id = coerce_text(payload_data.get("document_id")) or "__unknown__"
+        if not ignore_document_cap and (
+            chunks_by_document.get(document_id, 0) >= max_chunks_per_document
+        ):
+            return False
+
+        selected.append(candidate)
+        if candidate_id:
+            selected_ids.add(candidate_id)
+        chunks_by_document[document_id] = chunks_by_document.get(document_id, 0) + 1
+        return True
+
+    for candidate in candidates:
+        semantic_score = float(candidate.get("semantic_score", 0.0))
+        lexical_score = float(candidate.get("lexical_score", 0.0))
+        if semantic_score < relaxed_semantic_floor:
+            continue
+        if semantic_score < min_semantic_score and lexical_score < 0.25:
+            continue
+        added = add_candidate(candidate)
+        if added and len(selected) >= selected_top_k:
+            return selected
+
+    if len(selected) < selected_top_k:
+        for candidate in candidates:
+            semantic_score = float(candidate.get("semantic_score", 0.0))
+            if semantic_score < min_semantic_score:
+                continue
+            added = add_candidate(candidate)
+            if added and len(selected) >= selected_top_k:
+                break
+
+    if len(selected) < selected_top_k:
+        for candidate in candidates:
+            semantic_score = float(candidate.get("semantic_score", 0.0))
+            if semantic_score < min_semantic_score:
+                continue
+            added = add_candidate(candidate, ignore_document_cap=True)
+            if added and len(selected) >= selected_top_k:
+                break
+
+    return selected
+
+
 def ensure_general_notice(answer_text: str) -> str:
     trimmed = answer_text.strip()
     if not trimmed:
@@ -167,6 +290,9 @@ async def retrieve_context(
         )
 
     selected_top_k = top_k or settings.rag_top_k
+    fetch_multiplier = max(1, settings.rag_fetch_k_multiplier)
+    fetch_limit = max(selected_top_k, selected_top_k * fetch_multiplier)
+    fetch_limit = min(fetch_limit, max(selected_top_k, settings.rag_fetch_k_max))
     query_vector = await asyncio.to_thread(
         embed_query_with_fallback,
         question,
@@ -179,7 +305,7 @@ async def retrieve_context(
             f"/collections/{settings.qdrant_collection_name}/points/search",
             json={
                 "vector": query_vector,
-                "limit": selected_top_k,
+                "limit": fetch_limit,
                 "with_payload": True,
                 "with_vectors": False,
                 "filter": {
@@ -201,26 +327,24 @@ async def retrieve_context(
         result = response.json()
 
     hits = result.get("result", []) or []
+    ranked_candidates = rank_candidates(question, hits)
+    selected_candidates = select_candidates(ranked_candidates, selected_top_k)
+
     sources: list[RagSource] = []
     context_lines: list[str] = []
     document_ids: list[str] = []
 
-    for hit in hits:
-        payload_data = hit.get("payload") or {}
-        text = payload_data.get("text") or ""
-        score = float(hit.get("score", 0.0))
-        if score < settings.rag_min_score:
-            continue
-        if not text:
-            continue
-        document_id = payload_data.get("document_id")
+    for candidate in selected_candidates:
+        payload_data = candidate.get("payload") or {}
+        text = coerce_text(candidate.get("text"))
+        document_id = coerce_text(payload_data.get("document_id"))
         if document_id:
             document_ids.append(document_id)
         sources.append(
             RagSource(
-                document_id=document_id or "",
-                chunk_id=payload_data.get("chunk_id", 0),
-                score=score,
+                document_id=document_id,
+                chunk_id=coerce_int(payload_data.get("chunk_id"), default=0),
+                score=float(candidate.get("semantic_score", 0.0)),
                 text=text,
                 file_name=payload_data.get("file_name"),
                 page=payload_data.get("page"),

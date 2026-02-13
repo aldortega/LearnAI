@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
+import re
 import tempfile
 import time
 import uuid
@@ -22,6 +23,44 @@ from .gemini import embed_documents_with_fallback, has_gemini_api_keys
 
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_chunk_text(text: str) -> str:
+    normalized = text.replace("\u00a0", " ")
+    normalized = re.sub(r"(\w)-\n(\w)", r"\1\2", normalized)
+    normalized = re.sub(r"[ \t]+\n", "\n", normalized)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    normalized = re.sub(r"[ \t]{2,}", " ", normalized)
+    return normalized.strip()
+
+
+def split_documents_for_ingestion(
+    documents: list[Document], content_type: str
+) -> list[Document]:
+    chunk_size = settings.chunk_size
+    chunk_overlap = settings.chunk_overlap
+    if content_type in {"pdf", "pptx"}:
+        chunk_size = max(700, int(settings.chunk_size * 0.9))
+        chunk_overlap = max(100, int(settings.chunk_overlap * 1.2))
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ". ", "? ", "! ", "; ", " ", ""],
+    )
+
+    normalized_documents: list[Document] = []
+    for doc in documents:
+        text = normalize_chunk_text(doc.page_content)
+        if not text:
+            continue
+        normalized_documents.append(
+            Document(page_content=text, metadata=dict(doc.metadata or {}))
+        )
+
+    if not normalized_documents:
+        return []
+    return splitter.split_documents(normalized_documents)
 
 
 def process_document(document_id: str) -> None:
@@ -65,11 +104,12 @@ async def _process_document(document_id: str) -> None:
             documents = await asyncio.to_thread(
                 load_documents, file_bytes, document["content_type"]
             )
-            splitter = RecursiveCharacterTextSplitter(
-                chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
+            chunks = await asyncio.to_thread(
+                split_documents_for_ingestion, documents, document["content_type"]
             )
-            chunks = splitter.split_documents(documents)
-            filtered_chunks = [chunk for chunk in chunks if chunk.page_content]
+            filtered_chunks = [
+                chunk for chunk in chunks if chunk.page_content and chunk.page_content.strip()
+            ]
             texts = [chunk.page_content for chunk in filtered_chunks]
             if not texts:
                 raise RuntimeError("Documento sin texto utilizable")
