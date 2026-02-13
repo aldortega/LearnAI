@@ -2,32 +2,17 @@ import hashlib
 from datetime import datetime
 
 from bson import ObjectId
-from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import db
 from ...schemas.mindmap import MindmapNodeOut, MindmapOut
-from .normalization import coerce_text
+from ..notebook_access import resolve_notebook_access
+from .normalization import coerce_text, strip_parent_prefix
 
 
 async def get_notebook_or_404(notebook_id: str, user: dict) -> dict:
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Notebook invalido",
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notebook no encontrado",
-        )
-    return notebook
+    access = await resolve_notebook_access(notebook_id, user)
+    return access.notebook
 
 
 async def fetch_ready_documents(
@@ -74,16 +59,56 @@ async def compute_sources_fingerprint(
 def map_nodes_to_out(nodes_data: object) -> list[MindmapNodeOut]:
     if not isinstance(nodes_data, list):
         return []
+    node_by_id: dict[str, dict] = {}
+    for raw in nodes_data:
+        if not isinstance(raw, dict):
+            continue
+        node_id = coerce_text(raw.get("id"))
+        if not node_id:
+            continue
+        node_by_id[node_id] = raw
+
+    sanitized_title_by_id: dict[str, str] = {}
+
+    def resolve_sanitized_title(node_id: str, path: set[str] | None = None) -> str:
+        if node_id in sanitized_title_by_id:
+            return sanitized_title_by_id[node_id]
+
+        current_path = set() if path is None else path
+        if node_id in current_path:
+            return ""
+        current_path.add(node_id)
+        try:
+            raw_node = node_by_id.get(node_id)
+            if not raw_node:
+                return ""
+
+            raw_title = coerce_text(raw_node.get("title"))
+            parent_id = coerce_text(raw_node.get("parent_id")) or None
+            if not parent_id:
+                sanitized = raw_title
+            else:
+                parent_title = resolve_sanitized_title(parent_id, current_path)
+                sanitized = strip_parent_prefix(parent_title, raw_title) or raw_title
+
+            sanitized_title_by_id[node_id] = sanitized
+            return sanitized
+        finally:
+            current_path.discard(node_id)
+
     nodes_out: list[MindmapNodeOut] = []
     for raw in nodes_data:
         if not isinstance(raw, dict):
+            continue
+        raw_id = coerce_text(raw.get("id"))
+        if not raw_id:
             continue
         depth_raw = raw.get("depth")
         depth = int(depth_raw) if isinstance(depth_raw, int) else 0
         nodes_out.append(
             MindmapNodeOut(
-                id=coerce_text(raw.get("id")),
-                title=coerce_text(raw.get("title")),
+                id=raw_id,
+                title=resolve_sanitized_title(raw_id) or coerce_text(raw.get("title")),
                 parent_id=coerce_text(raw.get("parent_id")) or None,
                 depth=max(0, depth),
                 has_children=bool(raw.get("has_children")),
@@ -134,7 +159,7 @@ async def resolve_mindmap_node_context(
         )
 
     fingerprint, _ = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     if mindmap_doc.get("sources_fingerprint") != fingerprint:
         raise HTTPException(

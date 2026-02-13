@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+from functools import lru_cache
 import logging
 from pathlib import Path
 import re
@@ -21,8 +22,17 @@ from supabase import create_client
 from .config import settings
 from .gemini import embed_documents_with_fallback, has_gemini_api_keys
 
+try:
+    from docling.document_converter import DocumentConverter
+
+    DOCLING_AVAILABLE = True
+except Exception:
+    DocumentConverter = None  # type: ignore[assignment]
+    DOCLING_AVAILABLE = False
+
 
 logger = logging.getLogger(__name__)
+DOCLING_CONTENT_TYPES = {"pdf", "docx", "pptx"}
 
 
 def normalize_chunk_text(text: str) -> str:
@@ -176,6 +186,77 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
     )
 
 
+@lru_cache(maxsize=1)
+def get_docling_converter() -> "DocumentConverter":
+    if not DOCLING_AVAILABLE or DocumentConverter is None:
+        raise RuntimeError("Docling no disponible")
+    return DocumentConverter()
+
+
+def load_documents_with_docling(tmp_path: str, content_type: str) -> list[Document]:
+    converter = get_docling_converter()
+    result = converter.convert(tmp_path)
+    markdown = result.document.export_to_markdown() or ""
+    text = normalize_chunk_text(markdown)
+    if not text:
+        return []
+    return [
+        Document(
+            page_content=text,
+            metadata={"source_parser": "docling", "content_type": content_type},
+        )
+    ]
+
+
+def load_documents_legacy(tmp_path: str, content_type: str) -> list[Document]:
+    if content_type == "pdf":
+        reader = PdfReader(tmp_path)
+        documents: list[Document] = []
+        for index, page in enumerate(reader.pages, start=1):
+            text = page.extract_text() or ""
+            if text.strip():
+                documents.append(Document(page_content=text, metadata={"page": index}))
+        return documents
+    if content_type == "docx":
+        text = docx2txt.process(tmp_path) or ""
+        return [Document(page_content=text, metadata={})] if text.strip() else []
+    if content_type == "pptx":
+        presentation = Presentation(tmp_path)
+        documents: list[Document] = []
+        for index, slide in enumerate(presentation.slides, start=1):
+            slide_sections: list[str] = []
+            for shape in slide.shapes:
+                if getattr(shape, "has_table", False):
+                    table_rows: list[str] = []
+                    for row in shape.table.rows:
+                        cells = [
+                            cell.text.strip()
+                            for cell in row.cells
+                            if cell.text and cell.text.strip()
+                        ]
+                        if cells:
+                            table_rows.append(" | ".join(cells))
+                    if table_rows:
+                        slide_sections.append("\n".join(table_rows))
+                    continue
+
+                text = (getattr(shape, "text", "") or "").strip()
+                if text:
+                    slide_sections.append(text)
+
+            if slide_sections:
+                documents.append(
+                    Document(
+                        page_content="\n\n".join(slide_sections),
+                        metadata={"page": index},
+                    )
+                )
+        return documents
+
+    text = Path(tmp_path).read_text(encoding="utf-8", errors="ignore")
+    return [Document(page_content=text, metadata={})] if text.strip() else []
+
+
 def load_documents(file_bytes: bytes, content_type: str) -> list[Document]:
     suffix_map = {"pdf": ".pdf", "docx": ".docx", "txt": ".txt", "pptx": ".pptx"}
     suffix = suffix_map.get(content_type)
@@ -187,53 +268,29 @@ def load_documents(file_bytes: bytes, content_type: str) -> list[Document]:
         tmp_path = tmp.name
 
     try:
-        if content_type == "pdf":
-            reader = PdfReader(tmp_path)
-            documents: list[Document] = []
-            for index, page in enumerate(reader.pages, start=1):
-                text = page.extract_text() or ""
-                if text.strip():
-                    documents.append(
-                        Document(page_content=text, metadata={"page": index})
+        if content_type in DOCLING_CONTENT_TYPES and DOCLING_AVAILABLE:
+            try:
+                docling_documents = load_documents_with_docling(tmp_path, content_type)
+                if docling_documents:
+                    logger.info(
+                        "Extraccion con Docling completada",
+                        extra={
+                            "content_type": content_type,
+                            "documents": len(docling_documents),
+                        },
                     )
-            return documents
-        if content_type == "docx":
-            text = docx2txt.process(tmp_path) or ""
-            return [Document(page_content=text, metadata={})] if text.strip() else []
-        if content_type == "pptx":
-            presentation = Presentation(tmp_path)
-            documents: list[Document] = []
-            for index, slide in enumerate(presentation.slides, start=1):
-                slide_sections: list[str] = []
-                for shape in slide.shapes:
-                    if getattr(shape, "has_table", False):
-                        table_rows: list[str] = []
-                        for row in shape.table.rows:
-                            cells = [
-                                cell.text.strip()
-                                for cell in row.cells
-                                if cell.text and cell.text.strip()
-                            ]
-                            if cells:
-                                table_rows.append(" | ".join(cells))
-                        if table_rows:
-                            slide_sections.append("\n".join(table_rows))
-                        continue
+                    return docling_documents
+                logger.warning(
+                    "Docling no produjo texto; se usa extractor legacy",
+                    extra={"content_type": content_type},
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Docling fallo; se usa extractor legacy",
+                    extra={"content_type": content_type, "error": str(exc)},
+                )
 
-                    text = (getattr(shape, "text", "") or "").strip()
-                    if text:
-                        slide_sections.append(text)
-
-                if slide_sections:
-                    documents.append(
-                        Document(
-                            page_content="\n\n".join(slide_sections),
-                            metadata={"page": index},
-                        )
-                    )
-            return documents
-        text = Path(tmp_path).read_text(encoding="utf-8", errors="ignore")
-        return [Document(page_content=text, metadata={})] if text.strip() else []
+        return load_documents_legacy(tmp_path, content_type)
     finally:
         try:
             Path(tmp_path).unlink(missing_ok=True)

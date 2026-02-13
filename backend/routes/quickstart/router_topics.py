@@ -54,7 +54,7 @@ async def add_quickstart_topic(
         )
 
     fingerprint, ready_count = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     if ready_count == 0:
         raise HTTPException(

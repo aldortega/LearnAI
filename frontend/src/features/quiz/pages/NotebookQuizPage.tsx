@@ -1,4 +1,4 @@
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+﻿import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { documentsApi } from "../../notebooks/api/documentsApi";
@@ -25,6 +25,7 @@ export function NotebookQuizPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { notebook } = useNotebook(notebookId);
+  const canManageDocuments = notebook?.can_manage_documents ?? false;
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
   const hasCheckedLatestJobRef = useRef(false);
@@ -95,11 +96,13 @@ export function NotebookQuizPage() {
 
 
   const handlePickFile = () => {
+    if (!canManageDocuments) return;
     fileInputRef.current?.click();
   };
 
 
   const processFileUpload = async (file: File) => {
+    if (!canManageDocuments) return;
     const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
     if (!allowedExtensions.includes(extension)) {
       return;
@@ -126,6 +129,7 @@ export function NotebookQuizPage() {
   };
 
   const handleDeleteRequest = (documentItem: Document) => {
+    if (!canManageDocuments) return;
     setDeleteTarget(documentItem);
   };
 
@@ -134,7 +138,7 @@ export function NotebookQuizPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!notebookId || !deleteTarget) return;
+    if (!notebookId || !deleteTarget || !canManageDocuments) return;
 
     const documentId = deleteTarget.id;
 
@@ -292,6 +296,7 @@ export function NotebookQuizPage() {
     <NotebookShell
       title={notebook?.title}
       documents={documents}
+      canManageDocuments={canManageDocuments}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}
@@ -388,3 +393,4 @@ export function NotebookQuizPage() {
     </NotebookShell>
   );
 }
+

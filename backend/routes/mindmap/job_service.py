@@ -89,7 +89,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             await mark_mindmap_job_failed(
@@ -102,7 +102,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
         fingerprint, ready_count = await compute_sources_fingerprint(
             notebook["title"],
             notebook_object_id,
-            owner_object_id,
+            notebook["owner_id"],
             db_client=worker_db,
         )
         if ready_count == 0:

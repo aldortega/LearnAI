@@ -8,7 +8,7 @@
   Plus,
   Trash2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
@@ -16,23 +16,16 @@ import type { Document, DocumentStatus } from "../types/documents.types";
 
 type Props = {
   documents: Document[];
+  canManageDocuments: boolean;
   isUploading: boolean;
   deletingDocumentIds: Set<string>;
   onAddSource: () => void;
   onDeleteDocument: (document: Document) => void;
 };
 
-// const statusLabels: Record<DocumentStatus, string> = {
-//   pending: "En cola",
-//   processing: "Procesando",
-//   done: "Listo",
-//   error: "Error",
-//   queued: "En cola",
-//   failed: "Error",
-// };
-
 export function SourcesSidebar({
   documents,
+  canManageDocuments,
   isUploading,
   deletingDocumentIds,
   onAddSource,
@@ -72,11 +65,11 @@ export function SourcesSidebar({
           isOpen ? "justify-between px-4" : "justify-center",
         )}
       >
-        {isOpen && (
-            <h2 className="text-sm font-semibold text-foreground whitespace-nowrap">
-              Fuentes
-            </h2>
-          )}
+        {isOpen ? (
+          <h2 className="whitespace-nowrap text-sm font-semibold text-foreground">
+            Fuentes
+          </h2>
+        ) : null}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="rounded-md p-2 text-muted-foreground hover:bg-muted-hover"
@@ -93,13 +86,20 @@ export function SourcesSidebar({
         {isOpen ? (
           <>
             <Button
-              className="mb-6 w-full whitespace-nowrap"
+              className="mb-3 w-full whitespace-nowrap"
               leftIcon={isUploading ? undefined : <Plus className="h-4 w-4" />}
               onClick={onAddSource}
               loading={isUploading}
+              disabled={!canManageDocuments}
             >
               {isUploading ? "Subiendo…" : "Añadir fuente"}
             </Button>
+
+            {!canManageDocuments ? (
+              <p className="mb-4 text-xs text-muted-foreground" role="alert">
+                Tienes acceso de solo lectura para documentos.
+              </p>
+            ) : null}
 
             {documents.length === 0 ? (
               <div className="mt-10 flex flex-col items-center justify-center text-center">
@@ -110,7 +110,7 @@ export function SourcesSidebar({
                   Las fuentes guardadas aparecerán aquí.
                 </p>
                 <p className="mt-1 w-full truncate text-xs text-muted-foreground">
-                  Haz clic en el botón Añadir fuente de arriba para añadir PDF, DOCX, TXT o PPTX.
+                  Haz clic en el botón Añadir fuente para cargar PDF, DOCX, TXT o PPTX.
                 </p>
               </div>
             ) : (
@@ -119,54 +119,53 @@ export function SourcesSidebar({
                   const isDeleting = deletingDocumentIds.has(document.id);
 
                   return (
-                      <li
-                        key={document.id}
-                        className="group flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2"
-                      >
-
+                    <li
+                      key={document.id}
+                      className="group flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2"
+                    >
                       <div className="relative flex h-4 w-4 items-center justify-center">
-                        <div className="absolute inset-0 flex items-center justify-center transition-opacity group-hover:opacity-0">
+                        <div
+                          className={cn(
+                            "absolute inset-0 flex items-center justify-center",
+                            canManageDocuments && "transition-opacity group-hover:opacity-0",
+                          )}
+                        >
                           {renderStatusIcon(document.status)}
                         </div>
-                        <button
-                          type="button"
-                          className={cn(
-                            "absolute inset-0 flex items-center justify-center transition-opacity",
-                            "opacity-0 group-hover:opacity-100",
-                          )}
-                          onClick={() => onDeleteDocument(document)}
-                          aria-label={`Eliminar ${document.file_name}`}
-                          disabled={isDeleting}
-                        >
-                          {isDeleting ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          ) : (
-                             <Trash2 className="h-4 w-4 text-muted-foreground hover:text-error" />
-
-                          )}
-                        </button>
+                        {canManageDocuments ? (
+                          <button
+                            type="button"
+                            className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+                            onClick={() => onDeleteDocument(document)}
+                            aria-label={`Eliminar ${document.file_name}`}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-error" />
+                            )}
+                          </button>
+                        ) : null}
                       </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground whitespace-nowrap">
-                        {document.file_name}
-                      </p>
-                      {/* <p className="text-xs text-muted-foreground">
-                        {statusLabels[document.status] ?? "Procesando"}
-                      </p> */}
-                    </div>
-                  </li>
-                );
-              })}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate whitespace-nowrap text-sm font-medium text-foreground">
+                          {document.file_name}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </>
         ) : (
           <div className="flex flex-col items-center gap-4 pt-4">
             <button
-              className="rounded-md p-2 bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-primary p-2 text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               title="Añadir fuente"
               onClick={onAddSource}
-              disabled={isUploading}
+              disabled={isUploading || !canManageDocuments}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -176,5 +175,4 @@ export function SourcesSidebar({
     </div>
   );
 }
-
 

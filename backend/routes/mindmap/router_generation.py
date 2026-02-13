@@ -20,7 +20,7 @@ async def get_mindmap(notebook_id: str, request: Request) -> MindmapOut:
         {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
     )
     fingerprint, ready_count = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     has_ready_sources = ready_count > 0
     status_value = "missing"
@@ -50,7 +50,7 @@ async def generate_mindmap(
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
     _, ready_count = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     if ready_count == 0:
         raise HTTPException(

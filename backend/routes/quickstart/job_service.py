@@ -89,7 +89,7 @@ async def _process_quickstart_generation(
             return
 
         notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id, "owner_id": owner_object_id}
+            {"_id": notebook_object_id}
         )
         if not notebook:
             await mark_quickstart_job_failed(
@@ -98,7 +98,10 @@ async def _process_quickstart_generation(
             return
 
         fingerprint, ready_count = await compute_sources_fingerprint(
-            notebook["title"], notebook_object_id, owner_object_id, db_client=worker_db
+            notebook["title"],
+            notebook_object_id,
+            notebook["owner_id"],
+            db_client=worker_db,
         )
         if ready_count == 0:
             await mark_quickstart_job_failed(

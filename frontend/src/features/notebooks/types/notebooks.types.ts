@@ -4,6 +4,8 @@ export type Notebook = {
   title: string;
   description?: string | null;
   emoji?: string | null;
+  access_role: "owner" | "collaborator";
+  can_manage_documents: boolean;
   source_count: number;
   created_at: string;
   updated_at: string;

@@ -17,6 +17,10 @@ from ..ingestion import process_document
 from ..rq_queue import queue
 from ..schemas.documents import DocumentCreateResponse, DocumentOut
 from .auth import get_current_user
+from .notebook_access import (
+    require_document_manage_permission,
+    resolve_notebook_access,
+)
 
 router = APIRouter(prefix="/notebooks", tags=["documents"])
 
@@ -86,25 +90,12 @@ async def create_document(
     notebook_id: str, request: Request, file: UploadFile = File(...)
 ) -> DocumentCreateResponse:
     user = await get_current_user(request)
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook inválido"
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
-        )
+    access = await require_document_manage_permission(notebook_id, user)
 
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Supabase no está configurado",
+            detail="Supabase no esta configurado",
         )
 
     bucket = settings.supabase_storage_bucket
@@ -118,22 +109,23 @@ async def create_document(
     if not file_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Archivo inválido",
+            detail="Archivo invalido",
         )
 
     content_type, extension = resolve_content_type(file_name, file.content_type)
-    storage_path = f"{user['_id']}/{notebook_id}/{uuid4().hex}{extension}"
+    storage_path = f"{access.notebook['owner_id']}/{notebook_id}/{uuid4().hex}{extension}"
     file_path = f"{bucket}/{storage_path}"
 
     file_bytes = await file.read()
     if not file_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Archivo vacío",
+            detail="Archivo vacio",
         )
 
     supabase_client = create_client(
-        settings.supabase_url, settings.supabase_service_role_key
+        settings.supabase_url,
+        settings.supabase_service_role_key,
     )
     storage_response = supabase_client.storage.from_(bucket).upload(
         storage_path,
@@ -148,8 +140,9 @@ async def create_document(
 
     now = datetime.now(timezone.utc)
     document_doc = {
-        "owner_id": user["_id"],
-        "notebook_id": notebook_object_id,
+        "owner_id": access.notebook["owner_id"],
+        "created_by_id": user["_id"],
+        "notebook_id": access.notebook["_id"],
         "file_path": file_path,
         "file_name": file_name,
         "content_type": content_type,
@@ -165,8 +158,8 @@ async def create_document(
     job_doc = {
         "job_id": job.id,
         "document_id": result.inserted_id,
-        "notebook_id": notebook_object_id,
-        "owner_id": user["_id"],
+        "notebook_id": access.notebook["_id"],
+        "owner_id": access.notebook["owner_id"],
         "status": "queued",
         "started_at": None,
         "finished_at": None,
@@ -181,23 +174,13 @@ async def create_document(
 @router.get("/{notebook_id}/documents", response_model=list[DocumentOut])
 async def list_documents(notebook_id: str, request: Request) -> list[DocumentOut]:
     user = await get_current_user(request)
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook inválido"
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
-        )
+    access = await resolve_notebook_access(notebook_id, user)
 
     cursor = db.documents.find(
-        {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+        {
+            "notebook_id": access.notebook["_id"],
+            "owner_id": access.notebook["owner_id"],
+        }
     ).sort("created_at", -1)
     return [document_to_out(document) async for document in cursor]
 
@@ -205,20 +188,7 @@ async def list_documents(notebook_id: str, request: Request) -> list[DocumentOut
 @router.get("/{notebook_id}/documents/stream")
 async def stream_documents(notebook_id: str, request: Request) -> StreamingResponse:
     user = await get_current_user(request)
-    try:
-        notebook_object_id = ObjectId(notebook_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Notebook inválido"
-        ) from exc
-
-    notebook = await db.notebooks.find_one(
-        {"_id": notebook_object_id, "owner_id": user["_id"]}
-    )
-    if not notebook:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notebook no encontrado"
-        )
+    access = await resolve_notebook_access(notebook_id, user)
 
     async def event_generator():
         last_signature: list[tuple[str, str, datetime]] | None = None
@@ -227,7 +197,10 @@ async def stream_documents(notebook_id: str, request: Request) -> StreamingRespo
                 break
 
             cursor = db.documents.find(
-                {"notebook_id": notebook_object_id, "owner_id": user["_id"]}
+                {
+                    "notebook_id": access.notebook["_id"],
+                    "owner_id": access.notebook["owner_id"],
+                }
             ).sort("created_at", -1)
             documents = [document_to_out(document) async for document in cursor]
             signature = [(doc.id, doc.status, doc.updated_at) for doc in documents]
@@ -258,24 +231,27 @@ async def stream_documents(notebook_id: str, request: Request) -> StreamingRespo
 )
 async def delete_document(notebook_id: str, document_id: str, request: Request) -> None:
     user = await get_current_user(request)
+    access = await require_document_manage_permission(notebook_id, user)
+
     try:
-        notebook_object_id = ObjectId(notebook_id)
         document_object_id = ObjectId(document_id)
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Identificador inválido"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Identificador invalido",
         ) from exc
 
     document = await db.documents.find_one(
         {
             "_id": document_object_id,
-            "notebook_id": notebook_object_id,
-            "owner_id": user["_id"],
+            "notebook_id": access.notebook["_id"],
+            "owner_id": access.notebook["owner_id"],
         }
     )
     if not document:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Documento no encontrado"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Documento no encontrado",
         )
 
     async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
@@ -302,12 +278,13 @@ async def delete_document(notebook_id: str, document_id: str, request: Request) 
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Supabase no está configurado",
+            detail="Supabase no esta configurado",
         )
 
     bucket, storage_path = parse_storage_path(document["file_path"])
     supabase_client = create_client(
-        settings.supabase_url, settings.supabase_service_role_key
+        settings.supabase_url,
+        settings.supabase_service_role_key,
     )
     storage_response = supabase_client.storage.from_(bucket).remove([storage_path])
     if isinstance(storage_response, dict) and storage_response.get("error"):

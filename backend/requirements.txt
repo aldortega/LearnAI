@@ -11,6 +11,7 @@ rq
 langchain-core
 langchain-text-splitters
 langchain-google-genai
+docling>=2,<3
 pypdf
 docx2txt
 python-pptx

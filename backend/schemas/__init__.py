@@ -13,7 +13,20 @@ from .mindmap import (
     MindmapNodeOut,
     MindmapOut,
 )
+from .collaboration import (
+    NotebookAccessOut,
+    NotebookInviteCreate,
+    NotebookInviteOut,
+    NotebookMemberOut,
+    UserSearchItemOut,
+)
 from .notebooks import NotebookCreate, NotebookOut, NotebookUpdate
+from .notifications import (
+    NotificationInvitationOut,
+    NotificationListOut,
+    NotificationOut,
+    NotificationUnreadCountOut,
+)
 from .quickstart import (
     QuickstartAddTopicRequest,
     QuickstartDetailItemType,

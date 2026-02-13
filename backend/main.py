@@ -9,9 +9,11 @@ from .config import settings
 from .db import ensure_indexes
 from .qdrant import ensure_qdrant_collection
 from .routes.auth import router as auth_router
+from .routes.collaboration import router as collaboration_router
 from .routes.documents import router as documents_router
 from .routes.mindmap import router as mindmap_router
 from .routes.notebooks import router as notebooks_router
+from .routes.notifications import router as notifications_router
 from .routes.quickstart import router as quickstart_router
 from .routes.rag import router as rag_router
 from .routes.reports import router as reports_router
@@ -39,6 +41,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(notebooks_router)
+app.include_router(collaboration_router)
+app.include_router(notifications_router)
 app.include_router(documents_router)
 app.include_router(rag_router)
 app.include_router(quiz_router)

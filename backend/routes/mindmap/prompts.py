@@ -2,8 +2,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from .constants import (
     DETAIL_SCHEMA,
-    SECONDARY_NODE_COUNT,
-    TERTIARY_NODE_COUNT_PER_SECONDARY,
     TITLES_SCHEMA,
 )
 
@@ -17,17 +15,15 @@ def build_mindmap_tree_prompt(
         "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
         f"{TITLES_SCHEMA}"
     )
-    total_pairs = SECONDARY_NODE_COUNT * TERTIARY_NODE_COUNT_PER_SECONDARY
     user_prompt = (
         f"Tema central del mapa (usa exactamente este titulo): {notebook_title}\n\n"
         f"Contexto:\n{context_text}\n\n"
-        "Solo genera titulos para nodos, sin explicaciones. "
-        f"Debes proponer exactamente {SECONDARY_NODE_COUNT} nodos secundarios y "
-        f"{TERTIARY_NODE_COUNT_PER_SECONDARY} nodos terciarios por cada secundario. "
-        f"En total devuelve exactamente {total_pairs} pares en 'pairs'. "
-        "Cada par representa un secundario y uno de sus terciarios. "
-        "Los titulos deben ser cortos, claros y utiles para estudiar. "
-        "Evita duplicados y evita textos largos."
+        "Genera un arbol de nodos (title + children) con profundidad variable. "
+        "No hay un numero fijo de nodos ni profundidad fija. "
+        "Cada nodo no-hoja debe tener hijos claramente relacionados con su titulo padre.  "
+        "Si un concepto ya es atomico, puedes dejarlo como hoja (children vacio). "
+        "Usa titulos cortos, concretos y utiles para estudiar. "
+        "Evita duplicados entre hermanos, evita texto largo y no incluyas explicaciones."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
@@ -36,7 +32,16 @@ def build_node_detail_prompt(
     notebook_title: str,
     node_title: str,
     context_text: str,
+    lineage_titles: list[str],
+    children_titles: list[str],
 ) -> tuple[SystemMessage, HumanMessage]:
+    clean_lineage = [title.strip() for title in lineage_titles if title.strip()]
+    lineage_path = " > ".join(clean_lineage) if clean_lineage else node_title
+    parent_title = clean_lineage[-2] if len(clean_lineage) >= 2 else ""
+    child_list = ", ".join(
+        [title.strip() for title in children_titles if title.strip()][:10]
+    ) or "(sin subtemas directos)"
+
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
         "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
@@ -45,7 +50,11 @@ def build_node_detail_prompt(
     user_prompt = (
         f"Tema general: {notebook_title}\n"
         f"Nodo seleccionado: {node_title}\n\n"
+        f"Ruta del nodo: {lineage_path}\n"
+        f"Padre inmediato: {parent_title or '(sin padre)'}\n"
+        f"Subtemas directos del nodo: {child_list}\n\n"
         f"Contexto:\n{context_text}\n\n"
-        "Entrega una explicacion corta y directa del nodo en 1 o 2 parrafos breves."
+        "Entrega una explicacion corta y directa del nodo en 1 o 2 parrafos breves. "
+        "La explicacion debe estar alineada con la ruta del nodo y diferenciarlo de sus vecinos."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)

@@ -1,10 +1,10 @@
-﻿import { Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
+﻿import { Clock, MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getEmojiBackgroundClass } from "../../notebooks/utils/emojiColors";
 
-const DEFAULT_NOTEBOOK_EMOJI = "📓";
+const DEFAULT_NOTEBOOK_EMOJI = "??";
 
 type Props = {
   id: string;
@@ -12,8 +12,10 @@ type Props = {
   sourceCount: number;
   updatedAt: string;
   emoji?: string | null;
+  accessRole: "owner" | "collaborator";
   onEdit: () => void;
   onDelete: () => void;
+  onInvite?: () => void;
 };
 
 export function NotebookCard({
@@ -22,8 +24,10 @@ export function NotebookCard({
   sourceCount,
   updatedAt,
   emoji,
+  accessRole,
   onEdit,
   onDelete,
+  onInvite,
 }: Props) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,49 +53,69 @@ export function NotebookCard({
       onClick={handleNavigate}
       className="group relative flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-border bg-surface p-5 transition-shadow hover:shadow-md"
     >
-      <div className="absolute right-3 top-3" ref={menuRef}>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            setIsMenuOpen((prev) => !prev);
-          }}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Opciones del notebook"
-          aria-expanded={isMenuOpen}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
-
-        {isMenuOpen ? (
-          <div className="absolute right-0 mt-2 w-40 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsMenuOpen(false);
-                onEdit();
-              }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted"
-            >
-              <Pencil className="h-4 w-4" />
-              Editar
-            </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsMenuOpen(false);
-                onDelete();
-              }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted"
-            >
-              <Trash2 className="h-4 w-4" />
-              Eliminar
-            </button>
-          </div>
-        ) : null}
+      <div className="absolute left-3 top-3 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        {accessRole === "owner" ? "Owner" : "Compartida"}
       </div>
+
+      {accessRole === "owner" ? (
+        <div className="absolute right-3 top-3" ref={menuRef}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsMenuOpen((prev) => !prev);
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Opciones del notebook"
+            aria-expanded={isMenuOpen}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+
+          {isMenuOpen ? (
+            <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
+              {onInvite ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsMenuOpen(false);
+                    onInvite();
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Invitar
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsMenuOpen(false);
+                  onEdit();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:bg-muted"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsMenuOpen(false);
+                  onDelete();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted"
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div>
         <div

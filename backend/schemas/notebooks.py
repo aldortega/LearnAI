@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -22,6 +22,8 @@ class NotebookOut(BaseModel):
     title: str
     description: Optional[str] = None
     emoji: Optional[str] = None
+    access_role: Literal["owner", "collaborator"] = "owner"
+    can_manage_documents: bool = True
     source_count: int = 0
     created_at: datetime
     updated_at: datetime

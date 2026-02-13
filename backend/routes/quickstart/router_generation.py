@@ -35,7 +35,7 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
         {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
     )
     fingerprint, ready_count = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     has_ready_sources = ready_count > 0
 
@@ -97,7 +97,7 @@ async def get_quickstart_suggestions(
     topics_list = topics if isinstance(topics, list) else []
     topic_count = len(topics_list)
     fingerprint, ready_count = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     has_ready_sources = ready_count > 0
     is_stale = summary.get("sources_fingerprint") != fingerprint
@@ -139,7 +139,7 @@ async def generate_quickstart(
     notebook = await get_notebook_or_404(notebook_id, user)
 
     _, ready_count = await compute_sources_fingerprint(
-        notebook["title"], notebook["_id"], user["_id"]
+        notebook["title"], notebook["_id"], notebook["owner_id"]
     )
     if ready_count == 0:
         raise HTTPException(

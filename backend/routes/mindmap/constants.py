@@ -3,28 +3,29 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
-SECONDARY_NODE_COUNT = 3
-TERTIARY_NODE_COUNT_PER_SECONDARY = 3
+TECHNICAL_MAX_NODES = 120
+TECHNICAL_MAX_DEPTH = 8
+TECHNICAL_MAX_CHILDREN_PER_NODE = 12
 DETAIL_MAX_CHARS = 650
 
-FALLBACK_SECONDARY_TITLES = [
+FALLBACK_CHILD_TITLES = [
     "Fundamentos",
     "Conceptos clave",
     "Aplicaciones",
 ]
 
-FALLBACK_TERTIARY_TITLES = [
-    "Definicion y alcance",
-    "Elementos clave",
-    "Caso practico",
-]
-
 TITLES_SCHEMA = (
     "{\n"
-    '  "pairs": [\n'
+    '  "title": "string",\n'
+    '  "children": [\n'
     "    {\n"
-    '      "secondary_title": "string",\n'
-    '      "tertiary_title": "string"\n'
+    '      "title": "string",\n'
+    '      "children": [\n'
+    "        {\n"
+    '          "title": "string",\n'
+    '          "children": []\n'
+    "        }\n"
+    "      ]\n"
     "    }\n"
     "  ]\n"
     "}\n"
@@ -37,14 +38,18 @@ DETAIL_SCHEMA = (
 )
 
 
-class MindmapTitlePairLLM(BaseModel):
-    secondary_title: str
-    tertiary_title: str
+class MindmapTreeNodeLLM(BaseModel):
+    title: str
+    children: list["MindmapTreeNodeLLM"] = Field(default_factory=list)
 
 
-class MindmapTitlesPayloadLLM(BaseModel):
-    pairs: list[MindmapTitlePairLLM] = Field(default_factory=list)
+class MindmapTreePayloadLLM(BaseModel):
+    title: str
+    children: list[MindmapTreeNodeLLM] = Field(default_factory=list)
 
 
 class MindmapNodeDetailLLM(BaseModel):
     explanation: str
+
+
+MindmapTreeNodeLLM.model_rebuild()
