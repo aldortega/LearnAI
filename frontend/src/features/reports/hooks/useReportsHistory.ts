@@ -52,9 +52,18 @@ export function useReportsHistory(notebookId?: string): Result {
     }
   }, [notebookId]);
 
-  const removeReport = useCallback((reportId: string) => {
-    setReports((prev) => prev.filter((item) => item.id !== reportId));
-  }, []);
+  const removeReport = useCallback(
+    (reportId: string) => {
+      setReports((prev) => {
+        const next = prev.filter((item) => item.id !== reportId);
+        if (notebookId) {
+          reportsHistoryCache.set(notebookId, next);
+        }
+        return next;
+      });
+    },
+    [notebookId],
+  );
 
   useEffect(() => {
     if (!notebookId) {

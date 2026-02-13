@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FileText, Plus } from "lucide-react";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
-import { useNotebook } from "../../notebooks";
+import { useNotebook } from "../../notebooks/hooks/useNotebook";
 import { DeleteReportModal } from "../components/DeleteReportModal";
 import { EditReportPromptModal } from "../components/EditReportPromptModal";
 import { ReportGenerationOverlay } from "../components/ReportGenerationOverlay";
@@ -81,8 +81,9 @@ export function NotebookReportsPage() {
     error: deleteReportError,
     clearError: clearDeleteReportError,
   } = useDeleteReport(notebookId);
-  const templates = (config?.templates ?? []).slice(0, 4);
-  const suggestions = (config?.suggestions ?? []).slice(0, 4);
+  const templates = useMemo(() => (config?.templates ?? []).slice(0, 4), [config]);
+  const suggestions = useMemo(() => (config?.suggestions ?? []).slice(0, 4), [config]);
+  const hasConfigLoaded = Boolean(config);
   const canGenerateReports = config?.has_ready_sources ?? hasReadySources;
   const suggestionsStatus = config?.suggestions_status ?? "missing";
   const suggestionsAreStale = config?.suggestions_is_stale ?? false;
@@ -118,12 +119,11 @@ export function NotebookReportsPage() {
 
     previousReadySignatureRef.current = readySignature;
     void (async () => {
-      await reloadConfig();
-      await reloadReports();
+      await Promise.all([reloadConfig(), reloadReports()]);
     })();
   }, [notebookId, readySignature, reloadConfig, reloadReports]);
   useEffect(() => {
-    if (!notebookId || !config) return;
+    if (!notebookId || !hasConfigLoaded) return;
     if (hasTriggeredAutoSuggestionsRef.current) return;
     if (isConfigLoading || isGeneratingSuggestions || !canGenerateReports) return;
     if (suggestionsStatus !== "missing" && !suggestionsAreStale) return;
@@ -136,7 +136,7 @@ export function NotebookReportsPage() {
     })();
   }, [
     notebookId,
-    config,
+    hasConfigLoaded,
     isConfigLoading,
     isGeneratingSuggestions,
     canGenerateReports,
@@ -160,48 +160,71 @@ export function NotebookReportsPage() {
       prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
     );
   }, [notebookId, isReportsLoading, reports]);
-  const runGeneration = async (formatType: ReportFormatType, prompt: string, suggestionId: string | null = null) => {
-    if (!notebookId || !prompt.trim() || !canGenerateReports) return false;
-    clearGenerateError();
-    const result = await generate({
-      format_type: formatType,
-      prompt: prompt.trim(),
-      suggestion_id: suggestionId ?? undefined,
-    });
-    if (!result) return false;
-    const updatedReports = await reloadReports();
-    if (result.report_id) {
-      setSelectedReportId(result.report_id);
-    } else if (updatedReports.length > 0) {
-      setSelectedReportId(updatedReports[0].id);
-    }
-    setViewMode("history");
-    setHistoryView("cards");
-    setEditTarget(null);
-    setEditPrompt("");
-    return true;
-  };
-  const handleGenerateTemplate = (template: ReportPromptTemplate) => {
-    if (template.type === "freeform") {
-      handleEditTemplate(template);
-      return;
-    }
-    void runGeneration(template.type, template.default_prompt, null);
-  };
-  const handleGenerateSuggestion = (suggestion: ReportSuggestion) => {
-    void runGeneration("ai_suggested", suggestion.default_prompt, suggestion.id);
-  };
-  const handleEditTemplate = (template: ReportPromptTemplate) => {
-    clearGenerateError();
-    setEditTarget({ title: template.label, formatType: template.type, suggestionId: null });
-    setEditPrompt(template.default_prompt);
-  };
-  const handleEditSuggestion = (suggestion: ReportSuggestion) => {
-    clearGenerateError();
-    setEditTarget({ title: suggestion.title, formatType: "ai_suggested", suggestionId: suggestion.id });
-    setEditPrompt(suggestion.default_prompt);
-  };
-  const handleRefreshSuggestions = async () => {
+  const runGeneration = useCallback(
+    async (formatType: ReportFormatType, prompt: string, suggestionId: string | null = null) => {
+      if (!notebookId || !prompt.trim() || !canGenerateReports) return false;
+      clearGenerateError();
+      const result = await generate({
+        format_type: formatType,
+        prompt: prompt.trim(),
+        suggestion_id: suggestionId ?? undefined,
+      });
+      if (!result) return false;
+      const updatedReports = await reloadReports();
+      if (result.report_id) {
+        setSelectedReportId(result.report_id);
+      } else if (updatedReports.length > 0) {
+        setSelectedReportId(updatedReports[0].id);
+      }
+      setViewMode("history");
+      setHistoryView("cards");
+      setEditTarget(null);
+      setEditPrompt("");
+      return true;
+    },
+    [notebookId, canGenerateReports, clearGenerateError, generate, reloadReports],
+  );
+  const handleEditTemplate = useCallback(
+    (template: ReportPromptTemplate) => {
+      clearGenerateError();
+      setEditTarget({
+        title: template.label,
+        formatType: template.type,
+        suggestionId: null,
+      });
+      setEditPrompt(template.default_prompt);
+    },
+    [clearGenerateError],
+  );
+  const handleEditSuggestion = useCallback(
+    (suggestion: ReportSuggestion) => {
+      clearGenerateError();
+      setEditTarget({
+        title: suggestion.title,
+        formatType: "ai_suggested",
+        suggestionId: suggestion.id,
+      });
+      setEditPrompt(suggestion.default_prompt);
+    },
+    [clearGenerateError],
+  );
+  const handleGenerateTemplate = useCallback(
+    (template: ReportPromptTemplate) => {
+      if (template.type === "freeform") {
+        handleEditTemplate(template);
+        return;
+      }
+      void runGeneration(template.type, template.default_prompt, null);
+    },
+    [handleEditTemplate, runGeneration],
+  );
+  const handleGenerateSuggestion = useCallback(
+    (suggestion: ReportSuggestion) => {
+      void runGeneration("ai_suggested", suggestion.default_prompt, suggestion.id);
+    },
+    [runGeneration],
+  );
+  const handleRefreshSuggestions = useCallback(async () => {
     if (!notebookId || isRefreshingSuggestions || isGeneratingSuggestions) return;
     setIsRefreshingSuggestions(true);
     try {
@@ -211,8 +234,18 @@ export function NotebookReportsPage() {
     } finally {
       setIsRefreshingSuggestions(false);
     }
-  };
-  const handleDeleteReportConfirm = async () => {
+  }, [
+    notebookId,
+    isRefreshingSuggestions,
+    isGeneratingSuggestions,
+    clearGenerateSuggestionsError,
+    generateSuggestions,
+    reloadConfig,
+  ]);
+  const handleRefreshSuggestionsClick = useCallback(() => {
+    void handleRefreshSuggestions();
+  }, [handleRefreshSuggestions]);
+  const handleDeleteReportConfirm = useCallback(async () => {
     if (!deleteReportTarget) return;
     const deletedReportId = deleteReportTarget.id;
     const shouldReturnToCards = historyView === "detail";
@@ -233,9 +266,100 @@ export function NotebookReportsPage() {
     if (shouldReturnToCards) {
       setHistoryView("cards");
     }
-  };
-  const activeReport = reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null;
+  }, [
+    deleteReportTarget,
+    historyView,
+    deleteReport,
+    removeReport,
+    reloadReports,
+    selectedReportId,
+  ]);
+  const handleDeleteDocumentCancel = useCallback(() => {
+    setDeleteTarget(null);
+  }, [setDeleteTarget]);
+  const handleDeleteReportCancel = useCallback(() => {
+    clearDeleteReportError();
+    setDeleteReportTarget(null);
+  }, [clearDeleteReportError]);
+  const handleEditPromptCancel = useCallback(() => {
+    if (isGenerating) return;
+    setEditTarget(null);
+    setEditPrompt("");
+    clearGenerateError();
+  }, [isGenerating, clearGenerateError]);
+  const handleEditPromptGenerate = useCallback(() => {
+    if (!editTarget) return;
+    void runGeneration(editTarget.formatType, editPrompt, editTarget.suggestionId);
+  }, [editTarget, editPrompt, runGeneration]);
+  const handleSelectReport = useCallback((reportId: string) => {
+    setSelectedReportId(reportId);
+    setHistoryView("detail");
+  }, []);
+  const handleDeleteReport = useCallback(
+    (report: ReportOut) => {
+      clearDeleteReportError();
+      setDeleteReportTarget(report);
+    },
+    [clearDeleteReportError],
+  );
+  const handleStudioNavChat = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/chat`);
+  }, [notebookId, navigate]);
+  const handleStudioNavQuiz = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/quiz`);
+  }, [notebookId, navigate]);
+  const handleStudioNavQuickstart = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/quickstart`);
+  }, [notebookId, navigate]);
+  const handleStudioNavReports = useCallback(() => undefined, []);
+  const handleStudioNavMindmap = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/mindmap`);
+  }, [notebookId, navigate]);
+  const activeReport = useMemo(
+    () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
+    [reports, selectedReportId],
+  );
   const canReturnToHistory = reports.length > 0;
+  const isHeaderActionDisabled =
+    viewMode === "history"
+      ? historyView === "detail"
+        ? false
+        : isGenerating || !canGenerateReports
+      : isGenerating || !canReturnToHistory;
+  const headerActionLabel =
+    viewMode === "history"
+      ? historyView === "detail"
+        ? "Ver lista de informes"
+        : "Crear otro informe"
+      : "Volver al historial";
+  const handleHeaderAction = useCallback(() => {
+    if (viewMode === "history" && historyView === "detail") {
+      setHistoryView("cards");
+      return;
+    }
+    if (viewMode === "history") {
+      setViewMode("templates");
+      clearGenerateError();
+      return;
+    }
+    if (!canReturnToHistory) return;
+    setViewMode("history");
+    setHistoryView("cards");
+    setSelectedReportId((prev) =>
+      prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
+    );
+    clearGenerateError();
+  }, [
+    viewMode,
+    historyView,
+    canReturnToHistory,
+    reports,
+    clearGenerateError,
+  ]);
   return (
     <NotebookShell
       title={notebook?.title}
@@ -253,11 +377,11 @@ export function NotebookReportsPage() {
       isGeneratingReports={isGenerating}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
-      onGoChat={() => notebookId && navigate(`/notebook/${notebookId}/chat`)}
-      onGoQuiz={() => notebookId && navigate(`/notebook/${notebookId}/quiz`)}
-      onGoQuickstart={() => notebookId && navigate(`/notebook/${notebookId}/quickstart`)}
-      onGoReports={() => {}}
-      onGoMindmap={() => notebookId && navigate(`/notebook/${notebookId}/mindmap`)}
+      onGoChat={handleStudioNavChat}
+      onGoQuiz={handleStudioNavQuiz}
+      onGoQuickstart={handleStudioNavQuickstart}
+      onGoReports={handleStudioNavReports}
+      onGoMindmap={handleStudioNavMindmap}
       beforeMain={
         <input
           ref={fileInputRef}
@@ -273,7 +397,7 @@ export function NotebookReportsPage() {
             isOpen={Boolean(deleteTarget)}
             documentName={deleteTarget?.file_name}
             isDeleting={deleteTarget ? deletingDocumentIds.has(deleteTarget.id) : false}
-            onCancel={() => setDeleteTarget(null)}
+            onCancel={handleDeleteDocumentCancel}
             onConfirm={handleDeleteConfirm}
           />
           <DeleteReportModal
@@ -281,10 +405,7 @@ export function NotebookReportsPage() {
             reportTitle={deleteReportTarget?.title}
             isDeleting={deletingReportId === deleteReportTarget?.id}
             error={deleteReportError}
-            onCancel={() => {
-              clearDeleteReportError();
-              setDeleteReportTarget(null);
-            }}
+            onCancel={handleDeleteReportCancel}
             onConfirm={handleDeleteReportConfirm}
           />
           <EditReportPromptModal
@@ -294,20 +415,8 @@ export function NotebookReportsPage() {
             isGenerating={isGenerating}
             error={generateError}
             onPromptChange={setEditPrompt}
-            onCancel={() => {
-              if (isGenerating) return;
-              setEditTarget(null);
-              setEditPrompt("");
-              clearGenerateError();
-            }}
-            onGenerate={() => {
-              if (!editTarget) return;
-              void runGeneration(
-                editTarget.formatType,
-                editPrompt,
-                editTarget.suggestionId,
-              );
-            }}
+            onCancel={handleEditPromptCancel}
+            onGenerate={handleEditPromptGenerate}
           />
         </>
       }
@@ -316,45 +425,10 @@ export function NotebookReportsPage() {
         headerAction={
           <button
             type="button"
-            onClick={() => {
-              if (viewMode === "history" && historyView === "detail") {
-                setHistoryView("cards");
-                return;
-              }
-              if (viewMode === "history") {
-                setViewMode("templates");
-                clearGenerateError();
-                return;
-              }
-              if (!canReturnToHistory) return;
-              setViewMode("history");
-              setHistoryView("cards");
-              setSelectedReportId((prev) =>
-                prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
-              );
-              clearGenerateError();
-            }}
-            disabled={
-              viewMode === "history"
-                ? historyView === "detail"
-                  ? false
-                  : isGenerating || !canGenerateReports
-                : isGenerating || !canReturnToHistory
-            }
-            aria-label={
-              viewMode === "history"
-                ? historyView === "detail"
-                  ? "Ver lista de informes"
-                  : "Crear otro informe"
-                : "Volver al historial"
-            }
-            title={
-              viewMode === "history"
-                ? historyView === "detail"
-                  ? "Ver lista de informes"
-                  : "Crear otro informe"
-                : "Volver al historial"
-            }
+            onClick={handleHeaderAction}
+            disabled={isHeaderActionDisabled}
+            aria-label={headerActionLabel}
+            title={headerActionLabel}
             className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             {viewMode === "history" ? historyView === "detail" ? (
@@ -382,9 +456,7 @@ export function NotebookReportsPage() {
                   onGenerateSuggestion={handleGenerateSuggestion}
                   onEditTemplate={handleEditTemplate}
                   onEditSuggestion={handleEditSuggestion}
-                  onRefreshSuggestions={() => {
-                    void handleRefreshSuggestions();
-                  }}
+                  onRefreshSuggestions={handleRefreshSuggestionsClick}
                 />
                 {suggestionsError ? (
                   <p className="text-sm text-error" role="alert">
@@ -415,14 +487,8 @@ export function NotebookReportsPage() {
                       reports={reports}
                       selectedReportId={activeReport?.id ?? null}
                       deletingReportId={deletingReportId}
-                      onSelectReport={(reportId) => {
-                        setSelectedReportId(reportId);
-                        setHistoryView("detail");
-                      }}
-                      onDeleteReport={(report) => {
-                        clearDeleteReportError();
-                        setDeleteReportTarget(report);
-                      }}
+                      onSelectReport={handleSelectReport}
+                      onDeleteReport={handleDeleteReport}
                     />
                   </>
                 ) : (

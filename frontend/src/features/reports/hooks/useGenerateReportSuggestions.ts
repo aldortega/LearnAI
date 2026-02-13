@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
@@ -19,13 +19,34 @@ type Result = {
 export function useGenerateReportSuggestions(notebookId?: string): Result {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestTokenRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   const clearError = useCallback(() => setError(null), []);
+  const isTokenActive = useCallback(
+    (token: number) =>
+      isMountedRef.current && requestTokenRef.current === token,
+    [],
+  );
+
+  useEffect(() => {
+    requestTokenRef.current += 1;
+    setIsGenerating(false);
+  }, [notebookId]);
+
+  useEffect(
+    () => () => {
+      isMountedRef.current = false;
+      requestTokenRef.current += 1;
+    },
+    [],
+  );
 
   const pollGeneration = useCallback(
     async (
       jobId: string,
       initial: ReportSuggestionsJobOut,
+      token: number,
     ): Promise<ReportSuggestionsJobOut> => {
       if (!notebookId) return initial;
 
@@ -33,11 +54,17 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
       const deadline = Date.now() + POLL_TIMEOUT_MS;
 
       while (Date.now() < deadline) {
+        if (!isTokenActive(token)) {
+          return latest;
+        }
         if (latest.status === "done" || latest.status === "failed") {
           return latest;
         }
 
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+        if (!isTokenActive(token)) {
+          return latest;
+        }
         latest = await reportsApi.getSuggestionsGenerationStatus(notebookId, jobId);
       }
 
@@ -47,39 +74,54 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
         error: "La generacion esta tardando mas de lo esperado.",
       };
     },
-    [notebookId],
+    [notebookId, isTokenActive],
   );
 
   const generate = useCallback(async () => {
     if (!notebookId) return null;
 
+    const requestToken = requestTokenRef.current + 1;
+    requestTokenRef.current = requestToken;
     setIsGenerating(true);
     setError(null);
 
     try {
       const job = await reportsApi.generateSuggestions(notebookId);
-      const result = await pollGeneration(job.job_id, job);
+      const result = await pollGeneration(job.job_id, job, requestToken);
+      if (!isTokenActive(requestToken)) {
+        return null;
+      }
       if (result.status === "failed") {
         setError(result.error ?? "No se pudieron generar sugerencias.");
         return null;
       }
       return result;
     } catch (e) {
+      if (!isTokenActive(requestToken)) {
+        return null;
+      }
       setError(toNotebookErrorMessage(e));
       return null;
     } finally {
-      setIsGenerating(false);
+      if (isTokenActive(requestToken)) {
+        setIsGenerating(false);
+      }
     }
-  }, [notebookId, pollGeneration]);
+  }, [notebookId, pollGeneration, isTokenActive]);
 
   const resumeLatest = useCallback(async () => {
     if (!notebookId) return null;
 
+    const requestToken = requestTokenRef.current + 1;
+    requestTokenRef.current = requestToken;
     setIsGenerating(true);
     setError(null);
 
     try {
       const job = await reportsApi.getLatestSuggestionsGeneration(notebookId);
+      if (!isTokenActive(requestToken)) {
+        return null;
+      }
       if (job.status === "done") {
         return job;
       }
@@ -87,13 +129,19 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
         setError(job.error ?? "No se pudieron generar sugerencias.");
         return null;
       }
-      const result = await pollGeneration(job.job_id, job);
+      const result = await pollGeneration(job.job_id, job, requestToken);
+      if (!isTokenActive(requestToken)) {
+        return null;
+      }
       if (result.status === "failed") {
         setError(result.error ?? "No se pudieron generar sugerencias.");
         return null;
       }
       return result;
     } catch (e) {
+      if (!isTokenActive(requestToken)) {
+        return null;
+      }
       const apiError = e as ApiError | undefined;
       if (apiError?.status === 404) {
         return null;
@@ -101,9 +149,11 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
       setError(toNotebookErrorMessage(e));
       return null;
     } finally {
-      setIsGenerating(false);
+      if (isTokenActive(requestToken)) {
+        setIsGenerating(false);
+      }
     }
-  }, [notebookId, pollGeneration]);
+  }, [notebookId, pollGeneration, isTokenActive]);
 
   return { generate, resumeLatest, isGenerating, error, clearError };
 }
