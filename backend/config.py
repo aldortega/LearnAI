@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     gemini_failover_lock_seconds: int = 3
     rag_top_k: int = 8
     rag_min_score: float = 0.65
+    rag_fetch_k_multiplier: int = 4
+    rag_fetch_k_max: int = 40
+    rag_max_chunks_per_document: int = 2
+    rag_lexical_weight: float = 0.2
     chunk_size: int = 1000
     chunk_overlap: int = 150
     session_secret: str = ""
