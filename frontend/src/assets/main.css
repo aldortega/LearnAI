@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source "../node_modules/streamdown/dist/*.js";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -227,4 +229,34 @@ body {
 
 .ft-code-block {
   animation: var(--ft-marker-animation);
+}
+
+[data-streamdown="paragraph"] {
+  margin-bottom: 0.5rem;
+}
+
+[data-streamdown="unordered-list"],
+[data-streamdown="ordered-list"] {
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+[data-streamdown="list-item"] {
+  margin-bottom: 0.25rem;
+}
+
+[data-streamdown="list-item"] > [data-streamdown="unordered-list"],
+[data-streamdown="list-item"] > [data-streamdown="ordered-list"] {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+[data-streamdown="unordered-list"] [data-streamdown="unordered-list"],
+[data-streamdown="ordered-list"] [data-streamdown="ordered-list"] {
+  padding-left: 1.5rem;
+}
+
+[data-streamdown="unordered-list"] [data-streamdown="unordered-list"] [data-streamdown="unordered-list"],
+[data-streamdown="ordered-list"] [data-streamdown="ordered-list"] [data-streamdown="ordered-list"] {
+  padding-left: 1.5rem;
 }
