@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     gemini_api_keys: Optional[str] = None
     gemini_rotation_mode: Literal["failover", "per_call"] = "failover"
-    gemini_chat_model: str = "gemini-2.5-flash-lite"
+    gemini_chat_model: str = "gemini-2.5-flash"
     gemini_failover_redis_prefix: str = "learnai:gemini:failover"
     gemini_failover_lock_seconds: int = 3
     rag_top_k: int = 8
