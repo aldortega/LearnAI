@@ -77,12 +77,10 @@ export function useGenerateQuickstart(notebookId?: string): Result {
   const resumeLatest = useCallback(async () => {
     if (!notebookId) return null;
 
-    setIsGenerating(true);
-    setError(null);
-
     try {
       const job = await quickstartApi.getLatestGeneration(notebookId);
       if (job.status === "done") {
+        setError(null);
         return job;
       }
       if (job.status === "failed") {
@@ -90,6 +88,8 @@ export function useGenerateQuickstart(notebookId?: string): Result {
         return null;
       }
 
+      setIsGenerating(true);
+      setError(null);
       const result = await pollGeneration(job.job_id, job);
       if (result.status === "failed") {
         setError(result.error ?? "No se pudo generar el inicio rapido.");
