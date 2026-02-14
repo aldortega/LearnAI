@@ -32,12 +32,20 @@ class NotebookInviteOut(BaseModel):
     owner_id: str
     invitee_id: str
     invitee_username: str
+    invitee_name: str | None = None
+    invitee_last_name: str | None = None
+    invitee_email: str | None = None
+    invitee_avatar_url: str | None = None
     permission: InvitationPermission
     status: InvitationStatus
     expires_at: datetime
     created_at: datetime
     updated_at: datetime
     responded_at: datetime | None = None
+
+
+class NotebookMemberPermissionUpdate(BaseModel):
+    permission: InvitationPermission
 
 
 class NotebookMemberOut(BaseModel):

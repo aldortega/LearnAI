@@ -18,6 +18,10 @@ export type NotebookInvite = {
   owner_id: string;
   invitee_id: string;
   invitee_username: string;
+  invitee_name?: string | null;
+  invitee_last_name?: string | null;
+  invitee_email?: string | null;
+  invitee_avatar_url?: string | null;
   permission: InvitationPermission;
   status: "pending" | "accepted" | "rejected" | "revoked" | "expired";
   expires_at: string;

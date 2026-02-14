@@ -10,6 +10,7 @@ from ..db import db
 from ..schemas.collaboration import (
     NotebookInviteCreate,
     NotebookInviteOut,
+    NotebookMemberPermissionUpdate,
     UserSearchItemOut,
 )
 from .auth import get_current_user
@@ -27,6 +28,10 @@ def invitation_to_out(invitation: dict) -> NotebookInviteOut:
         owner_id=str(invitation["owner_id"]),
         invitee_id=str(invitation["invitee_id"]),
         invitee_username=str(invitation.get("invitee_username") or ""),
+        invitee_name=str(invitation.get("invitee_name") or "") or None,
+        invitee_last_name=str(invitation.get("invitee_last_name") or "") or None,
+        invitee_email=str(invitation.get("invitee_email") or "") or None,
+        invitee_avatar_url=str(invitation.get("invitee_avatar_url") or "") or None,
         permission=str(invitation.get("permission") or "read_only"),
         status=str(invitation.get("status") or "pending"),
         expires_at=invitation["expires_at"],
@@ -226,7 +231,7 @@ async def list_notebook_invitations(
 
     now = datetime.now(timezone.utc)
     stale_accepted_ids: list[ObjectId] = []
-    items: list[NotebookInviteOut] = []
+    invitation_docs: list[dict] = []
     async for invitation in cursor:
         if (
             invitation.get("status") == "accepted"
@@ -239,7 +244,7 @@ async def list_notebook_invitations(
                 "updated_at": now,
                 "responded_at": now,
             }
-        items.append(invitation_to_out(invitation))
+        invitation_docs.append(invitation)
 
     if stale_accepted_ids:
         await db.notebook_invitations.update_many(
@@ -255,6 +260,32 @@ async def list_notebook_invitations(
                 }
             },
         )
+
+    invitee_ids = [
+        item["invitee_id"]
+        for item in invitation_docs
+        if isinstance(item.get("invitee_id"), ObjectId)
+    ]
+    users_by_id: dict[ObjectId, dict] = {}
+    if invitee_ids:
+        users_cursor = db.users.find(
+            {"_id": {"$in": invitee_ids}},
+            {"name": 1, "last_name": 1, "email": 1, "avatar_url": 1},
+        )
+        users_by_id = {item["_id"]: item async for item in users_cursor}
+
+    items: list[NotebookInviteOut] = []
+    for invitation in invitation_docs:
+        invitee = users_by_id.get(invitation.get("invitee_id"))
+        if invitee:
+            invitation = {
+                **invitation,
+                "invitee_name": str(invitee.get("name") or ""),
+                "invitee_last_name": str(invitee.get("last_name") or ""),
+                "invitee_email": str(invitee.get("email") or ""),
+                "invitee_avatar_url": str(invitee.get("avatar_url") or "") or None,
+            }
+        items.append(invitation_to_out(invitation))
 
     return items
 
@@ -404,6 +435,60 @@ async def reject_invitation(invitation_id: str, request: Request) -> NotebookInv
             detail="Invitacion no encontrada",
         )
     return invitation_to_out(invitation)
+
+
+@router.patch(
+    "/notebooks/{notebook_id}/members/{member_id}/permission",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def update_member_permission(
+    notebook_id: str,
+    member_id: str,
+    payload: NotebookMemberPermissionUpdate,
+    request: Request,
+) -> None:
+    user = await get_current_user(request)
+    access = await require_notebook_owner(notebook_id, user)
+
+    try:
+        member_object_id = ObjectId(member_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario invalido",
+        ) from exc
+
+    if member_object_id == user["_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes cambiar tu propio permiso",
+        )
+
+    now = datetime.now(timezone.utc)
+    membership = await db.notebook_memberships.find_one_and_update(
+        {
+            "notebook_id": access.notebook["_id"],
+            "member_id": member_object_id,
+            "revoked_at": None,
+        },
+        {"$set": {"permission": payload.permission, "updated_at": now}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Miembro no encontrado",
+        )
+
+    await db.notebook_invitations.update_many(
+        {
+            "notebook_id": access.notebook["_id"],
+            "invitee_id": member_object_id,
+            "status": "accepted",
+        },
+        {"$set": {"permission": payload.permission, "updated_at": now}},
+    )
+    return None
 
 
 @router.post(

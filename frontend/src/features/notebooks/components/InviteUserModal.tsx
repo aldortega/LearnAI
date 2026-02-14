@@ -1,16 +1,17 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useAuth } from "../../../shared/hooks/useAuth";
 import { Button } from "../../../shared/ui/Button";
 import { Modal } from "../../../shared/ui/Modal";
 import { collaborationApi } from "../api/collaborationApi";
-import { InviteeAutocompleteField } from "./InviteeAutocompleteField";
 import { useInviteUser } from "../hooks/useInviteUser";
 import { useUserSearch } from "../hooks/useUserSearch";
-import type {
-  InvitationPermission,
-  NotebookInvite,
-} from "../types/collaboration.types";
+import type { InvitationPermission, NotebookInvite } from "../types/collaboration.types";
+import type { MemberAction } from "../types/collaboration-ui.types";
 import { toNotebookErrorMessage } from "../utils/notebookErrors";
+import { AccessPeopleSection } from "./AccessPeopleSection";
+import { InviteUserInlineForm } from "./InviteUserInlineForm";
+import { PendingInvitationsSection } from "./PendingInvitationsSection";
 
 type Props = {
   isOpen: boolean;
@@ -20,35 +21,6 @@ type Props = {
   onSuccess: () => void;
 };
 
-const permissionOptions: Array<{
-  value: InvitationPermission;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "read_only",
-    label: "Solo lectura",
-    description: "Puede usar el studio, pero no subir ni eliminar documentos.",
-  },
-  {
-    value: "can_manage_documents",
-    label: "Gestionar documentos",
-    description: "Puede subir y eliminar documentos en esta notebook.",
-  },
-];
-
-function formatPermission(value: InvitationPermission): string {
-  return value === "can_manage_documents" ? "Gestionar documentos" : "Solo lectura";
-}
-
-function formatStatus(value: NotebookInvite["status"]): string {
-  if (value === "pending") return "Pendiente";
-  if (value === "accepted") return "Aceptada";
-  if (value === "rejected") return "Rechazada";
-  if (value === "revoked") return "Revocada";
-  return "Expirada";
-}
-
 export function InviteUserModal({
   isOpen,
   notebookId,
@@ -56,21 +28,19 @@ export function InviteUserModal({
   onClose,
   onSuccess,
 }: Props) {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUsername, setSelectedUsername] = useState("");
-  const [permission, setPermission] =
-    useState<InvitationPermission>("read_only");
+  const [permission, setPermission] = useState<InvitationPermission>("read_only");
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [invitations, setInvitations] = useState<NotebookInvite[]>([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
   const [invitationError, setInvitationError] = useState<string | null>(null);
-  const [revokingMemberId, setRevokingMemberId] = useState<string | null>(null);
+  const [memberActions, setMemberActions] = useState<Record<string, MemberAction>>({});
+  const [isApplyingChanges, setIsApplyingChanges] = useState(false);
 
-  const { invite, isLoading, error } = useInviteUser();
-  const { users, isLoading: isSearching, error: searchError } = useUserSearch(
-    searchQuery,
-    isOpen,
-  );
+  const { invite, isLoading, error, clearError } = useInviteUser();
+  const { users, isLoading: isSearching, error: searchError } = useUserSearch(searchQuery, isOpen);
 
   const reloadInvitations = useCallback(async () => {
     if (!notebookId) {
@@ -99,163 +69,165 @@ export function InviteUserModal({
     if (isOpen) return;
     setSearchQuery("");
     setSelectedUsername("");
+    setPermission("read_only");
     setHasSubmitted(false);
-  }, [isOpen]);
+    setInvitationError(null);
+    setMemberActions({});
+    clearError();
+  }, [clearError, isOpen]);
 
-  const normalizedQuery = useMemo(
-    () => searchQuery.trim().toLowerCase(),
-    [searchQuery],
-  );
+  const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
   const exactMatch = useMemo(
-    () => users.find((userItem) => userItem.username.toLowerCase() === normalizedQuery),
+    () => users.find((item) => item.username.toLowerCase() === normalizedQuery),
     [normalizedQuery, users],
   );
 
-  const resolvedInviteeUsername = useMemo(
-    () => selectedUsername.trim() || exactMatch?.username || "",
-    [selectedUsername, exactMatch],
-  );
+  const resolvedInviteeUsername = useMemo(() => {
+    return selectedUsername.trim() || exactMatch?.username || "";
+  }, [selectedUsername, exactMatch]);
+
+  const isInviteeValid = useMemo(() => resolvedInviteeUsername.length >= 3, [resolvedInviteeUsername]);
 
   const canSubmit = useMemo(() => {
-    return Boolean(notebookId) && resolvedInviteeUsername.length >= 3 && !isLoading;
-  }, [notebookId, resolvedInviteeUsername, isLoading]);
+    return Boolean(notebookId) && isInviteeValid && !isLoading;
+  }, [isInviteeValid, isLoading, notebookId]);
 
-  const activeInvitations = useMemo(
-    () => invitations.filter((item) => item.status === "pending" || item.status === "accepted"),
+  const acceptedInvitations = useMemo(
+    () => invitations.filter((item) => item.status === "accepted"),
     [invitations],
   );
+
+  const pendingInvitations = useMemo(
+    () => invitations.filter((item) => item.status === "pending"),
+    [invitations],
+  );
+
+  useEffect(() => {
+    setMemberActions((previous) => {
+      const next: Record<string, MemberAction> = {};
+      for (const item of acceptedInvitations) {
+        next[item.invitee_id] = previous[item.invitee_id] ?? item.permission;
+      }
+      return next;
+    });
+  }, [acceptedInvitations]);
+
+  const pendingChanges = useMemo(() => {
+    return acceptedInvitations
+      .map((item) => {
+        const action = memberActions[item.invitee_id] ?? item.permission;
+        return {
+          memberId: item.invitee_id,
+          action,
+          currentPermission: item.permission,
+        };
+      })
+      .filter((item) => item.action === "remove" || item.action !== item.currentPermission);
+  }, [acceptedInvitations, memberActions]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setHasSubmitted(true);
+    clearError();
 
-    const inviteeUsername = resolvedInviteeUsername;
-    if (!notebookId || inviteeUsername.length < 3) return;
+    if (!notebookId || resolvedInviteeUsername.length < 3) return;
 
-    const result = await invite(notebookId, inviteeUsername, permission);
+    const result = await invite(notebookId, resolvedInviteeUsername, permission);
     if (!result) return;
 
+    setSearchQuery("");
+    setSelectedUsername("");
+    setHasSubmitted(false);
+    setInvitationError(null);
+    await reloadInvitations();
     onSuccess();
-    onClose();
   };
 
-  const handleRevoke = async (memberId: string) => {
-    if (!notebookId) return;
+  const handleAcceptChanges = async () => {
+    if (!notebookId || pendingChanges.length === 0) return;
 
-    setRevokingMemberId(memberId);
+    setIsApplyingChanges(true);
     setInvitationError(null);
     try {
-      await collaborationApi.revokeMember(notebookId, memberId);
+      for (const change of pendingChanges) {
+        if (change.action === "remove") {
+          await collaborationApi.revokeMember(notebookId, change.memberId);
+          continue;
+        }
+
+        await collaborationApi.updateMemberPermission(notebookId, change.memberId, change.action);
+      }
+
       await reloadInvitations();
       onSuccess();
     } catch (e) {
       setInvitationError(toNotebookErrorMessage(e));
     } finally {
-      setRevokingMemberId(null);
+      setIsApplyingChanges(false);
     }
+  };
+
+  const handleMemberActionChange = (memberId: string, action: MemberAction) => {
+    setMemberActions((previous) => ({
+      ...previous,
+      [memberId]: action,
+    }));
+  };
+
+  const handleRequestClose = () => {
+    setMemberActions({});
+    onClose();
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleRequestClose}
       title={notebookTitle ? `Invitar a ${notebookTitle}` : "Invitar usuario"}
+      className="max-w-3xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error ? (
-          <p
-            role="alert"
-            className="rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error"
-          >
-            {error}
-          </p>
-        ) : null}
+      <InviteUserInlineForm
+        searchQuery={searchQuery}
+        selectedUsername={selectedUsername}
+        users={users}
+        isSearching={isSearching}
+        searchError={searchError}
+        permission={permission}
+        isSubmitting={isLoading}
+        canSubmit={canSubmit}
+        showValidationError={hasSubmitted && !isInviteeValid}
+        error={error}
+        onSearchQueryChange={setSearchQuery}
+        onSelectedUsernameChange={setSelectedUsername}
+        onPermissionChange={setPermission}
+        onSubmit={handleSubmit}
+      />
 
-        <InviteeAutocompleteField
-          searchQuery={searchQuery}
-          selectedUsername={selectedUsername}
-          users={users}
-          isSearching={isSearching}
-          searchError={searchError}
-          showValidationError={hasSubmitted && !canSubmit}
-          onSearchQueryChange={setSearchQuery}
-          onSelectedUsernameChange={setSelectedUsername}
-        />
+      <AccessPeopleSection
+        isLoading={isLoadingInvitations}
+        error={invitationError}
+        owner={user}
+        acceptedInvitations={acceptedInvitations}
+        memberActions={memberActions}
+        isApplyingChanges={isApplyingChanges}
+        onMemberActionChange={handleMemberActionChange}
+      />
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">Permiso del invitado</p>
-          <div className="space-y-2">
-            {permissionOptions.map((option) => {
-              const isSelected = permission === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setPermission(option.value)}
-                  className={
-                    "w-full rounded-lg border px-3 py-2 text-left transition " +
-                    (isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-surface hover:bg-muted")
-                  }
-                >
-                  <p className="text-sm font-medium text-foreground">{option.label}</p>
-                  <p className="text-xs text-muted-foreground">{option.description}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <PendingInvitationsSection
+        isLoading={isLoadingInvitations}
+        pendingInvitations={pendingInvitations}
+      />
 
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>
-            Cancelar
-          </Button>
-          <Button type="submit" loading={isLoading} disabled={!canSubmit}>
-            Enviar invitacion
-          </Button>
-        </div>
-      </form>
-
-      <div className="mt-6 border-t border-border pt-4">
-        <p className="mb-2 text-sm font-semibold text-foreground">Accesos actuales</p>
-        {invitationError ? (
-          <p role="alert" className="mb-2 text-xs text-error">
-            {invitationError}
-          </p>
-        ) : null}
-
-        {isLoadingInvitations ? (
-          <p className="text-xs text-muted-foreground">Cargando accesos...</p>
-        ) : activeInvitations.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No hay invitaciones activas.</p>
-        ) : (
-          <ul className="max-h-36 space-y-2 overflow-y-auto">
-            {activeInvitations.map((item) => (
-              <li key={item.id} className="rounded-lg border border-border bg-muted/60 px-3 py-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">@{item.invitee_username}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatStatus(item.status)} · {formatPermission(item.permission)}
-                    </p>
-                  </div>
-                  {item.status === "accepted" ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleRevoke(item.invitee_id)}
-                      disabled={revokingMemberId === item.invitee_id}
-                      className="rounded-md border border-border px-2 py-1 text-xs text-error transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {revokingMemberId === item.invitee_id ? "Revocando..." : "Revocar"}
-                    </button>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="mt-6 flex justify-end">
+        <Button
+          type="button"
+          onClick={() => void handleAcceptChanges()}
+          loading={isApplyingChanges}
+          disabled={pendingChanges.length === 0 || isLoadingInvitations}
+        >
+          Aceptar
+        </Button>
       </div>
     </Modal>
   );

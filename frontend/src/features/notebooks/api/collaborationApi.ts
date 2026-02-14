@@ -29,6 +29,17 @@ export const collaborationApi = {
     });
   },
 
+  updateMemberPermission: async (
+    notebookId: string,
+    memberId: string,
+    permission: "read_only" | "can_manage_documents",
+  ): Promise<void> => {
+    await apiRequest<void>(`/notebooks/${notebookId}/members/${memberId}/permission`, {
+      method: "PATCH",
+      body: { permission },
+    });
+  },
+
   revokeMember: async (notebookId: string, memberId: string): Promise<void> => {
     await apiRequest<void>(`/notebooks/${notebookId}/members/${memberId}/revoke`, {
       method: "POST",

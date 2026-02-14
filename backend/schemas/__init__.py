@@ -18,6 +18,7 @@ from .collaboration import (
     NotebookInviteCreate,
     NotebookInviteOut,
     NotebookMemberOut,
+    NotebookMemberPermissionUpdate,
     UserSearchItemOut,
 )
 from .notebooks import NotebookCreate, NotebookOut, NotebookUpdate
