@@ -79,7 +79,7 @@ export function InviteUserModal({
   const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
   const exactMatch = useMemo(
-    () => users.find((item) => item.username.toLowerCase() === normalizedQuery),
+    () => users.find((item) => item.email.toLowerCase() === normalizedQuery),
     [normalizedQuery, users],
   );
 

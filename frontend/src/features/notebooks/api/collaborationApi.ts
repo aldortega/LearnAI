@@ -6,9 +6,9 @@ import type {
 } from "../types/collaboration.types";
 
 export const collaborationApi = {
-  searchUsers: async (username: string): Promise<UserSearchItem[]> => {
-    const query = encodeURIComponent(username.trim());
-    return apiRequest<UserSearchItem[]>(`/users/search?username=${query}`, {
+  searchUsers: async (email: string): Promise<UserSearchItem[]> => {
+    const query = encodeURIComponent(email.trim());
+    return apiRequest<UserSearchItem[]>(`/users/search?email=${query}`, {
       method: "GET",
     });
   },

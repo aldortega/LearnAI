@@ -17,6 +17,8 @@ InvitationStatus = Literal[
 class UserSearchItemOut(BaseModel):
     id: str
     username: str
+    email: str
+    avatar_url: str | None = None
     name: str
     last_name: str
 

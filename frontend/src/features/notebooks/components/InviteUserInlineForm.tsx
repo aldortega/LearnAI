@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 
 import { Button } from "../../../shared/ui/Button";
 import type { InvitationPermission, UserSearchItem } from "../types/collaboration.types";
+import { getDisplayName, getInitials } from "../utils/collaborationDisplay";
 
 type Props = {
   searchQuery: string;
@@ -48,7 +49,7 @@ export function InviteUserInlineForm({
   const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
   const exactMatch = useMemo(
-    () => users.find((item) => item.username.toLowerCase() === normalizedQuery),
+    () => users.find((item) => item.email.toLowerCase() === normalizedQuery),
     [normalizedQuery, users],
   );
 
@@ -56,9 +57,9 @@ export function InviteUserInlineForm({
     return isAutocompleteOpen && searchQuery.trim().length >= 2;
   }, [isAutocompleteOpen, searchQuery]);
 
-  const selectInvitee = (username: string) => {
-    onSearchQueryChange(username);
-    onSelectedUsernameChange(username);
+  const selectInvitee = (user: UserSearchItem) => {
+    onSearchQueryChange(user.email);
+    onSelectedUsernameChange(user.username);
     setIsAutocompleteOpen(false);
     setHighlightedIndex(-1);
   };
@@ -76,8 +77,8 @@ export function InviteUserInlineForm({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_96px_96px]">
           <div className="relative">
             <input
-              id="invitee_username"
-              name="invitee_username"
+              id="invitee_email"
+              name="invitee_email"
               value={searchQuery}
               onChange={(event) => {
                 const value = event.target.value;
@@ -85,9 +86,7 @@ export function InviteUserInlineForm({
                 setIsAutocompleteOpen(true);
                 setHighlightedIndex(-1);
 
-                const match = users.find(
-                  (item) => item.username.toLowerCase() === value.trim().toLowerCase(),
-                );
+                const match = users.find((item) => item.email.toLowerCase() === value.trim().toLowerCase());
                 onSelectedUsernameChange(match ? match.username : "");
               }}
               onFocus={() => setIsAutocompleteOpen(true)}
@@ -123,7 +122,7 @@ export function InviteUserInlineForm({
 
                 if (highlightedIndex >= 0 && users[highlightedIndex]) {
                   event.preventDefault();
-                  selectInvitee(users[highlightedIndex].username);
+                  selectInvitee(users[highlightedIndex]);
                   return;
                 }
 
@@ -136,10 +135,10 @@ export function InviteUserInlineForm({
 
                 if (users.length > 0) {
                   event.preventDefault();
-                  selectInvitee(users[0].username);
+                  selectInvitee(users[0]);
                 }
               }}
-              placeholder="Buscar usuario"
+              placeholder="Buscar correo"
               autoComplete="off"
               required
               className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground transition-all placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -151,7 +150,7 @@ export function InviteUserInlineForm({
                   <p className="px-3 py-2 text-xs text-muted-foreground">Buscando...</p>
                 ) : users.length === 0 ? (
                   <p className="px-3 py-2 text-xs text-muted-foreground">
-                    {searchError ?? "No hay resultados para este username."}
+                    {searchError ?? "No hay resultados para este correo."}
                   </p>
                 ) : (
                   <ul className="max-h-40 overflow-y-auto py-1" role="listbox">
@@ -159,6 +158,7 @@ export function InviteUserInlineForm({
                       const isActive =
                         selectedUsername.toLowerCase() === item.username.toLowerCase() ||
                         highlightedIndex === index;
+                      const displayName = getDisplayName(item.name, item.last_name, item.username);
 
                       return (
                         <li key={item.id} role="option" aria-selected={isActive}>
@@ -166,21 +166,30 @@ export function InviteUserInlineForm({
                             type="button"
                             onMouseDown={(event) => {
                               event.preventDefault();
-                              selectInvitee(item.username);
+                              selectInvitee(item);
                             }}
                             className={
-                              "w-full px-3 py-2 text-left text-sm transition " +
+                              "flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition " +
                               (isActive
                                 ? "bg-primary/10 text-primary"
                                 : "text-foreground hover:bg-muted")
                             }
                           >
-                            <span className="font-medium">@{item.username}</span>
-                            {item.name || item.last_name ? (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                {item.name} {item.last_name}
-                              </span>
-                            ) : null}
+                            <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary/15 text-xs font-semibold text-primary">
+                              {item.avatar_url ? (
+                                <img
+                                  src={item.avatar_url}
+                                  alt={`Avatar de ${displayName}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                getInitials(displayName)
+                              )}
+                            </div>
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium text-foreground">{displayName}</span>
+                              <span className="block truncate text-xs text-muted-foreground">{item.email}</span>
+                            </span>
                           </button>
                         </li>
                       );
@@ -221,7 +230,7 @@ export function InviteUserInlineForm({
 
       {showValidationError ? (
         <p role="alert" className="text-sm text-error">
-          Selecciona un usuario valido de las sugerencias
+          Selecciona un correo valido de las sugerencias
         </p>
       ) : null}
     </form>

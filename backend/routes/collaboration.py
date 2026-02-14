@@ -45,6 +45,10 @@ def _normalize_username(username: str) -> str:
     return username.strip()
 
 
+def _normalize_email_query(value: str) -> str:
+    return value.strip().lower()
+
+
 async def expire_pending_invitations(
     notebook_id: ObjectId | None = None,
     invitee_id: ObjectId | None = None,
@@ -74,31 +78,39 @@ async def expire_pending_invitations(
 @router.get("/users/search", response_model=list[UserSearchItemOut])
 async def search_users(
     request: Request,
-    username: str = Query(min_length=2, max_length=30),
+    email: str | None = Query(default=None, min_length=2, max_length=254),
+    username: str | None = Query(default=None, min_length=2, max_length=30),
 ) -> list[UserSearchItemOut]:
     user = await get_current_user(request)
-    value = _normalize_username(username)
+    if email is None and username is None:
+        return []
+
+    field = "email_normalized" if email is not None else "username"
+    raw_value = email if email is not None else username or ""
+    value = _normalize_email_query(raw_value) if field == "email_normalized" else _normalize_username(raw_value)
     if len(value) < 2:
         return []
 
     escaped = re.escape(value)
     cursor = db.users.find(
         {
-            "username": {"$regex": escaped, "$options": "i"},
+            field: {"$regex": escaped, "$options": "i"},
             "_id": {"$ne": user["_id"]},
         },
-        {"username": 1, "name": 1, "last_name": 1},
+        {"username": 1, "email": 1, "avatar_url": 1, "name": 1, "last_name": 1},
     ).limit(10)
 
     return [
         UserSearchItemOut(
             id=str(item["_id"]),
             username=str(item.get("username") or ""),
+            email=str(item.get("email") or ""),
+            avatar_url=str(item.get("avatar_url") or "") or None,
             name=str(item.get("name") or ""),
             last_name=str(item.get("last_name") or ""),
         )
         async for item in cursor
-        if item.get("username")
+        if item.get("username") and item.get("email")
     ]
 
 
