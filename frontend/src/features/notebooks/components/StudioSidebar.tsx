@@ -16,6 +16,7 @@ type Mode = "chat" | "quiz" | "quickstart" | "reports" | "mindmap";
 
 type Props = {
   mode: Mode;
+  isStudioLocked: boolean;
   canStartQuiz: boolean;
   isGeneratingQuiz: boolean;
   canStartQuickstart: boolean;
@@ -33,6 +34,7 @@ type Props = {
 
 export function StudioSidebar({
   mode,
+  isStudioLocked,
   canStartQuiz,
   isGeneratingQuiz,
   canStartQuickstart,
@@ -55,6 +57,13 @@ export function StudioSidebar({
   useEffect(() => {
     localStorage.setItem("studioSidebarOpen", String(isOpen));
   }, [isOpen]);
+
+  const isQuickstartDisabled = isStudioLocked || !canStartQuickstart;
+  const isMindmapDisabled = isStudioLocked || !canStartMindmap;
+  const isChatDisabled = isStudioLocked;
+  const isQuizDisabled = isStudioLocked || !canStartQuiz;
+  const isReportsDisabled = isStudioLocked || !canStartReports;
+  const activeMode: Mode | null = isStudioLocked ? null : mode;
 
   return (
     <div
@@ -96,78 +105,79 @@ export function StudioSidebar({
             <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
               <div className="grid gap-2">
                 <Button
-                  variant={mode === "quickstart" ? "primary" : "ghost"}
+                  variant={activeMode === "quickstart" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<Sparkles className="h-4 w-4" />}
                   onClick={onGoQuickstart}
-                  disabled={!canStartQuickstart}
+                  disabled={isQuickstartDisabled}
                   loading={isGeneratingQuickstart}
                 >
                   Inicio rapido
                 </Button>
 
                 <Button
-                  variant={mode === "mindmap" ? "primary" : "ghost"}
+                  variant={activeMode === "mindmap" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<Network className="h-4 w-4" />}
                   onClick={onGoMindmap}
-                  disabled={!canStartMindmap}
+                  disabled={isMindmapDisabled}
                   loading={isGeneratingMindmap}
                 >
                   Mapa mental
                 </Button>
 
                 <Button
-                  variant={mode === "chat" ? "primary" : "ghost"}
+                  variant={activeMode === "chat" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<MessageSquare className="h-4 w-4" />}
                   onClick={onGoChat}
+                  disabled={isChatDisabled}
                 >
                   Chat
                 </Button>
 
                 <Button
-                  variant={mode === "quiz" ? "primary" : "ghost"}
+                  variant={activeMode === "quiz" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<BookOpenCheck className="h-4 w-4" />}
                   onClick={onGoQuiz}
-                  disabled={!canStartQuiz}
+                  disabled={isQuizDisabled}
                   loading={isGeneratingQuiz}
                 >
                   Quiz
                 </Button>
 
                 <Button
-                  variant={mode === "reports" ? "primary" : "ghost"}
+                  variant={activeMode === "reports" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<FileText className="h-4 w-4" />}
                   onClick={onGoReports}
-                  disabled={!canStartReports}
+                  disabled={isReportsDisabled}
                   loading={isGeneratingReports}
                 >
                   Informes
                 </Button>
               </div>
 
-              {!canStartQuickstart ? (
+              {!isStudioLocked && !canStartQuickstart ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar el inicio rapido.
                 </p>
               ) : null}
 
-              {!canStartQuiz ? (
+              {!isStudioLocked && !canStartQuiz ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar el quiz.
                 </p>
               ) : null}
 
-              {!canStartReports ? (
+              {!isStudioLocked && !canStartReports ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar informes.
                 </p>
               ) : null}
 
-              {!canStartMindmap ? (
+              {!isStudioLocked && !canStartMindmap ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para generar el mapa mental.
                 </p>
@@ -180,14 +190,14 @@ export function StudioSidebar({
               type="button"
               className={cn(
                 "rounded-md p-2 transition-colors",
-                mode === "quickstart"
+                activeMode === "quickstart"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted-hover",
-                (!canStartQuickstart || isGeneratingQuickstart) &&
+                (isQuickstartDisabled || isGeneratingQuickstart) &&
                   "cursor-not-allowed opacity-50",
               )}
               onClick={onGoQuickstart}
-              disabled={!canStartQuickstart || isGeneratingQuickstart}
+              disabled={isQuickstartDisabled || isGeneratingQuickstart}
               title="Inicio rapido"
               aria-label="Inicio rapido"
             >
@@ -197,14 +207,14 @@ export function StudioSidebar({
               type="button"
               className={cn(
                 "rounded-md p-2 transition-colors",
-                mode === "mindmap"
+                activeMode === "mindmap"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted-hover",
-                (!canStartMindmap || isGeneratingMindmap) &&
+                (isMindmapDisabled || isGeneratingMindmap) &&
                   "cursor-not-allowed opacity-50",
               )}
               onClick={onGoMindmap}
-              disabled={!canStartMindmap || isGeneratingMindmap}
+              disabled={isMindmapDisabled || isGeneratingMindmap}
               title="Mapa mental"
               aria-label="Mapa mental"
             >
@@ -214,11 +224,13 @@ export function StudioSidebar({
               type="button"
               className={cn(
                 "rounded-md p-2 transition-colors",
-                mode === "chat"
+                activeMode === "chat"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted-hover",
+                isChatDisabled && "cursor-not-allowed opacity-50",
               )}
               onClick={onGoChat}
+              disabled={isChatDisabled}
               title="Chat"
               aria-label="Chat"
             >
@@ -228,13 +240,13 @@ export function StudioSidebar({
               type="button"
               className={cn(
                 "rounded-md p-2 transition-colors",
-                mode === "quiz"
+                activeMode === "quiz"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted-hover",
-                (!canStartQuiz || isGeneratingQuiz) && "cursor-not-allowed opacity-50",
+                (isQuizDisabled || isGeneratingQuiz) && "cursor-not-allowed opacity-50",
               )}
               onClick={onGoQuiz}
-              disabled={!canStartQuiz || isGeneratingQuiz}
+              disabled={isQuizDisabled || isGeneratingQuiz}
               title="Quiz"
               aria-label="Quiz"
             >
@@ -244,14 +256,14 @@ export function StudioSidebar({
               type="button"
               className={cn(
                 "rounded-md p-2 transition-colors",
-                mode === "reports"
+                activeMode === "reports"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted-hover",
-                (!canStartReports || isGeneratingReports) &&
+                (isReportsDisabled || isGeneratingReports) &&
                   "cursor-not-allowed opacity-50",
               )}
               onClick={onGoReports}
-              disabled={!canStartReports || isGeneratingReports}
+              disabled={isReportsDisabled || isGeneratingReports}
               title="Informes"
               aria-label="Informes"
             >

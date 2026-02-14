@@ -8,6 +8,7 @@ export { useUpdateNotebook } from "./hooks/useUpdateNotebook";
 export { useDeleteNotebook } from "./hooks/useDeleteNotebook";
 export { useDocumentStream } from "./hooks/useDocumentStream";
 export { useNotebook } from "./hooks/useNotebook";
+export { useNotebookReadySources } from "./hooks/useNotebookReadySources";
 export { useInviteUser } from "./hooks/useInviteUser";
 export { useUserSearch } from "./hooks/useUserSearch";
 export { NotebookShell } from "./components/NotebookShell";

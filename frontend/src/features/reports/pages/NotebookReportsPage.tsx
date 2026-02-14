@@ -377,6 +377,7 @@ export function NotebookReportsPage() {
         setDeleteTarget(document);
       }}
       mode="reports"
+      isStudioLocked={false}
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
       canStartQuickstart={hasReadySources}

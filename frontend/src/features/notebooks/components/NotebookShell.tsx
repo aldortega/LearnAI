@@ -16,6 +16,7 @@ type Props = {
   onAddSource: () => void;
   onDeleteDocument: (document: Document) => void;
   mode: NotebookShellMode;
+  isStudioLocked: boolean;
   canStartQuiz: boolean;
   isGeneratingQuiz: boolean;
   canStartQuickstart: boolean;
@@ -43,6 +44,7 @@ export function NotebookShell({
   onAddSource,
   onDeleteDocument,
   mode,
+  isStudioLocked,
   canStartQuiz,
   isGeneratingQuiz,
   canStartQuickstart,
@@ -77,6 +79,7 @@ export function NotebookShell({
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden">{children}</div>
         <StudioSidebar
           mode={mode}
+          isStudioLocked={isStudioLocked}
           canStartQuiz={canStartQuiz}
           isGeneratingQuiz={isGeneratingQuiz}
           canStartQuickstart={canStartQuickstart}

@@ -233,6 +233,7 @@ export function NotebookQuickstartTopicPage() {
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
       mode="quickstart"
+      isStudioLocked={false}
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
       canStartQuickstart={hasReadySources}

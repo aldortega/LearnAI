@@ -302,6 +302,7 @@ export function NotebookQuizPage() {
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
       mode="quiz"
+      isStudioLocked={false}
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={isGenerating}
       canStartQuickstart={hasReadySources}

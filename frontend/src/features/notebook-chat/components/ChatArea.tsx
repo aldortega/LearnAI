@@ -150,11 +150,11 @@ export function ChatArea({
                 <Upload className="h-8 w-8" />
               </div>
               <h2 className="mb-2 text-xl font-semibold text-foreground">
-                Comienza a chatear
+                Sube tus fuentes para comenzar
               </h2>
               <p className="mb-6 text-muted-foreground">
-                Añade al menos una fuente (PDF, DOCX, TXT o PPTX) para empezar a hacer
-                preguntas sobre tu material de estudio.
+                Añade al menos una fuente para habilitar el studio y comenzar a
+                estudiar con IA.
               </p>
               <div
                 className={

@@ -160,6 +160,7 @@ export function NotebookMindmapPage() {
         setDeleteTarget(document);
       }}
       mode="mindmap"
+      isStudioLocked={false}
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
       canStartQuickstart={hasReadySources}

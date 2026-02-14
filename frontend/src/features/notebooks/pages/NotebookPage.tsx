@@ -5,12 +5,17 @@ import { ChatArea, useNotebookChat } from "../../notebook-chat";
 import { documentsApi } from "../api/documentsApi";
 import { DeleteDocumentModal } from "../components/DeleteDocumentModal";
 import { NotebookShell } from "../components/NotebookShell";
+import { NotebookSourcesEmptyState } from "../components/NotebookSourcesEmptyState";
 import type { Document } from "../types/documents.types";
 import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../index";
 
 const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
-export function NotebookPage() {
+type Props = {
+  redirectWhenReady?: boolean;
+};
+
+export function NotebookPage({ redirectWhenReady = false }: Props) {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook } = useNotebook(notebookId);
@@ -148,6 +153,11 @@ export function NotebookPage() {
 
   const hasReadySources = documents.some((doc) => doc.status === "done");
 
+  useEffect(() => {
+    if (!redirectWhenReady || !notebookId || !hasReadySources) return;
+    navigate(`/notebook/${notebookId}/quickstart`, { replace: true });
+  }, [redirectWhenReady, hasReadySources, navigate, notebookId]);
+
   return (
     <NotebookShell
       title={notebook?.title}
@@ -158,6 +168,7 @@ export function NotebookPage() {
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
       mode="chat"
+      isStudioLocked={!hasReadySources}
       canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
       canStartQuickstart={hasReadySources}
@@ -206,18 +217,25 @@ export function NotebookPage() {
         />
       }
     >
-      <ChatArea
-        hasSources={hasReadySources}
-        messages={messages}
-        streamingContent={streamingContent}
-        isLoading={isChatLoading}
-        isStreaming={isChatStreaming}
-        isClearing={isChatClearing}
-        error={chatError}
-        onSendMessage={sendMessage}
-        onClearChat={clearConversation}
-        onDropFile={handleDropFile}
-      />
+      {hasReadySources ? (
+        <ChatArea
+          hasSources={hasReadySources}
+          messages={messages}
+          streamingContent={streamingContent}
+          isLoading={isChatLoading}
+          isStreaming={isChatStreaming}
+          isClearing={isChatClearing}
+          error={chatError}
+          onSendMessage={sendMessage}
+          onClearChat={clearConversation}
+          onDropFile={handleDropFile}
+        />
+      ) : (
+        <NotebookSourcesEmptyState
+          canManageDocuments={canManageDocuments}
+          onDropFile={handleDropFile}
+        />
+      )}
     </NotebookShell>
   );
 }
