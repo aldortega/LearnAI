@@ -106,10 +106,10 @@ export function SourcesSidebar({
                 <div className="mb-3 rounded-2xl bg-muted p-3">
                   <FileText className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <p className="w-full truncate text-sm text-muted-foreground">
+                <p className="w-full text-sm text-muted-foreground">
                   Las fuentes guardadas aparecerán aquí.
                 </p>
-                <p className="mt-1 w-full truncate text-xs text-muted-foreground">
+                <p className="mt-1 w-full text-xs text-muted-foreground">
                   Haz clic en el botón Añadir fuente para cargar PDF, DOCX, TXT o PPTX.
                 </p>
               </div>
