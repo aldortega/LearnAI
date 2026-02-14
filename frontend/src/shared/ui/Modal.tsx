@@ -4,15 +4,44 @@ import { createPortal } from "react-dom";
 
 import { cn } from "../lib/cn";
 
+export type ModalMaxWidth =
+  | "sm"
+  | "md"
+  | "lg"
+  | "xl"
+  | "2xl"
+  | "3xl"
+  | "4xl"
+  | "5xl";
+
+const maxWidthClasses: Record<ModalMaxWidth, string> = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+  "4xl": "max-w-4xl",
+  "5xl": "max-w-5xl",
+};
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  maxWidth?: ModalMaxWidth;
   className?: string;
 };
 
-export function Modal({ isOpen, onClose, title, children, className }: Props) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  maxWidth = "md",
+  className,
+}: Props) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,7 +85,8 @@ export function Modal({ isOpen, onClose, title, children, className }: Props) {
       <div
         ref={contentRef}
         className={cn(
-          "relative w-full max-w-md rounded-xl bg-surface shadow-xl ring-1 ring-border transition-all",
+          "relative w-full rounded-xl bg-surface shadow-xl ring-1 ring-border transition-all",
+          maxWidthClasses[maxWidth],
           "animate-in fade-in zoom-in-95 duration-200",
           "bg-surface ring-border",
           className,

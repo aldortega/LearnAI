@@ -185,7 +185,7 @@ export function InviteUserModal({
       isOpen={isOpen}
       onClose={handleRequestClose}
       title={notebookTitle ? `Invitar a ${notebookTitle}` : "Invitar usuario"}
-      className="max-w-3xl"
+      maxWidth="3xl"
     >
       <InviteUserInlineForm
         searchQuery={searchQuery}
@@ -225,6 +225,7 @@ export function InviteUserModal({
           onClick={() => void handleAcceptChanges()}
           loading={isApplyingChanges}
           disabled={pendingChanges.length === 0 || isLoadingInvitations}
+          className="h-10 w-24"
         >
           Aceptar
         </Button>

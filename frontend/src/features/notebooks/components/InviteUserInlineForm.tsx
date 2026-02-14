@@ -73,7 +73,7 @@ export function InviteUserInlineForm({
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-foreground">Invitar colaborador</p>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_112px_112px]">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_96px_96px]">
           <div className="relative">
             <input
               id="invitee_username"
@@ -213,7 +213,7 @@ export function InviteUserInlineForm({
             />
           </div>
 
-          <Button type="submit" loading={isSubmitting} disabled={!canSubmit} className="h-10 w-full px-3">
+          <Button type="submit" loading={isSubmitting} disabled={!canSubmit} className="h-10 w-full">
             Enviar
           </Button>
         </div>
