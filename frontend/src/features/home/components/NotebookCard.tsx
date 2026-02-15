@@ -1,4 +1,4 @@
-﻿import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
+﻿import { LogOut, MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -16,6 +16,7 @@ type Props = {
   onEdit: () => void;
   onDelete: () => void;
   onInvite?: () => void;
+  onLeave?: () => void;
 };
 
 export function NotebookCard({
@@ -28,6 +29,7 @@ export function NotebookCard({
   onEdit,
   onDelete,
   onInvite,
+  onLeave,
 }: Props) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -147,6 +149,25 @@ export function NotebookCard({
           >
             <MoreVertical className="h-4 w-4" />
           </button>
+
+          {isMenuOpen ? (
+            <div className="absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
+              {onLeave ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsMenuOpen(false);
+                    onLeave();
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Salir
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

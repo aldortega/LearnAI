@@ -11,6 +11,7 @@ InvitationStatus = Literal[
     "rejected",
     "revoked",
     "expired",
+    "left",
 ]
 
 

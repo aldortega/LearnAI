@@ -57,5 +57,10 @@ export const collaborationApi = {
       method: "POST",
     });
   },
-};
 
+  leaveNotebook: async (notebookId: string): Promise<void> => {
+    await apiRequest<void>(`/notebooks/${notebookId}/leave`, {
+      method: "POST",
+    });
+  },
+};

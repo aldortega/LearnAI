@@ -3,11 +3,12 @@ import { useMemo, useState } from "react";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
 import type { Notebook } from "../../notebooks";
-import { useDeleteNotebook, useNotebooks } from "../../notebooks";
+import { useDeleteNotebook, useLeaveNotebook, useNotebooks } from "../../notebooks";
 import { CreateNotebookModal } from "../../notebooks/components/CreateNotebookModal";
 import { DeleteNotebookModal } from "../../notebooks/components/DeleteNotebookModal";
 import { EditNotebookModal } from "../../notebooks/components/EditNotebookModal";
 import { InviteUserModal } from "../../notebooks/components/InviteUserModal";
+import { LeaveNotebookModal } from "../../notebooks/components/LeaveNotebookModal";
 import { Header } from "../components/Header";
 import { NotebookCard } from "../components/NotebookCard";
 import { NotebookListItem } from "../components/NotebookListItem";
@@ -38,10 +39,12 @@ export function HomePage() {
   const { user } = useAuth();
   const { notebooks, reload } = useNotebooks();
   const { deleteNotebook, isLoading, error, clearError } = useDeleteNotebook();
+  const { leaveNotebook, isLoading: isLeaving, error: leaveError, clearError: clearLeaveError } = useLeaveNotebook();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [inviteModalSeed, setInviteModalSeed] = useState(0);
   const [selectedNotebook, setSelectedNotebook] = useState<Notebook | null>(null);
   const [showAllOwned, setShowAllOwned] = useState(false);
@@ -103,6 +106,31 @@ export function HomePage() {
   const handleCloseInviteModal = () => {
     setIsInviteModalOpen(false);
     setSelectedNotebook(null);
+  };
+
+  const handleLeaveNotebook = (notebook: Notebook) => {
+    setSelectedNotebook(notebook);
+    clearLeaveError();
+    setIsLeaveModalOpen(true);
+  };
+
+  const handleCloseLeaveModal = () => {
+    setIsLeaveModalOpen(false);
+    setSelectedNotebook(null);
+    clearLeaveError();
+  };
+
+  const handleConfirmLeave = async () => {
+    if (!selectedNotebook) return;
+
+    try {
+      await leaveNotebook(selectedNotebook.id);
+      setIsLeaveModalOpen(false);
+      setSelectedNotebook(null);
+      await reload();
+    } catch {
+      // Error handled by hook.
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -236,6 +264,7 @@ export function HomePage() {
                     onInvite={() => handleInviteNotebook(notebook)}
                     onEdit={() => handleEditNotebook(notebook)}
                     onDelete={() => handleDeleteNotebook(notebook)}
+                    onLeave={() => handleLeaveNotebook(notebook)}
                   />
                 ))}
               </div>
@@ -279,6 +308,15 @@ export function HomePage() {
         onSuccess={() => {
           void reload();
         }}
+      />
+
+      <LeaveNotebookModal
+        isOpen={isLeaveModalOpen}
+        notebookName={selectedNotebook?.title}
+        isLeaving={isLeaving}
+        error={leaveError}
+        onCancel={handleCloseLeaveModal}
+        onConfirm={handleConfirmLeave}
       />
     </div>
   );

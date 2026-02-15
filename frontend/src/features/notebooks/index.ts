@@ -6,6 +6,7 @@ export { useDocuments } from "./hooks/useDocuments";
 export { useUploadDocument } from "./hooks/useUploadDocument";
 export { useUpdateNotebook } from "./hooks/useUpdateNotebook";
 export { useDeleteNotebook } from "./hooks/useDeleteNotebook";
+export { useLeaveNotebook } from "./hooks/useLeaveNotebook";
 export { useDocumentStream } from "./hooks/useDocumentStream";
 export { useNotebook } from "./hooks/useNotebook";
 export { useNotebookReadySources } from "./hooks/useNotebookReadySources";

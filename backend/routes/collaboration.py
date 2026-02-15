@@ -504,6 +504,76 @@ async def update_member_permission(
 
 
 @router.post(
+    "/notebooks/{notebook_id}/leave",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def leave_notebook(
+    notebook_id: str,
+    request: Request,
+) -> None:
+    user = await get_current_user(request)
+
+    try:
+        notebook_object_id = ObjectId(notebook_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Notebook invalido",
+        ) from exc
+
+    notebook = await db.notebooks.find_one({"_id": notebook_object_id})
+    if not notebook:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notebook no encontrado",
+        )
+
+    if notebook.get("owner_id") == user["_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El propietario no puede abandonar su propia notebook",
+        )
+
+    now = datetime.now(timezone.utc)
+    membership = await db.notebook_memberships.find_one_and_update(
+        {
+            "notebook_id": notebook_object_id,
+            "member_id": user["_id"],
+            "revoked_at": None,
+        },
+        {
+            "$set": {
+                "revoked_at": now,
+                "updated_at": now,
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No eres miembro de esta notebook",
+        )
+
+    await db.notebook_invitations.update_many(
+        {
+            "notebook_id": notebook_object_id,
+            "invitee_id": user["_id"],
+            "status": {"$in": ["pending", "accepted"]},
+        },
+        {
+            "$set": {
+                "status": "left",
+                "updated_at": now,
+                "responded_at": now,
+            }
+        },
+    )
+
+    return None
+
+
+@router.post(
     "/notebooks/{notebook_id}/members/{member_id}/revoke",
     status_code=status.HTTP_204_NO_CONTENT,
 )
