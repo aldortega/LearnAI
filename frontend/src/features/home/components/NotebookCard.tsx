@@ -1,10 +1,10 @@
-﻿import { Clock, MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
+﻿import { MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getEmojiBackgroundClass } from "../../notebooks/utils/emojiColors";
 
-const DEFAULT_NOTEBOOK_EMOJI = "??";
+const DEFAULT_NOTEBOOK_EMOJI = "📓";
 
 type Props = {
   id: string;
@@ -51,14 +51,32 @@ export function NotebookCard({
   return (
     <div
       onClick={handleNavigate}
-      className="group relative flex h-48 cursor-pointer flex-col justify-between rounded-xl border border-border bg-surface p-5 transition-shadow hover:shadow-md"
+      className="group relative flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface p-4 transition-shadow hover:shadow-md"
     >
-      <div className="absolute left-3 top-3 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-        {accessRole === "owner" ? "Owner" : "Compartida"}
+      {/* Emoji avatar */}
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getEmojiBackgroundClass(
+          emoji,
+        )}`}
+      >
+        <span className="text-lg" aria-hidden>
+          {emoji ?? DEFAULT_NOTEBOOK_EMOJI}
+        </span>
       </div>
 
+      {/* Text content */}
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground group-hover:text-primary">
+          {title}
+        </h3>
+        <p className="mt-1 truncate text-xs text-muted-foreground">
+          {sourceCount} {sourceCount === 1 ? "fuente" : "fuentes"} · {updatedAt}
+        </p>
+      </div>
+
+      {/* Menu button */}
       {accessRole === "owner" ? (
-        <div className="absolute right-3 top-3" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
             onClick={(event) => {
@@ -73,7 +91,7 @@ export function NotebookCard({
           </button>
 
           {isMenuOpen ? (
-            <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
+            <div className="absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
               {onInvite ? (
                 <button
                   type="button"
@@ -115,33 +133,22 @@ export function NotebookCard({
             </div>
           ) : null}
         </div>
-      ) : null}
-
-      <div>
-        <div
-          className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full ${getEmojiBackgroundClass(
-            emoji,
-          )}`}
-        >
-          <span className="text-xl" aria-hidden>
-            {emoji ?? DEFAULT_NOTEBOOK_EMOJI}
-          </span>
+      ) : (
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsMenuOpen((prev) => !prev);
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label="Opciones del notebook"
+            aria-expanded={isMenuOpen}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
         </div>
-        <h3 className="line-clamp-2 text-lg font-semibold leading-tight text-foreground group-hover:text-primary">
-          {title}
-        </h3>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          {sourceCount} {sourceCount === 1 ? "fuente" : "fuentes"}
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {updatedAt}
-        </span>
-      </div>
+      )}
     </div>
   );
 }
-
