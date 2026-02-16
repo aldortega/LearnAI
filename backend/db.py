@@ -113,7 +113,9 @@ async def ensure_indexes() -> None:
     await db.quickstart_generation_jobs.create_index("notebook_id")
     await db.quickstart_generation_jobs.create_index("status")
     await db.quickstart_generation_jobs.create_index("created_at")
-    await db.mindmap_maps.create_index([("owner_id", 1), ("notebook_id", 1)], unique=True)
+    await db.mindmap_maps.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
     await db.mindmap_maps.create_index("updated_at")
     await db.mindmap_maps.create_index("sources_fingerprint")
     await db.mindmap_generation_jobs.create_index("job_id", unique=True)
@@ -131,7 +133,21 @@ async def ensure_indexes() -> None:
         unique=True,
     )
     await db.mindmap_node_details.create_index("updated_at")
-    await db.reports.create_index([("owner_id", 1), ("notebook_id", 1), ("created_at", -1)])
+    await db.flashcard_sets.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.flashcard_sets.create_index("owner_id")
+    await db.flashcard_sets.create_index("notebook_id")
+    await db.flashcard_sets.create_index("updated_at")
+    await db.flashcard_sets.create_index("sources_fingerprint")
+    await db.flashcard_generation_jobs.create_index("job_id", unique=True)
+    await db.flashcard_generation_jobs.create_index("owner_id")
+    await db.flashcard_generation_jobs.create_index("notebook_id")
+    await db.flashcard_generation_jobs.create_index("status")
+    await db.flashcard_generation_jobs.create_index("created_at")
+    await db.reports.create_index(
+        [("owner_id", 1), ("notebook_id", 1), ("created_at", -1)]
+    )
     await db.reports.create_index("owner_id")
     await db.reports.create_index("notebook_id")
     await db.reports.create_index("created_at")

@@ -177,6 +177,8 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       isGeneratingReports={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
+      canStartFlashcards={hasReadySources}
+      isGeneratingFlashcards={false}
       onGoChat={() => {
         // already on chat
       }}
@@ -195,6 +197,10 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       onGoMindmap={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/mindmap`);
+      }}
+      onGoFlashcards={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/flashcards`);
       }}
       beforeMain={
         <input

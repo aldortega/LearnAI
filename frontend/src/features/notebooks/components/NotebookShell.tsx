@@ -5,7 +5,13 @@ import { StudioSidebar } from "./StudioSidebar";
 import { SourcesSidebar } from "./SourcesSidebar";
 import type { Document } from "../types/documents.types";
 
-export type NotebookShellMode = "chat" | "quiz" | "quickstart" | "reports" | "mindmap";
+export type NotebookShellMode =
+  | "chat"
+  | "quiz"
+  | "quickstart"
+  | "reports"
+  | "mindmap"
+  | "flashcards";
 
 type Props = {
   title?: string;
@@ -25,11 +31,14 @@ type Props = {
   isGeneratingReports: boolean;
   canStartMindmap: boolean;
   isGeneratingMindmap: boolean;
+  canStartFlashcards: boolean;
+  isGeneratingFlashcards: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
   onGoReports: () => void;
   onGoMindmap: () => void;
+  onGoFlashcards: () => void;
   beforeMain?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -53,11 +62,14 @@ export function NotebookShell({
   isGeneratingReports,
   canStartMindmap,
   isGeneratingMindmap,
+  canStartFlashcards,
+  isGeneratingFlashcards,
   onGoChat,
   onGoQuiz,
   onGoQuickstart,
   onGoReports,
   onGoMindmap,
+  onGoFlashcards,
   beforeMain,
   children,
   footer,
@@ -88,11 +100,14 @@ export function NotebookShell({
           isGeneratingReports={isGeneratingReports}
           canStartMindmap={canStartMindmap}
           isGeneratingMindmap={isGeneratingMindmap}
+          canStartFlashcards={canStartFlashcards}
+          isGeneratingFlashcards={isGeneratingFlashcards}
           onGoChat={onGoChat}
           onGoQuiz={onGoQuiz}
           onGoQuickstart={onGoQuickstart}
           onGoReports={onGoReports}
           onGoMindmap={onGoMindmap}
+          onGoFlashcards={onGoFlashcards}
         />
       </main>
       {footer}

@@ -11,6 +11,7 @@ import { AuthProvider } from "./app/providers/AuthProvider";
 import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { AuthPage } from "./features/auth/pages/AuthPage";
 import { CompleteProfilePage } from "./features/auth/pages/CompleteProfilePage";
+import { NotebookFlashcardsPage } from "./features/flashcards/pages/NotebookFlashcardsPage";
 import { HomePage } from "./features/home/pages/HomePage";
 import { useNotebookReadySources } from "./features/notebooks";
 import { NotebookMindmapPage } from "./features/mindmap/pages/NotebookMindmapPage";
@@ -149,6 +150,16 @@ function App() {
                 <ProtectedRoute>
                   <RequireReadySources>
                     <NotebookReportsPage />
+                  </RequireReadySources>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notebook/:notebookId/flashcards"
+              element={
+                <ProtectedRoute>
+                  <RequireReadySources>
+                    <NotebookFlashcardsPage />
                   </RequireReadySources>
                 </ProtectedRoute>
               }

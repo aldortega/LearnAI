@@ -200,6 +200,11 @@ export function NotebookQuizPage() {
     navigate(`/notebook/${notebookId}/mindmap`);
   };
 
+  const handleGoFlashcards = () => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/flashcards`);
+  };
+
   const handleGenerateQuiz = useCallback(
     async (options: QuizGenerateRequest) => {
       if (!notebookId) return;
@@ -311,11 +316,14 @@ export function NotebookQuizPage() {
       isGeneratingReports={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
+      canStartFlashcards={hasReadySources}
+      isGeneratingFlashcards={false}
       onGoChat={handleGoChat}
       onGoQuiz={() => void handleGoQuiz()}
       onGoQuickstart={handleGoQuickstart}
       onGoReports={handleGoReports}
       onGoMindmap={handleGoMindmap}
+      onGoFlashcards={handleGoFlashcards}
       beforeMain={
         <input
           ref={fileInputRef}

@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Layers,
   MessageSquare,
   Network,
   Sparkles,
@@ -12,7 +13,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 
-type Mode = "chat" | "quiz" | "quickstart" | "reports" | "mindmap";
+type Mode = "chat" | "quiz" | "quickstart" | "reports" | "mindmap" | "flashcards";
 
 type Props = {
   mode: Mode;
@@ -25,11 +26,14 @@ type Props = {
   isGeneratingReports: boolean;
   canStartMindmap: boolean;
   isGeneratingMindmap: boolean;
+  canStartFlashcards: boolean;
+  isGeneratingFlashcards: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
   onGoReports: () => void;
   onGoMindmap: () => void;
+  onGoFlashcards: () => void;
 };
 
 export function StudioSidebar({
@@ -43,11 +47,14 @@ export function StudioSidebar({
   isGeneratingReports,
   canStartMindmap,
   isGeneratingMindmap,
+  canStartFlashcards,
+  isGeneratingFlashcards,
   onGoChat,
   onGoQuiz,
   onGoQuickstart,
   onGoReports,
   onGoMindmap,
+  onGoFlashcards,
 }: Props) {
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem("studioSidebarOpen");
@@ -62,6 +69,7 @@ export function StudioSidebar({
   const isMindmapDisabled = isStudioLocked || !canStartMindmap;
   const isChatDisabled = isStudioLocked;
   const isQuizDisabled = isStudioLocked || !canStartQuiz;
+  const isFlashcardsDisabled = isStudioLocked || !canStartFlashcards;
   const isReportsDisabled = isStudioLocked || !canStartReports;
   const activeMode: Mode | null = isStudioLocked ? null : mode;
 
@@ -85,7 +93,6 @@ export function StudioSidebar({
             Estudio
           </h2>
         ) : null}
-
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="rounded-md p-2 text-muted-foreground hover:bg-muted-hover"
@@ -148,6 +155,17 @@ export function StudioSidebar({
                 </Button>
 
                 <Button
+                  variant={activeMode === "flashcards" ? "primary" : "ghost"}
+                  className="w-full justify-start whitespace-nowrap transition-colors"
+                  leftIcon={<Layers className="h-4 w-4" />}
+                  onClick={onGoFlashcards}
+                  disabled={isFlashcardsDisabled}
+                  loading={isGeneratingFlashcards}
+                >
+                  Flashcards
+                </Button>
+
+                <Button
                   variant={activeMode === "reports" ? "primary" : "ghost"}
                   className="w-full justify-start whitespace-nowrap transition-colors"
                   leftIcon={<FileText className="h-4 w-4" />}
@@ -159,27 +177,14 @@ export function StudioSidebar({
                 </Button>
               </div>
 
-              {!isStudioLocked && !canStartQuickstart ? (
+              {!isStudioLocked &&
+              (!canStartQuickstart ||
+                !canStartQuiz ||
+                !canStartFlashcards ||
+                !canStartReports ||
+                !canStartMindmap) ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
-                  Necesitas al menos una fuente lista para generar el inicio rapido.
-                </p>
-              ) : null}
-
-              {!isStudioLocked && !canStartQuiz ? (
-                <p className="mt-3 text-xs text-muted-foreground" role="alert">
-                  Necesitas al menos una fuente lista para generar el quiz.
-                </p>
-              ) : null}
-
-              {!isStudioLocked && !canStartReports ? (
-                <p className="mt-3 text-xs text-muted-foreground" role="alert">
-                  Necesitas al menos una fuente lista para generar informes.
-                </p>
-              ) : null}
-
-              {!isStudioLocked && !canStartMindmap ? (
-                <p className="mt-3 text-xs text-muted-foreground" role="alert">
-                  Necesitas al menos una fuente lista para generar el mapa mental.
+                  Necesitas al menos una fuente lista para usar el modo estudio.
                 </p>
               ) : null}
             </div>
@@ -251,6 +256,23 @@ export function StudioSidebar({
               aria-label="Quiz"
             >
               <BookOpenCheck className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-md p-2 transition-colors",
+                activeMode === "flashcards"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover",
+                (isFlashcardsDisabled || isGeneratingFlashcards) &&
+                  "cursor-not-allowed opacity-50",
+              )}
+              onClick={onGoFlashcards}
+              disabled={isFlashcardsDisabled || isGeneratingFlashcards}
+              title="Flashcards"
+              aria-label="Flashcards"
+            >
+              <Layers className="h-4 w-4" />
             </button>
             <button
               type="button"

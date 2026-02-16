@@ -320,6 +320,10 @@ export function NotebookReportsPage() {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/mindmap`);
   }, [notebookId, navigate]);
+  const handleStudioNavFlashcards = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/flashcards`);
+  }, [notebookId, navigate]);
   const activeReport = useMemo(
     () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
     [reports, selectedReportId],
@@ -386,11 +390,14 @@ export function NotebookReportsPage() {
       isGeneratingReports={isGenerating}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
+      canStartFlashcards={hasReadySources}
+      isGeneratingFlashcards={false}
       onGoChat={handleStudioNavChat}
       onGoQuiz={handleStudioNavQuiz}
       onGoQuickstart={handleStudioNavQuickstart}
       onGoReports={handleStudioNavReports}
       onGoMindmap={handleStudioNavMindmap}
+      onGoFlashcards={handleStudioNavFlashcards}
       beforeMain={
         <input
           ref={fileInputRef}

@@ -11,6 +11,7 @@ from .qdrant import ensure_qdrant_collection
 from .routes.auth import router as auth_router
 from .routes.collaboration import router as collaboration_router
 from .routes.documents import router as documents_router
+from .routes.flashcards import router as flashcards_router
 from .routes.mindmap import router as mindmap_router
 from .routes.notebooks import router as notebooks_router
 from .routes.notifications import router as notifications_router
@@ -49,6 +50,7 @@ app.include_router(quiz_router)
 app.include_router(quickstart_router)
 app.include_router(reports_router)
 app.include_router(mindmap_router)
+app.include_router(flashcards_router)
 
 
 @app.get("/health")

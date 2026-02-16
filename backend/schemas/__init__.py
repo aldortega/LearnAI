@@ -7,6 +7,15 @@ from .auth import (
     UserOut,
 )
 from .documents import DocumentCreate, DocumentCreateResponse, DocumentOut
+from .flashcards import (
+    FlashcardCountPreset,
+    FlashcardDifficulty,
+    FlashcardOut,
+    FlashcardSourceRef,
+    FlashcardsGenerateRequest,
+    FlashcardsGenerationJobOut,
+    FlashcardsOut,
+)
 from .mindmap import (
     MindmapGenerationJobOut,
     MindmapNodeDetailOut,
