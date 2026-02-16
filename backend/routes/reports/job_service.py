@@ -141,27 +141,39 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             notebook_object_id = ObjectId(notebook_id)
             owner_object_id = ObjectId(owner_id)
         except Exception as exc:
-            await mark_report_job_failed(job_id, "Identificador invalido", db_client=worker_db)
-            logger.exception("Identificador invalido en reportes", extra={"error": str(exc)})
+            await mark_report_job_failed(
+                job_id, "Identificador invalido", db_client=worker_db
+            )
+            logger.exception(
+                "Identificador invalido en reportes", extra={"error": str(exc)}
+            )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
-            await mark_report_job_failed(job_id, "Notebook no encontrado", db_client=worker_db)
+            await mark_report_job_failed(
+                job_id, "Notebook no encontrado", db_client=worker_db
+            )
             return
 
         job_doc = await worker_db.report_generation_jobs.find_one(
-            {"job_id": job_id, "owner_id": owner_object_id, "notebook_id": notebook_object_id}
+            {
+                "job_id": job_id,
+                "owner_id": owner_object_id,
+                "notebook_id": notebook_object_id,
+            }
         )
         if not job_doc:
-            await mark_report_job_failed(job_id, "Job no encontrado", db_client=worker_db)
+            await mark_report_job_failed(
+                job_id, "Job no encontrado", db_client=worker_db
+            )
             return
 
         prompt = coerce_text(job_doc.get("prompt")).strip()
         if not prompt:
-            await mark_report_job_failed(job_id, "El prompt es obligatorio", db_client=worker_db)
+            await mark_report_job_failed(
+                job_id, "El prompt es obligatorio", db_client=worker_db
+            )
             return
 
         format_type = coerce_text(job_doc.get("format_type")) or "freeform"
@@ -188,12 +200,20 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             return
 
         try:
-            report_title, report_description, content, sources = await generate_report_payload(
+            (
+                report_title,
+                report_description,
+                content,
+                sources,
+            ) = await generate_report_payload(
                 notebook_title=coerce_text(notebook.get("title")),
                 format_type=format_type,
                 prompt=prompt,
                 notebook_object_id=notebook_object_id,
-                user={"_id": owner_object_id},
+                user={
+                    "_id": owner_object_id,
+                    "_source_owner_id": notebook["owner_id"],
+                },
             )
             if not report_title or not report_description:
                 raise ValueError("No se pudo generar la metadata del informe")
@@ -216,7 +236,9 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             await mark_report_job_failed(job_id, error_message, db_client=worker_db)
             return
 
-        await mark_report_job_done(job_id, str(report_result.inserted_id), db_client=worker_db)
+        await mark_report_job_done(
+            job_id, str(report_result.inserted_id), db_client=worker_db
+        )
     finally:
         worker_client.close()
 
@@ -252,9 +274,7 @@ async def _process_report_suggestions_generation(
             )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
             await mark_report_suggestions_job_failed(
                 job_id, "Notebook no encontrado", db_client=worker_db
@@ -262,7 +282,11 @@ async def _process_report_suggestions_generation(
             return
 
         job_doc = await worker_db.report_suggestion_generation_jobs.find_one(
-            {"job_id": job_id, "owner_id": owner_object_id, "notebook_id": notebook_object_id}
+            {
+                "job_id": job_id,
+                "owner_id": owner_object_id,
+                "notebook_id": notebook_object_id,
+            }
         )
         if not job_doc:
             await mark_report_suggestions_job_failed(
@@ -294,7 +318,10 @@ async def _process_report_suggestions_generation(
             suggestions = await generate_report_suggestions(
                 notebook_title=coerce_text(notebook.get("title")),
                 notebook_object_id=notebook_object_id,
-                user={"_id": owner_object_id},
+                user={
+                    "_id": owner_object_id,
+                    "_source_owner_id": notebook["owner_id"],
+                },
             )
             if not suggestions:
                 raise ValueError("No se pudieron generar sugerencias de reportes")
@@ -315,4 +342,3 @@ async def _process_report_suggestions_generation(
         await mark_report_suggestions_job_done(job_id, db_client=worker_db)
     finally:
         worker_client.close()
-

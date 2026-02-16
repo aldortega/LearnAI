@@ -88,9 +88,7 @@ async def _process_quickstart_generation(
             )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
             await mark_quickstart_job_failed(
                 job_id, "Notebook no encontrado", db_client=worker_db
@@ -115,7 +113,10 @@ async def _process_quickstart_generation(
             quickstart_payload = await generate_quickstart_topics(
                 notebook["title"],
                 notebook_object_id,
-                {"_id": owner_object_id},
+                {
+                    "_id": owner_object_id,
+                    "_source_owner_id": notebook["owner_id"],
+                },
             )
             now = datetime.now(timezone.utc)
             await worker_db.quickstart_summaries.update_one(

@@ -105,9 +105,7 @@ async def _process_quiz_questions_generation(notebook_id: str, owner_id: str) ->
             )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
             logger.error("Notebook no encontrado en preguntas")
             return
@@ -119,7 +117,10 @@ async def _process_quiz_questions_generation(notebook_id: str, owner_id: str) ->
             logger.error("Roadmap no encontrado en preguntas")
             return
 
-        user = {"_id": owner_object_id}
+        user = {
+            "_id": owner_object_id,
+            "_source_owner_id": notebook["owner_id"],
+        }
         await generate_questions_for_roadmap(
             notebook, user, roadmap, db_client=worker_db
         )
@@ -143,9 +144,7 @@ async def _process_quiz_level_questions_generation(
             )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
             logger.error("Notebook no encontrado en preguntas de nivel")
             return
@@ -188,7 +187,10 @@ async def _process_quiz_level_questions_generation(
             return
 
         try:
-            user = {"_id": owner_object_id}
+            user = {
+                "_id": owner_object_id,
+                "_source_owner_id": notebook["owner_id"],
+            }
             await generate_questions_for_level(
                 notebook, user, roadmap, unit, level, db_client=worker_db
             )
@@ -261,9 +263,7 @@ async def _process_quiz_generation(
             )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
             await mark_quiz_job_failed(
                 job_id, "Notebook no encontrado", db_client=worker_db
@@ -273,7 +273,10 @@ async def _process_quiz_generation(
         try:
             config = resolve_generation_config(length)
             resolve_difficulty_label(difficulty)
-            user = {"_id": owner_object_id}
+            user = {
+                "_id": owner_object_id,
+                "_source_owner_id": notebook["owner_id"],
+            }
             await generate_quiz_for_notebook(
                 notebook,
                 user,

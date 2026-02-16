@@ -88,9 +88,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
             )
             return
 
-        notebook = await worker_db.notebooks.find_one(
-            {"_id": notebook_object_id}
-        )
+        notebook = await worker_db.notebooks.find_one({"_id": notebook_object_id})
         if not notebook:
             await mark_mindmap_job_failed(
                 job_id,
@@ -117,7 +115,10 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
             tree = await generate_mindmap_tree(
                 notebook["title"],
                 notebook_object_id,
-                {"_id": owner_object_id},
+                {
+                    "_id": owner_object_id,
+                    "_source_owner_id": notebook["owner_id"],
+                },
             )
             root_node_id, nodes = flatten_tree_to_nodes(tree)
             now = datetime.now(timezone.utc)
