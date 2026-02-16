@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { FlashcardsOut } from "../types/flashcards.types";
 
@@ -8,17 +8,87 @@ type Props = {
   error: string | null;
 };
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT" ||
+    target.closest("[contenteditable='true']") !== null
+  );
+}
+
 export function FlashcardsStudyView({
   flashcards,
   error,
 }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [navigationDirection, setNavigationDirection] = useState<"prev" | "next">(
+    "next",
+  );
 
   const cards = flashcards.cards;
   const currentCard = cards[currentIndex] ?? null;
   const isFirstCard = currentIndex === 0;
   const isLastCard = currentIndex === cards.length - 1;
+  const cardChangeAnimationClass =
+    navigationDirection === "next"
+      ? "[animation:flashcard-enter-next_380ms_cubic-bezier(0.22,1,0.36,1)]"
+      : "[animation:flashcard-enter-prev_380ms_cubic-bezier(0.22,1,0.36,1)]";
+
+  const goToPreviousCard = useCallback(() => {
+    setNavigationDirection("prev");
+    setCurrentIndex((previous) => Math.max(0, previous - 1));
+    setIsFlipped(false);
+  }, []);
+
+  const goToNextCard = useCallback(() => {
+    setNavigationDirection("next");
+    setCurrentIndex((previous) => Math.min(cards.length - 1, previous + 1));
+    setIsFlipped(false);
+  }, [cards.length]);
+
+  const toggleCardFace = useCallback(() => {
+    setIsFlipped((previous) => !previous);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        if (!isFirstCard) {
+          goToPreviousCard();
+        }
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        if (!isLastCard) {
+          goToNextCard();
+        }
+        return;
+      }
+
+      if (event.code === "Space" || event.key === " ") {
+        event.preventDefault();
+        if (!event.repeat) {
+          toggleCardFace();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [goToNextCard, goToPreviousCard, isFirstCard, isLastCard, toggleCardFace]);
 
   if (!currentCard) {
     return (
@@ -55,28 +125,37 @@ export function FlashcardsStudyView({
             disabled={isFirstCard}
             aria-label="Tarjeta anterior"
             title="Tarjeta anterior"
-            onClick={() => {
-              setCurrentIndex((previous) => Math.max(0, previous - 1));
-              setIsFlipped(false);
-            }}
+            onClick={goToPreviousCard}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
 
           <button
             type="button"
-            onClick={() => setIsFlipped((previous) => !previous)}
-            className="aspect-[3/2] w-full rounded-xl border border-border bg-muted px-4 py-4 text-left shadow-sm transition hover:border-border-strong hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:aspect-[4/3]"
+            onClick={toggleCardFace}
+            className="aspect-[3/2] w-full text-left [perspective:1200px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:aspect-[4/3]"
             aria-label={isFlipped ? "Mostrar termino" : "Mostrar definicion"}
           >
-            <div className="flex h-full items-center justify-center">
-              <p
-                className={`text-base font-semibold text-foreground sm:text-lg ${
-                  isFlipped ? "" : "text-center"
+            <div
+              key={currentIndex}
+              className={`h-full w-full motion-reduce:animate-none ${cardChangeAnimationClass}`}
+            >
+              <div
+                className={`relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out motion-reduce:transition-none ${
+                  isFlipped ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
                 }`}
               >
-                {isFlipped ? currentCard.definition : currentCard.term}
-              </p>
+                <div className="absolute inset-0 flex items-center justify-center rounded-xl border border-border bg-muted px-4 py-4 shadow-sm transition [backface-visibility:hidden] hover:border-border-strong hover:shadow-md">
+                  <p className="text-center text-base font-semibold text-foreground sm:text-lg">
+                    {currentCard.term}
+                  </p>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center overflow-y-auto rounded-xl border border-border bg-muted px-4 py-4 shadow-sm transition [backface-visibility:hidden] [transform:rotateY(180deg)] hover:border-border-strong hover:shadow-md">
+                  <p className="text-base font-semibold text-foreground sm:text-lg">
+                    {currentCard.definition}
+                  </p>
+                </div>
+              </div>
             </div>
           </button>
 
@@ -86,10 +165,7 @@ export function FlashcardsStudyView({
             disabled={isLastCard}
             aria-label="Tarjeta siguiente"
             title="Tarjeta siguiente"
-            onClick={() => {
-              setCurrentIndex((previous) => Math.min(cards.length - 1, previous + 1));
-              setIsFlipped(false);
-            }}
+            onClick={goToNextCard}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
