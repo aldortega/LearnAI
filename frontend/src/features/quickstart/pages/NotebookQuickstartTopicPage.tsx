@@ -299,7 +299,7 @@ export function NotebookQuickstartTopicPage() {
       >
         {isQuickstartLoading && !quickstart ? (
           <div className="mx-auto flex h-full w-full max-w-4xl items-center justify-center px-6">
-            <p className="text-sm text-muted-foreground">Cargando inicio rapido...</p>
+            <p className="text-sm text-foreground/75">Cargando inicio rapido...</p>
           </div>
         ) : showTopicView && topic ? (
           <QuickstartTopicDetailView
@@ -317,7 +317,7 @@ export function NotebookQuickstartTopicPage() {
         ) : (
           <div className="mx-auto flex h-full w-full max-w-4xl items-center justify-center px-6">
             <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 text-center shadow-sm">
-              <p className="text-sm text-muted-foreground" role={combinedError ? "alert" : undefined}>
+              <p className="text-sm text-foreground/75" role={combinedError ? "alert" : undefined}>
                 {combinedError ?? "No se encontro el tema solicitado."}
               </p>
               <Button

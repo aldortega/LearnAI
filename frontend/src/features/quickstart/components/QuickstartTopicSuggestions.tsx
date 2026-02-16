@@ -50,7 +50,7 @@ export function QuickstartTopicSuggestions({
           Temas sugeridos
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-foreground/70">
             {topicCount}/{topicLimit} temas
           </span>
           <button
@@ -75,7 +75,7 @@ export function QuickstartTopicSuggestions({
       ) : null}
 
       {!isStale && remaining <= 0 ? (
-        <p className="text-xs text-muted-foreground" role="alert">
+        <p className="text-xs text-foreground/75" role="alert">
           Alcanzaste el limite de temas para esta notebook.
         </p>
       ) : null}
@@ -109,7 +109,7 @@ export function QuickstartTopicSuggestions({
                 void onAddTopic(suggestion, "suggestion");
               }}
               disabled={isDisabled}
-              className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               {suggestion}
             </button>

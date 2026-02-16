@@ -79,7 +79,7 @@ export function QuickstartTopicCard({
           <p className="text-base font-semibold text-foreground transition group-hover:text-primary">
             {topic.title}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">{topic.summary}</p>
+          <p className="mt-2 text-sm text-foreground/80">{topic.summary}</p>
         </div>
       </div>
 

@@ -143,7 +143,7 @@ export function QuickstartOverview({
             {displaySummaryParagraphs.map((paragraph, index) => (
               <p
                 key={`summary-${index}`}
-                className="text-sm leading-6 text-muted-foreground"
+                className="text-sm leading-6 text-foreground/80"
               >
                 {paragraph}
               </p>
@@ -153,7 +153,7 @@ export function QuickstartOverview({
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-muted-hover" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
             Temas principales
           </p>
           <div className="h-px flex-1 bg-muted-hover" />

@@ -17,7 +17,7 @@ export function RegenerateQuickstartModal({
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title="Regenerar inicio rapido">
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-foreground/75">
           Esto regenerara el inicio rapido con las fuentes actuales.
         </p>
         <div className="flex items-center justify-end gap-3 pt-2">

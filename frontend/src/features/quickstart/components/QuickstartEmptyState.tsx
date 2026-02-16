@@ -25,7 +25,7 @@ export function QuickstartEmptyState({
         <h2 className="mt-4 text-lg font-semibold text-foreground">
           {isGenerating ? "Generando inicio rápido..." : "Todavía no hay inicio rápido"}
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-foreground/75">
           Genera un resumen de temas para presentar tu notebook rapidamente.
         </p>
 
@@ -45,7 +45,7 @@ export function QuickstartEmptyState({
         </div>
 
         {!canGenerate ? (
-          <p className="mt-3 text-xs text-muted-foreground" role="alert">
+          <p className="mt-3 text-xs text-foreground/70" role="alert">
             Necesitas al menos una fuente con estado "Listo".
           </p>
         ) : null}

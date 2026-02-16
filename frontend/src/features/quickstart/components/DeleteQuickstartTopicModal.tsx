@@ -21,7 +21,7 @@ export function DeleteQuickstartTopicModal({
   return (
     <Modal isOpen={isOpen} onClose={onCancel} title="Eliminar tema">
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-foreground/75">
           Seguro que quieres eliminar este tema?
         </p>
         {topicTitle ? (
