@@ -31,7 +31,7 @@ export function MindmapDetailPanel({
         ) : null}
 
         {selectedNodeTitle ? (
-          <p className="mt-3 text-sm font-medium text-foreground">{selectedNodeTitle}</p>
+          <p className="mt-3 break-words text-sm font-medium text-foreground">{selectedNodeTitle}</p>
         ) : null}
 
         {isLoading ? (
@@ -58,9 +58,9 @@ export function MindmapDetailPanel({
         ) : null}
 
         {!isLoading && !error && explanation ? (
-          <div className="mt-4 space-y-3 text-sm leading-relaxed text-foreground">
-            {explanation.split("\n\n").map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
+          <div className="mt-4 space-y-3 break-words text-sm leading-relaxed text-foreground">
+            {explanation.split("\n\n").map((paragraph, index) => (
+              <p key={`${selectedNodeTitle ?? "node"}-${index}`}>{paragraph}</p>
             ))}
           </div>
         ) : null}

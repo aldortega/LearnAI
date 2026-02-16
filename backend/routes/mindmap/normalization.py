@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from .constants import (
-    DETAIL_MAX_CHARS,
     FALLBACK_CHILD_TITLES,
     TECHNICAL_MAX_CHILDREN_PER_NODE,
     TECHNICAL_MAX_DEPTH,
@@ -77,9 +76,7 @@ def compact_context(context_lines: list[str], max_chars: int = 5000) -> str:
 def _tokenize_title(value: str) -> set[str]:
     tokens = re.findall(r"[0-9a-zA-Z]+", value.casefold())
     return {
-        token
-        for token in tokens
-        if len(token) >= 3 and token not in SPANISH_STOPWORDS
+        token for token in tokens if len(token) >= 3 and token not in SPANISH_STOPWORDS
     }
 
 
@@ -191,7 +188,9 @@ def _normalize_children(
     return children
 
 
-def _build_fallback_children(root_title: str, state: TreeNormalizationState) -> list[dict]:
+def _build_fallback_children(
+    root_title: str, state: TreeNormalizationState
+) -> list[dict]:
     children: list[dict] = []
     seen_titles: set[str] = set()
 
@@ -262,7 +261,4 @@ def normalize_detail_explanation(raw_explanation: object, node_title: str) -> st
     if not paragraphs:
         return f"{node_title} es un concepto importante dentro de esta notebook."
 
-    normalized = "\n\n".join(paragraphs[:2]).strip()
-    if len(normalized) > DETAIL_MAX_CHARS:
-        return normalized[:DETAIL_MAX_CHARS].rstrip() + "..."
-    return normalized
+    return "\n\n".join(paragraphs[:2]).strip()

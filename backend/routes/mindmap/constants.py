@@ -6,8 +6,6 @@ from pydantic import BaseModel, Field
 TECHNICAL_MAX_NODES = 120
 TECHNICAL_MAX_DEPTH = 8
 TECHNICAL_MAX_CHILDREN_PER_NODE = 12
-DETAIL_MAX_CHARS = 650
-
 FALLBACK_CHILD_TITLES = [
     "Fundamentos",
     "Conceptos clave",
@@ -31,11 +29,7 @@ TITLES_SCHEMA = (
     "}\n"
 )
 
-DETAIL_SCHEMA = (
-    "{\n"
-    '  "explanation": "string"\n'
-    "}\n"
-)
+DETAIL_SCHEMA = '{\n  "explanation": "string"\n}\n'
 
 
 class MindmapTreeNodeLLM(BaseModel):
