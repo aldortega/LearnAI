@@ -4,6 +4,31 @@ import type { Notebook } from "../types/notebooks.types";
 import { notebooksApi } from "../api/notebooksApi";
 import { toNotebookErrorMessage } from "../utils/notebookErrors";
 
+const notebooksCacheByUserId = new Map<string, Notebook[]>();
+const notebooksRequestByUserId = new Map<string, Promise<Notebook[]>>();
+
+function getCachedNotebooks(userId?: string): Notebook[] | null {
+  if (!userId) {
+    return null;
+  }
+
+  return notebooksCacheByUserId.get(userId) ?? null;
+}
+
+async function listNotebooks(userId: string): Promise<Notebook[]> {
+  const existingRequest = notebooksRequestByUserId.get(userId);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const nextRequest = notebooksApi.list().finally(() => {
+    notebooksRequestByUserId.delete(userId);
+  });
+
+  notebooksRequestByUserId.set(userId, nextRequest);
+  return nextRequest;
+}
+
 type Result = {
   notebooks: Notebook[];
   isLoading: boolean;
@@ -11,24 +36,47 @@ type Result = {
   reload: () => Promise<void>;
 };
 
-export function useNotebooks(): Result {
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export function useNotebooks(userId?: string): Result {
+  const [notebooks, setNotebooks] = useState<Notebook[]>(() => getCachedNotebooks(userId) ?? []);
+  const [isLoading, setIsLoading] = useState(() => getCachedNotebooks(userId) === null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const cached = getCachedNotebooks(userId);
+    setNotebooks(cached ?? []);
+    setIsLoading(cached === null);
+    setError(null);
+  }, [userId]);
+
   const reload = useCallback(async () => {
-    setIsLoading(true);
+    if (!userId) {
+      setNotebooks([]);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    const cached = getCachedNotebooks(userId);
+    const shouldShowLoader = cached === null;
+
+    if (shouldShowLoader) {
+      setIsLoading(true);
+    }
+
     setError(null);
 
     try {
-      const data = await notebooksApi.list();
+      const data = await listNotebooks(userId);
+      notebooksCacheByUserId.set(userId, data);
       setNotebooks(data);
     } catch (e) {
       setError(toNotebookErrorMessage(e));
     } finally {
-      setIsLoading(false);
+      if (shouldShowLoader) {
+        setIsLoading(false);
+      }
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void reload();
@@ -38,6 +86,7 @@ export function useNotebooks(): Result {
     const handleReload = () => {
       void reload();
     };
+
     window.addEventListener("notebook-collaboration-changed", handleReload);
     return () =>
       window.removeEventListener("notebook-collaboration-changed", handleReload);

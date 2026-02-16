@@ -37,7 +37,7 @@ function formatRelativeDate(value: string): string {
 
 export function HomePage() {
   const { user } = useAuth();
-  const { notebooks, reload } = useNotebooks();
+  const { notebooks, isLoading: isNotebooksLoading, error: notebooksError, reload } = useNotebooks(user?.id);
   const { deleteNotebook, isLoading, error, clearError } = useDeleteNotebook();
   const { leaveNotebook, isLoading: isLeaving, error: leaveError, clearError: clearLeaveError } = useLeaveNotebook();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -217,6 +217,14 @@ export function HomePage() {
                     />
                   </div>
                 ))
+              ) : isNotebooksLoading ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Cargando notebooks...
+                </div>
+              ) : notebooksError ? (
+                <div className="px-4 py-8 text-center text-sm text-error" role="alert">
+                  {notebooksError}
+                </div>
               ) : (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                   No tenés notebooks aún. ¡Creá tu primera!
