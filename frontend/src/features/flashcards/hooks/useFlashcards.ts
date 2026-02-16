@@ -74,7 +74,9 @@ export function useFlashcards(notebookId?: string): Result {
       return;
     }
 
-    void reload();
+    setFlashcards(null);
+    setError(null);
+    setIsLoading(true);
   }, [notebookId, reload]);
 
   return { flashcards, isLoading, error, reload };

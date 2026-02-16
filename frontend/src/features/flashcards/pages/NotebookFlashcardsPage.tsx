@@ -70,7 +70,6 @@ export function NotebookFlashcardsPage() {
 
   useEffect(() => {
     if (!notebookId || hasCheckedLatestJobRef.current) return;
-    if (flashcards && flashcards.status !== "missing") return;
     if (isFlashcardsLoading || isGenerating) return;
 
     hasCheckedLatestJobRef.current = true;
@@ -91,7 +90,7 @@ export function NotebookFlashcardsPage() {
   ]);
 
   const runGeneration = async (options?: FlashcardsGenerateRequest) => {
-    if (!notebookId) return;
+    if (!notebookId || isGenerating) return;
     clearGenerateError();
     const result = await generate(options);
     if (result?.status === "done") {
@@ -108,6 +107,7 @@ export function NotebookFlashcardsPage() {
   const canRegenerate = Boolean(flashcards) && !isEmpty;
 
   const handleRegenerateRequest = () => {
+    if (isGenerating) return;
     clearDeleteFlashcardsError();
     setIsRegenerateModalOpen(true);
   };
@@ -119,7 +119,7 @@ export function NotebookFlashcardsPage() {
   };
 
   const handleRegenerateConfirm = async () => {
-    if (!notebookId) return;
+    if (!notebookId || isGenerating) return;
 
     const wasDeleted = await deleteFlashcards();
     if (!wasDeleted) return;
@@ -182,7 +182,7 @@ export function NotebookFlashcardsPage() {
           />
           <RegenerateFlashcardsModal
             isOpen={isRegenerateModalOpen}
-            isDeleting={isDeletingFlashcards}
+            isDeleting={isDeletingFlashcards || isGenerating}
             error={deleteFlashcardsError}
             onCancel={handleRegenerateCancel}
             onConfirm={() => void handleRegenerateConfirm()}
