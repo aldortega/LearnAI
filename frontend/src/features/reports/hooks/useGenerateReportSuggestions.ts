@@ -10,7 +10,9 @@ const POLL_TIMEOUT_MS = 180000;
 
 type Result = {
   generate: () => Promise<ReportSuggestionsJobOut | null>;
-  resumeLatest: () => Promise<ReportSuggestionsJobOut | null>;
+  resumeLatest: (options?: {
+    suppressFailedError?: boolean;
+  }) => Promise<ReportSuggestionsJobOut | null>;
   isGenerating: boolean;
   error: string | null;
   clearError: () => void;
@@ -109,51 +111,62 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
     }
   }, [notebookId, pollGeneration, isTokenActive]);
 
-  const resumeLatest = useCallback(async () => {
-    if (!notebookId) return null;
+  const resumeLatest = useCallback(
+    async (options?: { suppressFailedError?: boolean }) => {
+      if (!notebookId) return null;
 
-    const requestToken = requestTokenRef.current + 1;
-    requestTokenRef.current = requestToken;
-    setIsGenerating(true);
-    setError(null);
+      const suppressFailedError = options?.suppressFailedError ?? false;
 
-    try {
-      const job = await reportsApi.getLatestSuggestionsGeneration(notebookId);
-      if (!isTokenActive(requestToken)) {
+      const requestToken = requestTokenRef.current + 1;
+      requestTokenRef.current = requestToken;
+      setIsGenerating(true);
+      setError(null);
+
+      try {
+        const job = await reportsApi.getLatestSuggestionsGeneration(notebookId);
+        if (!isTokenActive(requestToken)) {
+          return null;
+        }
+        if (job.status === "done") {
+          return job;
+        }
+        if (job.status === "failed") {
+          if (!suppressFailedError) {
+            setError(job.error ?? "No se pudieron generar sugerencias.");
+          }
+          return null;
+        }
+        const result = await pollGeneration(job.job_id, job, requestToken);
+        if (!isTokenActive(requestToken)) {
+          return null;
+        }
+        if (result.status === "failed") {
+          if (!suppressFailedError) {
+            setError(result.error ?? "No se pudieron generar sugerencias.");
+          }
+          return null;
+        }
+        return result;
+      } catch (e) {
+        if (!isTokenActive(requestToken)) {
+          return null;
+        }
+        const apiError = e as ApiError | undefined;
+        if (apiError?.status === 404) {
+          return null;
+        }
+        if (!suppressFailedError) {
+          setError(toNotebookErrorMessage(e));
+        }
         return null;
+      } finally {
+        if (isTokenActive(requestToken)) {
+          setIsGenerating(false);
+        }
       }
-      if (job.status === "done") {
-        return job;
-      }
-      if (job.status === "failed") {
-        setError(job.error ?? "No se pudieron generar sugerencias.");
-        return null;
-      }
-      const result = await pollGeneration(job.job_id, job, requestToken);
-      if (!isTokenActive(requestToken)) {
-        return null;
-      }
-      if (result.status === "failed") {
-        setError(result.error ?? "No se pudieron generar sugerencias.");
-        return null;
-      }
-      return result;
-    } catch (e) {
-      if (!isTokenActive(requestToken)) {
-        return null;
-      }
-      const apiError = e as ApiError | undefined;
-      if (apiError?.status === 404) {
-        return null;
-      }
-      setError(toNotebookErrorMessage(e));
-      return null;
-    } finally {
-      if (isTokenActive(requestToken)) {
-        setIsGenerating(false);
-      }
-    }
-  }, [notebookId, pollGeneration, isTokenActive]);
+    },
+    [notebookId, pollGeneration, isTokenActive],
+  );
 
   return { generate, resumeLatest, isGenerating, error, clearError };
 }

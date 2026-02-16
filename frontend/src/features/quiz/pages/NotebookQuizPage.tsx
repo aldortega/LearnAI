@@ -270,7 +270,7 @@ export function NotebookQuizPage() {
     hasCheckedLatestJobRef.current = true;
 
     void (async () => {
-      const result = await resumeLatest();
+      const result = await resumeLatest({ suppressFailedError: true });
       if (result?.status === "done") {
         await reloadRoadmap();
       }

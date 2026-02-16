@@ -13,7 +13,9 @@ const POLL_TIMEOUT_MS = 180000;
 
 type Result = {
   generate: (options: QuizGenerateRequest) => Promise<QuizGenerationJobOut | null>;
-  resumeLatest: () => Promise<QuizGenerationJobOut | null>;
+  resumeLatest: (options?: {
+    suppressFailedError?: boolean;
+  }) => Promise<QuizGenerationJobOut | null>;
   isGenerating: boolean;
   error: string | null;
   clearError: () => void;
@@ -80,42 +82,53 @@ export function useGenerateQuizRoadmap(notebookId?: string): Result {
     [notebookId, pollGeneration],
   );
 
-  const resumeLatest = useCallback(async () => {
-    if (!notebookId) return null;
+  const resumeLatest = useCallback(
+    async (options?: { suppressFailedError?: boolean }) => {
+      if (!notebookId) return null;
 
-    setError(null);
+      const suppressFailedError = options?.suppressFailedError ?? false;
 
-    try {
-      const job = await quizApi.getLatestGeneration(notebookId);
-      if (!job) {
-        return null;
-      }
-      if (job.status === "done") {
-        return job;
-      }
-      if (job.status === "failed") {
-        setError(job.error ?? "No se pudo generar el quiz.");
-        return null;
-      }
+      setError(null);
 
-      setIsGenerating(true);
-      const result = await pollGeneration(job.job_id, job);
-      if (result.status === "failed") {
-        setError(result.error ?? "No se pudo generar el quiz.");
+      try {
+        const job = await quizApi.getLatestGeneration(notebookId);
+        if (!job) {
+          return null;
+        }
+        if (job.status === "done") {
+          return job;
+        }
+        if (job.status === "failed") {
+          if (!suppressFailedError) {
+            setError(job.error ?? "No se pudo generar el quiz.");
+          }
+          return null;
+        }
+
+        setIsGenerating(true);
+        const result = await pollGeneration(job.job_id, job);
+        if (result.status === "failed") {
+          if (!suppressFailedError) {
+            setError(result.error ?? "No se pudo generar el quiz.");
+          }
+          return null;
+        }
+        return result;
+      } catch (e) {
+        const apiError = e as ApiError | undefined;
+        if (apiError?.status === 404) {
+          return null;
+        }
+        if (!suppressFailedError) {
+          setError(toNotebookErrorMessage(e));
+        }
         return null;
+      } finally {
+        setIsGenerating(false);
       }
-      return result;
-    } catch (e) {
-      const apiError = e as ApiError | undefined;
-      if (apiError?.status === 404) {
-        return null;
-      }
-      setError(toNotebookErrorMessage(e));
-      return null;
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [notebookId, pollGeneration]);
+    },
+    [notebookId, pollGeneration],
+  );
 
   return { generate, resumeLatest, isGenerating, error, clearError };
 }
