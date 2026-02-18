@@ -1,7 +1,8 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Button } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/TextField";
@@ -95,13 +96,12 @@ export function LoginForm() {
           Recordarme
         </label>
 
-        <button
-          type="button"
+        <Link
+          to="/forgot-password"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          onClick={() => setFormError("Recuperación de contraseña: pendiente")}
         >
           ¿Olvidaste tu contraseña?
-        </button>
+        </Link>
       </div>
 
       <Button

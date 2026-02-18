@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -11,6 +11,8 @@ import { AuthProvider } from "./app/providers/AuthProvider";
 import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { AuthPage } from "./features/auth/pages/AuthPage";
 import { CompleteProfilePage } from "./features/auth/pages/CompleteProfilePage";
+import { ForgotPasswordPage } from "./features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./features/auth/pages/ResetPasswordPage";
 import { NotebookFlashcardsPage } from "./features/flashcards/pages/NotebookFlashcardsPage";
 import { HomePage } from "./features/home/pages/HomePage";
 import { useNotebookReadySources } from "./features/notebooks";
@@ -88,6 +90,11 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Public routes (no auth required) */}
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+            {/* Protected routes */}
             <Route
               path="/"
               element={
