@@ -46,12 +46,10 @@ export function AuthShell({ children, title, topSlot }: Props) {
 
         <div className="relative z-10 max-w-md">
           <h2 className="text-4xl font-bold tracking-tight text-white">
-            Dominá tus documentos con IA
+            Estudio inteligente, resultados superiores.
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-green-200">
-            Subí tus materiales de estudio, generá quizzes y mejorá tu retención
-            en minutos. La plataforma diseñada para estudiantes que buscan
-            excelencia.
+            Transformá tus materiales en aprendizaje inteligente con una IA diseñada para llevar tu rendimiento al siguiente nivel.
           </p>
 
           
