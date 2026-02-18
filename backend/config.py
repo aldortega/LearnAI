@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     session_short_hours: int = 12
     session_remember_days: int = 7
     google_client_id: Optional[str] = None
+    resend_api_key: Optional[str] = None
+    from_email: str = "onboarding@resend.dev"
+    frontend_url: str = "http://localhost:5173"
+    password_reset_token_hours: int = 1
 
     @field_validator("session_secret")
     @classmethod

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from bson import ObjectId
@@ -12,9 +12,13 @@ from ..db import db
 from ..schemas.auth import (
     AuthResponse,
     CompleteProfileRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     GoogleLoginRequest,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     UserOut,
 )
 from ..security import (
@@ -24,6 +28,7 @@ from ..security import (
     session_expiry,
     verify_password,
 )
+from ..services.email import send_password_reset
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -67,7 +72,9 @@ def set_session_cookie(response: Response, token: str, remember_me: bool) -> Non
     )
 
 
-async def create_session(user_id: ObjectId, request: Request, response: Response, remember_me: bool) -> None:
+async def create_session(
+    user_id: ObjectId, request: Request, response: Response, remember_me: bool
+) -> None:
     token = create_session_token()
     token_hash = hash_session_token(token)
     expires_at = session_expiry(remember_me)
@@ -90,7 +97,9 @@ async def create_session(user_id: ObjectId, request: Request, response: Response
 async def get_current_user(request: Request) -> dict:
     token = request.cookies.get(settings.session_cookie_name)
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No session"
+        )
 
     token_hash = hash_session_token(token)
     now = datetime.now(timezone.utc)
@@ -103,20 +112,33 @@ async def get_current_user(request: Request) -> dict:
     )
 
     if not session:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session"
+        )
 
     user = await db.users.find_one({"_id": session["user_id"]})
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session"
+        )
 
     return user
 
 
-@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def register(payload: RegisterRequest, request: Request, response: Response) -> AuthResponse:
+@router.post(
+    "/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED
+)
+async def register(
+    payload: RegisterRequest, request: Request, response: Response
+) -> AuthResponse:
     email_normalized = normalize_email(payload.email)
     existing = await db.users.find_one(
-        {"$or": [{"email_normalized": email_normalized}, {"username": payload.username}]}
+        {
+            "$or": [
+                {"email_normalized": email_normalized},
+                {"username": payload.username},
+            ]
+        }
     )
     if existing:
         raise HTTPException(
@@ -130,7 +152,9 @@ async def register(payload: RegisterRequest, request: Request, response: Respons
         "email": email_normalized,
         "email_normalized": email_normalized,
         "username": payload.username.strip(),
-        "birthdate": datetime.combine(payload.birthdate, datetime.min.time(), tzinfo=timezone.utc),
+        "birthdate": datetime.combine(
+            payload.birthdate, datetime.min.time(), tzinfo=timezone.utc
+        ),
         "password_hash": hash_password(payload.password),
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
@@ -151,7 +175,9 @@ async def register(payload: RegisterRequest, request: Request, response: Respons
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(payload: LoginRequest, request: Request, response: Response) -> AuthResponse:
+async def login(
+    payload: LoginRequest, request: Request, response: Response
+) -> AuthResponse:
     email_normalized = normalize_email(payload.email)
     user = await db.users.find_one({"email_normalized": email_normalized})
 
@@ -161,7 +187,9 @@ async def login(payload: LoginRequest, request: Request, response: Response) -> 
             detail="Credenciales inválidas",
         )
 
-    await create_session(user["_id"], request, response, remember_me=payload.remember_me)
+    await create_session(
+        user["_id"], request, response, remember_me=payload.remember_me
+    )
     return AuthResponse(user=user_to_out(user))
 
 
@@ -306,6 +334,7 @@ async def google_login(
     await create_session(user["_id"], request, response, remember_me=True)
     return AuthResponse(user=user_to_out(user))
 
+
 @router.post("/complete-profile", response_model=AuthResponse)
 async def complete_profile(
     payload: CompleteProfileRequest, request: Request
@@ -348,3 +377,111 @@ async def complete_profile(
     )
     return AuthResponse(user=user_to_out(user))
 
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(payload: ForgotPasswordRequest) -> ForgotPasswordResponse:
+    email_normalized = normalize_email(payload.email)
+    user = await db.users.find_one({"email_normalized": email_normalized})
+
+    if not user:
+        return ForgotPasswordResponse(
+            message="Si existe una cuenta con ese email, recibirás instrucciones para restablecer tu contraseña."
+        )
+
+    # Rate limiting: max 3 requests per hour per email
+    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+    recent_requests = await db.password_resets.count_documents(
+        {
+            "email_normalized": email_normalized,
+            "created_at": {"$gte": one_hour_ago},
+        }
+    )
+
+    if recent_requests >= 3:
+        return ForgotPasswordResponse(
+            message="Demasiadas solicitudes. Por favor, espera antes de intentar nuevamente."
+        )
+
+    # Generate token and store hashed version
+    token = create_session_token()
+    token_hash = hash_session_token(token)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        hours=settings.password_reset_token_hours
+    )
+
+    await db.password_resets.insert_one(
+        {
+            "user_id": user["_id"],
+            "email_normalized": email_normalized,
+            "token_hash": token_hash,
+            "used": False,
+            "created_at": datetime.now(timezone.utc),
+            "expires_at": expires_at,
+            "used_at": None,
+        }
+    )
+
+    # Send email
+    reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+    try:
+        send_password_reset(user["email"], reset_url)
+    except Exception:
+        # Log error but don't expose it to user
+        pass
+
+    return ForgotPasswordResponse(
+        message="Si existe una cuenta con ese email, recibirás instrucciones para restablecer tu contraseña."
+    )
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(payload: ResetPasswordRequest) -> ResetPasswordResponse:
+    token_hash = hash_session_token(payload.token)
+    now = datetime.now(timezone.utc)
+
+    reset_record = await db.password_resets.find_one(
+        {
+            "token_hash": token_hash,
+            "used": False,
+            "expires_at": {"$gt": now},
+        }
+    )
+
+    if not reset_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token inválido o expirado",
+        )
+
+    # Update password
+    new_password_hash = hash_password(payload.new_password)
+    await db.users.update_one(
+        {"_id": reset_record["user_id"]},
+        {
+            "$set": {
+                "password_hash": new_password_hash,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    # Mark token as used
+    await db.password_resets.update_one(
+        {"_id": reset_record["_id"]},
+        {
+            "$set": {
+                "used": True,
+                "used_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    # Revoke all active sessions for security
+    await db.sessions.update_many(
+        {"user_id": reset_record["user_id"], "revoked_at": None},
+        {"$set": {"revoked_at": datetime.now(timezone.utc)}},
+    )
+
+    return ResetPasswordResponse(
+        message="Tu contraseña ha sido actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
+    )

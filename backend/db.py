@@ -145,6 +145,11 @@ async def ensure_indexes() -> None:
     await db.flashcard_generation_jobs.create_index("notebook_id")
     await db.flashcard_generation_jobs.create_index("status")
     await db.flashcard_generation_jobs.create_index("created_at")
+    await db.password_resets.create_index("expires_at", expireAfterSeconds=0)
+    await db.password_resets.create_index("token_hash", unique=True)
+    await db.password_resets.create_index("user_id")
+    await db.password_resets.create_index("email_normalized")
+    await db.password_resets.create_index([("email_normalized", 1), ("created_at", -1)])
     await db.reports.create_index(
         [("owner_id", 1), ("notebook_id", 1), ("created_at", -1)]
     )
