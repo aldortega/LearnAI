@@ -12,7 +12,6 @@ import httpx
 from bson import ObjectId
 import docx2txt
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pypdf import PdfReader
 from pptx import Presentation
@@ -33,6 +32,8 @@ except Exception:
 
 logger = logging.getLogger(__name__)
 DOCLING_CONTENT_TYPES = {"pdf", "docx", "pptx"}
+PARENT_CHILD_SCHEMA_VERSION = 2
+TOKEN_PATTERN = re.compile(r"\S+")
 
 
 def normalize_chunk_text(text: str) -> str:
@@ -44,20 +45,67 @@ def normalize_chunk_text(text: str) -> str:
     return normalized.strip()
 
 
+def resolve_chunking_params(content_type: str) -> tuple[int, int, int, int]:
+    parent_chunk_tokens = settings.parent_chunk_tokens
+    parent_chunk_overlap_tokens = settings.parent_chunk_overlap_tokens
+    child_chunk_tokens = settings.child_chunk_tokens
+    child_chunk_overlap_tokens = settings.child_chunk_overlap_tokens
+
+    if content_type in {"pdf", "pptx"}:
+        parent_chunk_tokens = max(220, int(parent_chunk_tokens * 0.9))
+        parent_chunk_overlap_tokens = max(30, int(parent_chunk_overlap_tokens * 1.2))
+        child_chunk_tokens = max(90, int(child_chunk_tokens * 0.9))
+        child_chunk_overlap_tokens = max(16, int(child_chunk_overlap_tokens * 1.2))
+
+    return (
+        parent_chunk_tokens,
+        parent_chunk_overlap_tokens,
+        child_chunk_tokens,
+        child_chunk_overlap_tokens,
+    )
+
+
+def tokenize_with_spans(text: str) -> list[tuple[int, int]]:
+    return [(match.start(), match.end()) for match in TOKEN_PATTERN.finditer(text)]
+
+
+def split_text_with_token_spans(
+    text: str, chunk_tokens: int, overlap_tokens: int
+) -> list[tuple[str, int, int]]:
+    spans = tokenize_with_spans(text)
+    if not spans:
+        return []
+
+    max_tokens = max(1, chunk_tokens)
+    safe_overlap = max(0, min(overlap_tokens, max_tokens - 1))
+    step = max(1, max_tokens - safe_overlap)
+
+    chunks: list[tuple[str, int, int]] = []
+    for start_index in range(0, len(spans), step):
+        end_index = min(len(spans), start_index + max_tokens)
+        if start_index >= end_index:
+            continue
+        chunk_start = spans[start_index][0]
+        chunk_end = spans[end_index - 1][1]
+        chunk_text = text[chunk_start:chunk_end].strip()
+        if not chunk_text:
+            continue
+        chunks.append((chunk_text, chunk_start, chunk_end))
+        if end_index >= len(spans):
+            break
+
+    return chunks
+
+
 def split_documents_for_ingestion(
     documents: list[Document], content_type: str
 ) -> list[Document]:
-    chunk_size = settings.chunk_size
-    chunk_overlap = settings.chunk_overlap
-    if content_type in {"pdf", "pptx"}:
-        chunk_size = max(700, int(settings.chunk_size * 0.9))
-        chunk_overlap = max(100, int(settings.chunk_overlap * 1.2))
-
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ". ", "? ", "! ", "; ", " ", ""],
-    )
+    (
+        parent_chunk_tokens,
+        parent_chunk_overlap_tokens,
+        child_chunk_tokens,
+        child_chunk_overlap_tokens,
+    ) = resolve_chunking_params(content_type)
 
     normalized_documents: list[Document] = []
     for doc in documents:
@@ -70,7 +118,36 @@ def split_documents_for_ingestion(
 
     if not normalized_documents:
         return []
-    return splitter.split_documents(normalized_documents)
+
+    child_chunks: list[Document] = []
+    for document in normalized_documents:
+        document_text = document.page_content
+        base_metadata = dict(document.metadata or {})
+        parent_spans = split_text_with_token_spans(
+            document_text, parent_chunk_tokens, parent_chunk_overlap_tokens
+        )
+        for parent_chunk_id, (parent_text, parent_start, parent_end) in enumerate(parent_spans):
+            child_spans = split_text_with_token_spans(
+                parent_text, child_chunk_tokens, child_chunk_overlap_tokens
+            )
+            for child_text, child_rel_start, child_rel_end in child_spans:
+                child_chunks.append(
+                    Document(
+                        page_content=child_text,
+                        metadata={
+                            **base_metadata,
+                            "chunk_schema_version": PARENT_CHILD_SCHEMA_VERSION,
+                            "parent_chunk_id": parent_chunk_id,
+                            "parent_text": parent_text,
+                            "parent_start": parent_start,
+                            "parent_end": parent_end,
+                            "child_start": parent_start + child_rel_start,
+                            "child_end": parent_start + child_rel_end,
+                        },
+                    )
+                )
+
+    return child_chunks
 
 
 def process_document(document_id: str) -> None:
@@ -298,7 +375,9 @@ def load_documents(file_bytes: bytes, content_type: str) -> list[Document]:
             pass
 
 
-async def upsert_chunks(document: dict, chunks, vectors) -> None:
+async def upsert_chunks(
+    document: dict, chunks: list[Document], vectors: list[list[float]]
+) -> None:
     async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
         collection = settings.qdrant_collection_name
         owner_id = str(document["owner_id"])
@@ -313,22 +392,43 @@ async def upsert_chunks(document: dict, chunks, vectors) -> None:
         for index, (chunk, vector) in enumerate(zip(chunks, vectors)):
             metadata = chunk.metadata or {}
             point_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{document_id}:{index}"))
+            payload = {
+                "document_id": document_id,
+                "notebook_id": notebook_id,
+                "owner_id": owner_id,
+                "file_path": file_path,
+                "file_name": file_name,
+                "chunk_id": index,
+                "page": metadata.get("page"),
+                "source_type": source_type,
+                "created_at": created_at,
+                "text": chunk.page_content,
+            }
+
+            chunk_schema_version = metadata.get("chunk_schema_version")
+            if isinstance(chunk_schema_version, int):
+                payload["chunk_schema_version"] = chunk_schema_version
+
+            parent_text = metadata.get("parent_text")
+            if isinstance(parent_text, str) and parent_text.strip():
+                payload["parent_text"] = parent_text
+
+            for key in (
+                "parent_chunk_id",
+                "parent_start",
+                "parent_end",
+                "child_start",
+                "child_end",
+            ):
+                value = metadata.get(key)
+                if isinstance(value, int):
+                    payload[key] = value
+
             points.append(
                 {
                     "id": point_id,
                     "vector": vector,
-                    "payload": {
-                        "document_id": document_id,
-                        "notebook_id": notebook_id,
-                        "owner_id": owner_id,
-                        "file_path": file_path,
-                        "file_name": file_name,
-                        "chunk_id": index,
-                        "page": metadata.get("page"),
-                        "source_type": source_type,
-                        "created_at": created_at,
-                        "text": chunk.page_content,
-                    },
+                    "payload": payload,
                 }
             )
 
