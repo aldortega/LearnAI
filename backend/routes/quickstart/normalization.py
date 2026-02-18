@@ -187,14 +187,6 @@ def build_expansion_content_fallback(topic_title: str, summary: str) -> str:
     )
 
 
-def build_expansion_additional_paragraph(topic_title: str) -> str:
-    return (
-        f"Tambien es util analizar {topic_title} en casos reales, identificar "
-        "errores frecuentes y definir criterios simples para evaluar si se esta "
-        "aplicando correctamente."
-    )
-
-
 def normalize_expansion_content(
     raw_content: object, topic_title: str, summary: str
 ) -> str:
@@ -218,9 +210,6 @@ def normalize_expansion_content(
 
     if content_is_summary or content_is_short:
         return build_expansion_content_fallback(topic_title, summary)
-
-    if len(paragraphs) == 1:
-        paragraphs.append(build_expansion_additional_paragraph(topic_title))
 
     return "\n\n".join(paragraphs)
 

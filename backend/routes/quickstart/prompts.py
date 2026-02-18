@@ -17,7 +17,9 @@ def build_quickstart_prompt(
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
-        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        "Puedes usar markdown simple dentro de los campos de texto "
+        "(por ejemplo **negrita** y saltos de linea). "
+        "Sigue exactamente este esquema:\n"
         f"{QUICKSTART_SCHEMA}"
     )
     user_prompt = (
@@ -39,7 +41,9 @@ def build_expansion_prompt(
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
-        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        "Puedes usar markdown simple dentro de los campos de texto "
+        "(por ejemplo **negrita** y saltos de linea). "
+        "Sigue exactamente este esquema:\n"
         f"{EXPANSION_SCHEMA}"
     )
     key_points_text = "\n".join(f"- {point}" for point in key_points)
@@ -66,7 +70,9 @@ def build_topic_detail_prompt(
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
-        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        "Puedes usar markdown simple dentro de los campos de texto "
+        "(por ejemplo **negrita** y saltos de linea). "
+        "Sigue exactamente este esquema:\n"
         f"{DETAIL_SCHEMA}"
     )
     item_label = (
@@ -93,7 +99,9 @@ def build_suggestions_prompt(
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
-        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        "Puedes usar markdown simple dentro de los campos de texto "
+        "(por ejemplo **negrita** y saltos de linea). "
+        "Sigue exactamente este esquema:\n"
         f"{SUGGESTIONS_SCHEMA}"
     )
     existing_titles_text = "\n".join(f"- {title}" for title in existing_titles)
@@ -116,7 +124,9 @@ def build_single_topic_prompt(
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
-        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        "Puedes usar markdown simple dentro de los campos de texto "
+        "(por ejemplo **negrita** y saltos de linea). "
+        "Sigue exactamente este esquema:\n"
         f"{SINGLE_TOPIC_SCHEMA}"
     )
     existing_titles_text = "\n".join(f"- {title}" for title in existing_titles)
