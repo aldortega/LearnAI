@@ -19,9 +19,15 @@ export type LoginRequest = {
   remember_me: boolean;
 };
 
-export type GoogleLoginRequest = {
-  credential: string;
-};
+export type GoogleLoginRequest =
+  | {
+      credential: string;
+      access_token?: never;
+    }
+  | {
+      access_token: string;
+      credential?: never;
+    };
 
 export type CompleteProfileRequest = {
   username: string;

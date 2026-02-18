@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import type { User } from "../../features/auth/types/auth.types";
+import type { GoogleLoginRequest, User } from "../../features/auth/types/auth.types";
 
 export type AuthContextValue = {
   user: User | null;
@@ -11,7 +11,7 @@ export type AuthContextValue = {
     password: string;
     rememberMe: boolean;
   }) => Promise<void>;
-  googleLogin: (credential: string) => Promise<void>;
+  googleLogin: (payload: GoogleLoginRequest) => Promise<void>;
   completeProfile: (args: {
     username: string;
     birthdate: string;

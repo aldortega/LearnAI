@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { authApi } from "../../features/auth/api/authApi";
-import type { User } from "../../features/auth/types/auth.types";
+import type { GoogleLoginRequest, User } from "../../features/auth/types/auth.types";
 import { AuthContext, type AuthContextValue } from "./authContext";
 
 type Props = {
@@ -51,8 +51,8 @@ export function AuthProvider({ children }: Props) {
   );
 
   const googleLogin: AuthContextValue["googleLogin"] = useCallback(
-    async (credential) => {
-      const res = await authApi.googleLogin({ credential });
+    async (payload: GoogleLoginRequest) => {
+      const res = await authApi.googleLogin(payload);
       setUser(res.user);
     },
     [],

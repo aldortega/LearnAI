@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+import httpx
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from google.auth.transport import requests as google_requests
@@ -188,24 +189,75 @@ async def me(request: Request) -> AuthResponse:
 async def google_login(
     payload: GoogleLoginRequest, request: Request, response: Response
 ) -> AuthResponse:
-    """Authenticate with Google ID token."""
+    """Authenticate with Google ID token or access token."""
     if not settings.google_client_id:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Google login no configurado",
         )
 
-    try:
-        idinfo = id_token.verify_oauth2_token(
-            payload.credential,
-            google_requests.Request(),
-            settings.google_client_id,
-        )
-    except ValueError:
+    if not payload.credential and not payload.access_token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token de Google inválido",
-        ) from None
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se recibio credencial de Google",
+        )
+
+    if payload.credential:
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                payload.credential,
+                google_requests.Request(),
+                settings.google_client_id,
+            )
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de Google invalido",
+            ) from None
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                token_info_res = await client.get(
+                    "https://oauth2.googleapis.com/tokeninfo",
+                    params={"access_token": payload.access_token},
+                )
+                if token_info_res.status_code != status.HTTP_200_OK:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token de Google invalido",
+                    )
+                token_info = token_info_res.json()
+
+                if token_info.get("aud") != settings.google_client_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token de Google invalido",
+                    )
+
+                user_info_res = await client.get(
+                    "https://openidconnect.googleapis.com/v1/userinfo",
+                    headers={"Authorization": f"Bearer {payload.access_token}"},
+                )
+                if user_info_res.status_code != status.HTTP_200_OK:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Token de Google invalido",
+                    )
+                user_info = user_info_res.json()
+        except httpx.HTTPError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="No se pudo validar token de Google",
+            ) from None
+
+        idinfo = {**token_info, **user_info}
+
+    google_sub = idinfo.get("sub")
+    if not google_sub:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario de Google invalido",
+        )
 
     email = idinfo.get("email", "").strip().lower()
     avatar_url = idinfo.get("picture")
@@ -221,8 +273,8 @@ async def google_login(
         # Existing user - link Google and refresh avatar data
         update_fields = {"updated_at": datetime.now(timezone.utc)}
         if not user.get("google_sub"):
-            update_fields["google_sub"] = idinfo["sub"]
-            user["google_sub"] = idinfo["sub"]
+            update_fields["google_sub"] = google_sub
+            user["google_sub"] = google_sub
         if avatar_url:
             update_fields["avatar_url"] = avatar_url
             user["avatar_url"] = avatar_url
@@ -242,7 +294,7 @@ async def google_login(
             "username": None,
             "birthdate": None,
             "password_hash": None,
-            "google_sub": idinfo["sub"],
+            "google_sub": google_sub,
             "avatar_url": avatar_url,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
@@ -253,7 +305,6 @@ async def google_login(
 
     await create_session(user["_id"], request, response, remember_me=True)
     return AuthResponse(user=user_to_out(user))
-
 
 @router.post("/complete-profile", response_model=AuthResponse)
 async def complete_profile(
@@ -296,3 +347,4 @@ async def complete_profile(
         payload.birthdate, datetime.min.time(), tzinfo=timezone.utc
     )
     return AuthResponse(user=user_to_out(user))
+

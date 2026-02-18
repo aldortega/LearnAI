@@ -20,7 +20,8 @@ class LoginRequest(BaseModel):
 
 
 class GoogleLoginRequest(BaseModel):
-    credential: str
+    credential: Optional[str] = None
+    access_token: Optional[str] = None
 
 
 class CompleteProfileRequest(BaseModel):
