@@ -6,6 +6,15 @@ export type MindmapNodeOut = {
   has_children: boolean;
 };
 
+export type MindmapGenerationMetaOut = {
+  generated_nodes: number;
+  discarded_empty: number;
+  discarded_duplicate: number;
+  discarded_limit: number;
+  used_contextual_fallback: boolean;
+  used_generic_fallback: boolean;
+};
+
 export type MindmapOut = {
   notebook_id: string;
   has_ready_sources: boolean;
@@ -13,6 +22,7 @@ export type MindmapOut = {
   generated_at?: string | null;
   root_node_id?: string | null;
   nodes: MindmapNodeOut[];
+  generation_meta?: MindmapGenerationMetaOut | null;
 };
 
 export type MindmapGenerationJobOut = {

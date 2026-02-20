@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -12,35 +13,15 @@ from .constants import (
     TECHNICAL_MAX_NODES,
 )
 
-SPANISH_STOPWORDS = {
-    "ante",
-    "bajo",
-    "cada",
-    "como",
-    "con",
-    "contra",
-    "desde",
-    "donde",
-    "entre",
-    "esta",
-    "este",
-    "hacia",
-    "hasta",
-    "para",
-    "pero",
-    "por",
-    "que",
-    "sin",
-    "sobre",
-    "tema",
-    "una",
-    "uno",
-}
-
 
 @dataclass
 class TreeNormalizationState:
     total_nodes: int = 1
+    discarded_empty: int = 0
+    discarded_duplicate: int = 0
+    discarded_limit: int = 0
+    used_contextual_fallback: bool = False
+    used_generic_fallback: bool = False
 
 
 def coerce_text(value: object | None) -> str:
@@ -73,20 +54,12 @@ def compact_context(context_lines: list[str], max_chars: int = 5000) -> str:
     return context_text[:max_chars].rstrip() + "..."
 
 
-def _tokenize_title(value: str) -> set[str]:
-    tokens = re.findall(r"[0-9a-zA-Z]+", value.casefold())
-    return {
-        token for token in tokens if len(token) >= 3 and token not in SPANISH_STOPWORDS
-    }
-
-
 def strip_parent_prefix(parent_title: str, child_title: object | None) -> str:
     parent = normalize_title(parent_title, "")
     cleaned = normalize_title(child_title, "")
     if not cleaned:
         return ""
 
-    # Sanitizacion directa solicitada: conservar texto despues de ":".
     for _ in range(3):
         if ":" not in cleaned:
             break
@@ -100,7 +73,7 @@ def strip_parent_prefix(parent_title: str, child_title: object | None) -> str:
 
     parent_pattern = re.escape(parent)
     prefix_pattern = re.compile(
-        rf"^{parent_pattern}\s*[:>\-–|/\\]+\s*(.+)$",
+        rf"^{parent_pattern}\s*[:>\-|/\\]+\s*(.+)$",
         flags=re.IGNORECASE,
     )
     for _ in range(3):
@@ -114,30 +87,11 @@ def strip_parent_prefix(parent_title: str, child_title: object | None) -> str:
     return cleaned[:80]
 
 
-def _is_related_title(parent_title: str, child_title: str) -> bool:
-    parent_key = normalize_title(parent_title, "").casefold()
-    child_key = strip_parent_prefix(parent_title, child_title).casefold()
-    if not parent_key or not child_key:
-        return False
-    if parent_key == child_key:
-        return False
-    if child_key.startswith(parent_key) or parent_key in child_key:
-        return True
-
-    parent_tokens = _tokenize_title(parent_key)
-    child_tokens = _tokenize_title(child_key)
-    if not parent_tokens or not child_tokens:
-        return False
-    return len(parent_tokens.intersection(child_tokens)) > 0
-
-
-def _clean_related_title(parent_title: str, child_title: str) -> str:
+def _clean_child_title(parent_title: str, child_title: str) -> str:
     title = strip_parent_prefix(parent_title, child_title)
     if not title:
         return ""
-    if not parent_title or _is_related_title(parent_title, title):
-        return title[:80]
-    return ""
+    return title[:80]
 
 
 def _normalize_children(
@@ -155,21 +109,27 @@ def _normalize_children(
     seen_titles: set[str] = set()
     for raw_child in raw_children:
         if len(children) >= TECHNICAL_MAX_CHILDREN_PER_NODE:
+            state.discarded_limit += 1
             break
         if state.total_nodes >= TECHNICAL_MAX_NODES:
+            state.discarded_limit += 1
             break
         if not isinstance(raw_child, dict):
+            state.discarded_empty += 1
             continue
 
         raw_title = normalize_title(raw_child.get("title"), "")
-        title = _clean_related_title(parent_title, raw_title)
+        title = _clean_child_title(parent_title, raw_title)
         if not title:
+            state.discarded_empty += 1
             continue
         if title.casefold() == parent_title.casefold():
+            state.discarded_duplicate += 1
             continue
 
         title_key = title.casefold()
         if title_key in seen_titles:
+            state.discarded_duplicate += 1
             continue
         seen_titles.add(title_key)
 
@@ -185,6 +145,86 @@ def _normalize_children(
                 ),
             }
         )
+    return children
+
+
+def _split_context_segments(raw_line: str) -> list[str]:
+    cleaned = " ".join(coerce_text(raw_line).split()).strip()
+    if not cleaned:
+        return []
+    return [
+        " ".join(segment.split()).strip()
+        for segment in re.split(r"[.;\n]+", cleaned)
+        if " ".join(segment.split()).strip()
+    ]
+
+
+def _normalize_context_candidate(candidate: str, root_title: str) -> str:
+    cleaned = normalize_title(candidate, "")
+    cleaned = re.sub(r"^[\-\*\d\)\(]+\s*", "", cleaned).strip()
+    if not cleaned:
+        return ""
+    if ":" in cleaned:
+        right = cleaned.split(":", 1)[1].strip()
+        if right:
+            cleaned = right
+    cleaned = strip_parent_prefix(root_title, cleaned)
+    cleaned = normalize_title(cleaned, "")
+    if not cleaned:
+        return ""
+    if cleaned.casefold() == root_title.casefold():
+        return ""
+    if len(cleaned) < 3:
+        return ""
+    return cleaned[:80]
+
+
+def _extract_contextual_title_candidates(
+    context_lines: list[str],
+    root_title: str,
+) -> list[str]:
+    seen: set[str] = set()
+    candidates: list[str] = []
+
+    for line in context_lines:
+        for segment in _split_context_segments(line):
+            normalized = _normalize_context_candidate(segment, root_title)
+            if not normalized:
+                continue
+            key = normalized.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(normalized)
+            if len(candidates) >= TECHNICAL_MAX_CHILDREN_PER_NODE * 3:
+                return candidates
+
+    return candidates
+
+
+def _build_contextual_fallback_children(
+    root_title: str,
+    context_lines: list[str],
+    state: TreeNormalizationState,
+) -> list[dict]:
+    children: list[dict] = []
+    seen_titles: set[str] = set()
+    candidates = _extract_contextual_title_candidates(context_lines, root_title)
+
+    for candidate in candidates:
+        if len(children) >= TECHNICAL_MAX_CHILDREN_PER_NODE:
+            break
+        if state.total_nodes >= TECHNICAL_MAX_NODES:
+            break
+        key = candidate.casefold()
+        if key in seen_titles:
+            continue
+        seen_titles.add(key)
+        state.total_nodes += 1
+        children.append({"title": candidate, "children": []})
+
+    if children:
+        state.used_contextual_fallback = True
     return children
 
 
@@ -207,16 +247,41 @@ def _build_fallback_children(
         state.total_nodes += 1
         children.append({"title": title, "children": []})
 
+    if children:
+        state.used_generic_fallback = True
     return children
 
 
-def normalize_tree_payload(payload: dict, notebook_title: str) -> dict:
+def _build_generation_meta(state: TreeNormalizationState) -> dict[str, Any]:
+    return {
+        "generated_nodes": state.total_nodes,
+        "discarded_empty": state.discarded_empty,
+        "discarded_duplicate": state.discarded_duplicate,
+        "discarded_limit": state.discarded_limit,
+        "used_contextual_fallback": state.used_contextual_fallback,
+        "used_generic_fallback": state.used_generic_fallback,
+    }
+
+
+def normalize_tree_payload(
+    payload: dict,
+    notebook_title: str,
+    context_lines: list[str] | None = None,
+) -> tuple[dict, dict[str, Any]]:
     root_title = normalize_title(notebook_title, "Mapa mental")
     state = TreeNormalizationState(total_nodes=1)
     children = _normalize_children(payload.get("children"), root_title, 1, state)
     if not children:
+        fallback_context_lines = context_lines if isinstance(context_lines, list) else []
+        children = _build_contextual_fallback_children(
+            root_title,
+            fallback_context_lines,
+            state,
+        )
+    if not children:
         children = _build_fallback_children(root_title, state)
-    return {"title": root_title, "children": children}
+    tree = {"title": root_title, "children": children}
+    return tree, _build_generation_meta(state)
 
 
 def flatten_tree_to_nodes(tree: dict) -> tuple[str, list[dict]]:

@@ -2,10 +2,11 @@ import hashlib
 from datetime import datetime
 
 from bson import ObjectId
+from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import db
-from ...schemas.mindmap import MindmapNodeOut, MindmapOut
+from ...schemas.mindmap import MindmapGenerationMetaOut, MindmapNodeOut, MindmapOut
 from ..notebook_access import resolve_notebook_access
 from .normalization import coerce_text, strip_parent_prefix
 
@@ -126,9 +127,13 @@ def build_mindmap_out(
     nodes_out = map_nodes_to_out(mindmap_doc.get("nodes") if mindmap_doc else [])
     generated_at = None
     root_node_id = None
+    generation_meta = None
     if mindmap_doc:
         generated_at = mindmap_doc.get("updated_at") or mindmap_doc.get("created_at")
         root_node_id = coerce_text(mindmap_doc.get("root_node_id")) or None
+        raw_generation_meta = mindmap_doc.get("generation_meta")
+        if isinstance(raw_generation_meta, dict):
+            generation_meta = MindmapGenerationMetaOut.model_validate(raw_generation_meta)
     status_normalized = (
         status_value if status_value in ("missing", "ready", "stale") else "missing"
     )
@@ -139,6 +144,7 @@ def build_mindmap_out(
         generated_at=generated_at,
         root_node_id=root_node_id,
         nodes=nodes_out,
+        generation_meta=generation_meta,
     )
 
 

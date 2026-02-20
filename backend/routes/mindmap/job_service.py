@@ -112,7 +112,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
             return
 
         try:
-            tree = await generate_mindmap_tree(
+            tree, generation_meta = await generate_mindmap_tree(
                 notebook["title"],
                 notebook_object_id,
                 {
@@ -121,6 +121,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
                 },
             )
             root_node_id, nodes = flatten_tree_to_nodes(tree)
+            generation_meta["generated_nodes"] = len(nodes)
             now = datetime.now(timezone.utc)
             await worker_db.mindmap_maps.update_one(
                 {"owner_id": owner_object_id, "notebook_id": notebook_object_id},
@@ -131,6 +132,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
                         "sources_fingerprint": fingerprint,
                         "root_node_id": root_node_id,
                         "nodes": nodes,
+                        "generation_meta": generation_meta,
                         "updated_at": now,
                     },
                     "$setOnInsert": {"created_at": now},

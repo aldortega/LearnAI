@@ -12,6 +12,15 @@ class MindmapNodeOut(BaseModel):
     has_children: bool
 
 
+class MindmapGenerationMetaOut(BaseModel):
+    generated_nodes: int = Field(ge=0, default=0)
+    discarded_empty: int = Field(ge=0, default=0)
+    discarded_duplicate: int = Field(ge=0, default=0)
+    discarded_limit: int = Field(ge=0, default=0)
+    used_contextual_fallback: bool = False
+    used_generic_fallback: bool = False
+
+
 class MindmapOut(BaseModel):
     notebook_id: str
     has_ready_sources: bool
@@ -19,6 +28,7 @@ class MindmapOut(BaseModel):
     generated_at: Optional[datetime] = None
     root_node_id: Optional[str] = None
     nodes: list[MindmapNodeOut] = Field(default_factory=list)
+    generation_meta: Optional[MindmapGenerationMetaOut] = None
 
 
 class MindmapGenerationJobOut(BaseModel):

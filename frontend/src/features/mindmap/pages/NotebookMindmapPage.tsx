@@ -134,6 +134,9 @@ export function NotebookMindmapPage() {
 
   const isStale = mindmap?.status === "stale";
   const isEmpty = !mindmap || mindmap.status === "missing";
+  const usedGenericFallback = Boolean(
+    mindmap?.generation_meta?.used_generic_fallback,
+  );
 
   const selectedNode = useMemo(() => {
     if (!mindmap || !selectedNodeId) return null;
@@ -229,6 +232,12 @@ export function NotebookMindmapPage() {
                 <p className="border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground">
                   Tu mapa mental esta desactualizado porque cambiaron las fuentes.
                   Regeneralo para actualizar nodos y explicaciones.
+                </p>
+              ) : null}
+              {usedGenericFallback ? (
+                <p className="border-b border-border bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                  Se detecto estructura limitada en la generacion. Puedes regenerar
+                  el mapa para intentar mejorar la cobertura de nodos.
                 </p>
               ) : null}
               <div className="min-h-0 flex-1">

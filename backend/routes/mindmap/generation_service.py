@@ -54,9 +54,14 @@ async def generate_mindmap_tree(
     notebook_title: str,
     notebook_object_id: ObjectId,
     user: dict,
-) -> dict:
+) -> tuple[dict, dict]:
     question = f"Mapa mental completo sobre {notebook_title}"
-    context_lines, _, _, _ = await retrieve_context(question, notebook_object_id, user)
+    context_lines, _, _, _ = await retrieve_context(
+        question,
+        notebook_object_id,
+        user,
+        top_k=12,
+    )
     context_text = compact_context(context_lines, max_chars=5500)
     system_message, user_message = build_mindmap_tree_prompt(notebook_title, context_text)
     llm = create_llm()
@@ -92,7 +97,16 @@ async def generate_mindmap_tree(
 
     try:
         logger.info("Mindmap estructurado:\n%s", json.dumps(payload_data, ensure_ascii=False))
-        return normalize_tree_payload(payload_data, notebook_title)
+        tree, generation_meta = normalize_tree_payload(
+            payload_data,
+            notebook_title,
+            context_lines=context_lines,
+        )
+        logger.info(
+            "Mindmap normalizado meta: %s",
+            json.dumps(generation_meta, ensure_ascii=False),
+        )
+        return tree, generation_meta
     except Exception as exc:
         logger.exception("Mindmap normalizacion invalida", extra={"error": str(exc)})
         raise HTTPException(
