@@ -218,57 +218,11 @@ def select_candidates(candidates: list[dict], selected_top_k: int) -> list[dict]
     return selected
 
 
-def extract_parent_window(payload_data: dict) -> str:
-    if not settings.rag_parent_expansion_enabled:
-        return ""
-
-    parent_text = coerce_text(payload_data.get("parent_text")).strip()
-    if not parent_text:
-        return ""
-
-    window_chars = max(120, settings.rag_parent_context_window_chars)
-    parent_start = coerce_int(payload_data.get("parent_start"), default=-1)
-    child_start_abs = coerce_int(payload_data.get("child_start"), default=-1)
-    child_end_abs = coerce_int(payload_data.get("child_end"), default=-1)
-
-    if parent_start < 0 or child_start_abs < 0 or child_end_abs <= child_start_abs:
-        excerpt = parent_text[:window_chars].strip()
-        if len(excerpt) < len(parent_text):
-            excerpt = excerpt + "..."
-        return excerpt
-
-    child_start = max(0, child_start_abs - parent_start)
-    child_end = min(len(parent_text), max(child_start + 1, child_end_abs - parent_start))
-    half_window = window_chars // 2
-    left = max(0, child_start - half_window)
-    right = min(len(parent_text), child_end + half_window)
-
-    excerpt = parent_text[left:right].strip()
-    if not excerpt:
-        return ""
-    if left > 0:
-        excerpt = "..." + excerpt
-    if right < len(parent_text):
-        excerpt = excerpt + "..."
-    return excerpt
-
-
 def build_context_line(candidate: dict) -> str:
     child_text = coerce_text(candidate.get("text")).strip()
     if not child_text:
         return ""
-
-    payload_data = candidate.get("payload") or {}
-    parent_excerpt = extract_parent_window(payload_data)
-    if not parent_excerpt or parent_excerpt == child_text:
-        return child_text
-
-    return (
-        "Fragmento clave:\n"
-        + child_text
-        + "\n\nContexto relacionado:\n"
-        + parent_excerpt
-    )
+    return child_text
 
 
 def ensure_general_notice(answer_text: str) -> str:

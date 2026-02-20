@@ -11,7 +11,7 @@ rq
 langchain-core
 langchain-text-splitters
 langchain-google-genai
-docling
+llama-cloud-services
 pypdf
 docx2txt
 python-pptx

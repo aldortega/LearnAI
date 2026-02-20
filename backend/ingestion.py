@@ -22,18 +22,20 @@ from .config import settings
 from .gemini import embed_documents_with_fallback, has_gemini_api_keys
 
 try:
-    from docling.document_converter import DocumentConverter
+    from llama_cloud_services import LlamaParse
 
-    DOCLING_AVAILABLE = True
+    LLAMAPARSE_AVAILABLE = True
 except Exception:
-    DocumentConverter = None  # type: ignore[assignment]
-    DOCLING_AVAILABLE = False
+    LlamaParse = None  # type: ignore[assignment]
+    LLAMAPARSE_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
-DOCLING_CONTENT_TYPES = {"pdf", "docx", "pptx"}
-PARENT_CHILD_SCHEMA_VERSION = 2
+LLAMAPARSE_CONTENT_TYPES = {"pdf", "docx", "pptx"}
 TOKEN_PATTERN = re.compile(r"\S+")
+MARKDOWN_HEADING_PATTERN = re.compile(r"^\s{0,3}#{1,6}\s+.+$")
+NUMBERED_HEADING_PATTERN = re.compile(r"^\s*\d+(?:\.\d+){0,3}[\)\.\-:]?\s+\S+")
+BULLET_LINE_PATTERN = re.compile(r"^\s*(?:[-*+]|(?:\d+[\.\)]))\s+\S+")
 
 
 def normalize_chunk_text(text: str) -> str:
@@ -45,33 +47,17 @@ def normalize_chunk_text(text: str) -> str:
     return normalized.strip()
 
 
-def resolve_chunking_params(content_type: str) -> tuple[int, int, int, int]:
-    parent_chunk_tokens = settings.parent_chunk_tokens
-    parent_chunk_overlap_tokens = settings.parent_chunk_overlap_tokens
-    child_chunk_tokens = settings.child_chunk_tokens
-    child_chunk_overlap_tokens = settings.child_chunk_overlap_tokens
-
-    if content_type in {"pdf", "pptx"}:
-        parent_chunk_tokens = max(220, int(parent_chunk_tokens * 0.9))
-        parent_chunk_overlap_tokens = max(30, int(parent_chunk_overlap_tokens * 1.2))
-        child_chunk_tokens = max(90, int(child_chunk_tokens * 0.9))
-        child_chunk_overlap_tokens = max(16, int(child_chunk_overlap_tokens * 1.2))
-
-    return (
-        parent_chunk_tokens,
-        parent_chunk_overlap_tokens,
-        child_chunk_tokens,
-        child_chunk_overlap_tokens,
-    )
-
-
 def tokenize_with_spans(text: str) -> list[tuple[int, int]]:
     return [(match.start(), match.end()) for match in TOKEN_PATTERN.finditer(text)]
 
 
-def split_text_with_token_spans(
+def count_tokens(text: str) -> int:
+    return len(TOKEN_PATTERN.findall(text))
+
+
+def split_text_with_token_windows(
     text: str, chunk_tokens: int, overlap_tokens: int
-) -> list[tuple[str, int, int]]:
+) -> list[str]:
     spans = tokenize_with_spans(text)
     if not spans:
         return []
@@ -80,7 +66,7 @@ def split_text_with_token_spans(
     safe_overlap = max(0, min(overlap_tokens, max_tokens - 1))
     step = max(1, max_tokens - safe_overlap)
 
-    chunks: list[tuple[str, int, int]] = []
+    chunks: list[str] = []
     for start_index in range(0, len(spans), step):
         end_index = min(len(spans), start_index + max_tokens)
         if start_index >= end_index:
@@ -90,22 +76,189 @@ def split_text_with_token_spans(
         chunk_text = text[chunk_start:chunk_end].strip()
         if not chunk_text:
             continue
-        chunks.append((chunk_text, chunk_start, chunk_end))
+        chunks.append(chunk_text)
         if end_index >= len(spans):
             break
 
     return chunks
 
 
+def is_heading_block(block: str) -> bool:
+    normalized = block.strip()
+    if not normalized:
+        return False
+    if MARKDOWN_HEADING_PATTERN.match(normalized):
+        return True
+    if "\n" in normalized:
+        return False
+    if NUMBERED_HEADING_PATTERN.match(normalized):
+        return True
+
+    words = normalized.split()
+    if not words or len(words) > 14:
+        return False
+    if normalized.endswith(":"):
+        return True
+
+    letters = [char for char in normalized if char.isalpha()]
+    if not letters:
+        return False
+    uppercase_ratio = sum(1 for char in letters if char.isupper()) / len(letters)
+    return uppercase_ratio >= 0.75 and len(words) <= 10
+
+
+def normalize_heading(block: str) -> str:
+    normalized = block.strip()
+    normalized = re.sub(r"^\s{0,3}#{1,6}\s*", "", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized.rstrip(":").strip()
+
+
+def is_list_block(block: str) -> bool:
+    lines = [line.strip() for line in block.splitlines() if line.strip()]
+    if not lines:
+        return False
+    matching_lines = sum(1 for line in lines if BULLET_LINE_PATTERN.match(line))
+    if matching_lines == 0:
+        return False
+    if matching_lines == len(lines):
+        return True
+    return matching_lines >= max(2, len(lines) - 1)
+
+
+def clean_block(block: str) -> str:
+    normalized_lines = [
+        re.sub(r"[ \t]{2,}", " ", line).strip()
+        for line in block.splitlines()
+        if line.strip()
+    ]
+    return "\n".join(normalized_lines).strip()
+
+
+def split_into_sections(text: str) -> list[tuple[str | None, str]]:
+    raw_parts = [clean_block(part) for part in re.split(r"\n{2,}", text)]
+    blocks = [part for part in raw_parts if part]
+    if not blocks:
+        return []
+
+    sections: list[tuple[str | None, str]] = []
+    current_title: str | None = None
+    current_parts: list[str] = []
+
+    def flush_current_section() -> None:
+        if not current_parts:
+            return
+        body = "\n\n".join(current_parts).strip()
+        if body:
+            sections.append((current_title, body))
+        current_parts.clear()
+
+    for block in blocks:
+        if is_heading_block(block):
+            flush_current_section()
+            current_title = normalize_heading(block)
+            continue
+
+        if is_list_block(block):
+            flush_current_section()
+            sections.append((current_title, block))
+            continue
+
+        current_parts.append(block)
+
+    flush_current_section()
+
+    if sections:
+        return sections
+
+    text_fallback = "\n\n".join(blocks).strip()
+    if not text_fallback:
+        return []
+    return [(None, text_fallback)]
+
+
+def render_section_text(title: str | None, body: str) -> str:
+    cleaned_body = body.strip()
+    if not cleaned_body:
+        return title.strip() if isinstance(title, str) else ""
+    if not title:
+        return cleaned_body
+    normalized_title = title.strip()
+    if not normalized_title:
+        return cleaned_body
+    return f"{normalized_title}\n\n{cleaned_body}"
+
+
+def merge_small_sections(
+    sections: list[tuple[str | None, str]], minimum_tokens: int
+) -> list[tuple[str | None, str]]:
+    if not sections:
+        return []
+
+    merged: list[tuple[str | None, str]] = []
+    min_tokens = max(1, minimum_tokens)
+
+    for title, body in sections:
+        normalized_body = body.strip()
+        if not normalized_body:
+            continue
+
+        candidate_text = render_section_text(title, normalized_body)
+        if count_tokens(candidate_text) < min_tokens and merged:
+            previous_title, previous_body = merged[-1]
+            combined_title = previous_title or title
+            merged[-1] = (combined_title, f"{previous_body}\n\n{normalized_body}".strip())
+            continue
+
+        merged.append((title, normalized_body))
+
+    if len(merged) >= 2:
+        first_title, first_body = merged[0]
+        first_text = render_section_text(first_title, first_body)
+        if count_tokens(first_text) < min_tokens:
+            second_title, second_body = merged[1]
+            merged[1] = (
+                second_title or first_title,
+                f"{first_body}\n\n{second_body}".strip(),
+            )
+            merged = merged[1:]
+
+    return merged
+
+
+def split_section_body(
+    title: str | None,
+    body: str,
+    max_tokens: int,
+    fallback_tokens: int,
+    fallback_overlap_tokens: int,
+) -> list[str]:
+    section_text = render_section_text(title, body)
+    if not section_text:
+        return []
+
+    if count_tokens(section_text) <= max(1, max_tokens):
+        return [section_text]
+
+    if title:
+        windows = split_text_with_token_windows(
+            body, fallback_tokens, fallback_overlap_tokens
+        )
+        return [
+            render_section_text(title, window)
+            for window in windows
+            if window and window.strip()
+        ]
+
+    return split_text_with_token_windows(
+        section_text, fallback_tokens, fallback_overlap_tokens
+    )
+
+
 def split_documents_for_ingestion(
     documents: list[Document], content_type: str
 ) -> list[Document]:
-    (
-        parent_chunk_tokens,
-        parent_chunk_overlap_tokens,
-        child_chunk_tokens,
-        child_chunk_overlap_tokens,
-    ) = resolve_chunking_params(content_type)
+    _ = content_type
 
     normalized_documents: list[Document] = []
     for doc in documents:
@@ -119,35 +272,44 @@ def split_documents_for_ingestion(
     if not normalized_documents:
         return []
 
-    child_chunks: list[Document] = []
+    section_chunks: list[Document] = []
     for document in normalized_documents:
         document_text = document.page_content
         base_metadata = dict(document.metadata or {})
-        parent_spans = split_text_with_token_spans(
-            document_text, parent_chunk_tokens, parent_chunk_overlap_tokens
-        )
-        for parent_chunk_id, (parent_text, parent_start, parent_end) in enumerate(parent_spans):
-            child_spans = split_text_with_token_spans(
-                parent_text, child_chunk_tokens, child_chunk_overlap_tokens
+        sections = split_into_sections(document_text)
+        merged_sections = merge_small_sections(sections, settings.section_min_tokens)
+
+        if not merged_sections:
+            fallback_chunks = split_text_with_token_windows(
+                document_text,
+                settings.section_fallback_chunk_tokens,
+                settings.section_fallback_overlap_tokens,
             )
-            for child_text, child_rel_start, child_rel_end in child_spans:
-                child_chunks.append(
-                    Document(
-                        page_content=child_text,
-                        metadata={
-                            **base_metadata,
-                            "chunk_schema_version": PARENT_CHILD_SCHEMA_VERSION,
-                            "parent_chunk_id": parent_chunk_id,
-                            "parent_text": parent_text,
-                            "parent_start": parent_start,
-                            "parent_end": parent_end,
-                            "child_start": parent_start + child_rel_start,
-                            "child_end": parent_start + child_rel_end,
-                        },
-                    )
+            for chunk_text in fallback_chunks:
+                section_chunks.append(
+                    Document(page_content=chunk_text, metadata=dict(base_metadata))
+                )
+            continue
+
+        for section_index, (section_title, section_body) in enumerate(merged_sections):
+            chunks = split_section_body(
+                section_title,
+                section_body,
+                settings.section_max_tokens,
+                settings.section_fallback_chunk_tokens,
+                settings.section_fallback_overlap_tokens,
+            )
+            for chunk_in_section, chunk_text in enumerate(chunks):
+                if not chunk_text or not chunk_text.strip():
+                    continue
+                metadata = dict(base_metadata)
+                metadata["section_index"] = section_index
+                metadata["chunk_in_section"] = chunk_in_section
+                section_chunks.append(
+                    Document(page_content=chunk_text.strip(), metadata=metadata)
                 )
 
-    return child_chunks
+    return section_chunks
 
 
 def process_document(document_id: str) -> None:
@@ -264,23 +426,56 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
 
 
 @lru_cache(maxsize=1)
-def get_docling_converter() -> "DocumentConverter":
-    if not DOCLING_AVAILABLE or DocumentConverter is None:
-        raise RuntimeError("Docling no disponible")
-    return DocumentConverter()
+def get_llamaparse_parser() -> "LlamaParse":
+    if not LLAMAPARSE_AVAILABLE or LlamaParse is None:
+        raise RuntimeError("LlamaParse no disponible")
+    api_key = settings.llama_cloud_api_key
+    if not api_key:
+        raise RuntimeError("LlamaParse no esta configurado")
+    return LlamaParse(
+        api_key=api_key,
+        result_type="markdown",
+        language=settings.llamaparse_language,
+        verbose=False,
+    )
 
 
-def load_documents_with_docling(tmp_path: str, content_type: str) -> list[Document]:
-    converter = get_docling_converter()
-    result = converter.convert(tmp_path)
-    markdown = result.document.export_to_markdown() or ""
-    text = normalize_chunk_text(markdown)
+def load_documents_with_llamaparse(tmp_path: str, content_type: str) -> list[Document]:
+    parser = get_llamaparse_parser()
+    result = parser.parse(tmp_path)
+
+    page_markdown_chunks: list[str] = []
+    pages = getattr(result, "pages", None)
+    if isinstance(pages, list):
+        for page in pages:
+            markdown = getattr(page, "md", None)
+            if markdown is None and isinstance(page, dict):
+                markdown = page.get("md") or page.get("text")
+            if isinstance(markdown, str) and markdown.strip():
+                page_markdown_chunks.append(markdown)
+
+    if not page_markdown_chunks and hasattr(result, "get_markdown_documents"):
+        try:
+            markdown_documents = result.get_markdown_documents(split_by_page=True)
+        except Exception:
+            markdown_documents = []
+        for markdown_document in markdown_documents:
+            markdown = getattr(markdown_document, "text", None)
+            if markdown is None and isinstance(markdown_document, dict):
+                markdown = markdown_document.get("text")
+            if isinstance(markdown, str) and markdown.strip():
+                page_markdown_chunks.append(markdown)
+
+    text = normalize_chunk_text("\n\n".join(page_markdown_chunks))
     if not text:
         return []
     return [
         Document(
             page_content=text,
-            metadata={"source_parser": "docling", "content_type": content_type},
+            metadata={
+                "source_parser": "llamaparse",
+                "content_type": content_type,
+            },
         )
     ]
 
@@ -345,27 +540,40 @@ def load_documents(file_bytes: bytes, content_type: str) -> list[Document]:
         tmp_path = tmp.name
 
     try:
-        if content_type in DOCLING_CONTENT_TYPES and DOCLING_AVAILABLE:
-            try:
-                docling_documents = load_documents_with_docling(tmp_path, content_type)
-                if docling_documents:
-                    logger.info(
-                        "Extraccion con Docling completada",
-                        extra={
-                            "content_type": content_type,
-                            "documents": len(docling_documents),
-                        },
-                    )
-                    return docling_documents
-                logger.warning(
-                    "Docling no produjo texto; se usa extractor legacy",
+        if content_type in LLAMAPARSE_CONTENT_TYPES:
+            if not settings.llama_cloud_api_key:
+                logger.info(
+                    "LlamaParse no esta configurado; se usa extractor legacy",
                     extra={"content_type": content_type},
                 )
-            except Exception as exc:
+            elif not LLAMAPARSE_AVAILABLE:
                 logger.warning(
-                    "Docling fallo; se usa extractor legacy",
-                    extra={"content_type": content_type, "error": str(exc)},
+                    "LlamaParse no disponible; se usa extractor legacy",
+                    extra={"content_type": content_type},
                 )
+            else:
+                try:
+                    llamaparse_documents = load_documents_with_llamaparse(
+                        tmp_path, content_type
+                    )
+                    if llamaparse_documents:
+                        logger.info(
+                            "Extraccion con LlamaParse completada",
+                            extra={
+                                "content_type": content_type,
+                                "documents": len(llamaparse_documents),
+                            },
+                        )
+                        return llamaparse_documents
+                    logger.warning(
+                        "LlamaParse no produjo texto; se usa extractor legacy",
+                        extra={"content_type": content_type},
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "LlamaParse fallo; se usa extractor legacy",
+                        extra={"content_type": content_type, "error": str(exc)},
+                    )
 
         return load_documents_legacy(tmp_path, content_type)
     finally:
@@ -404,25 +612,6 @@ async def upsert_chunks(
                 "created_at": created_at,
                 "text": chunk.page_content,
             }
-
-            chunk_schema_version = metadata.get("chunk_schema_version")
-            if isinstance(chunk_schema_version, int):
-                payload["chunk_schema_version"] = chunk_schema_version
-
-            parent_text = metadata.get("parent_text")
-            if isinstance(parent_text, str) and parent_text.strip():
-                payload["parent_text"] = parent_text
-
-            for key in (
-                "parent_chunk_id",
-                "parent_start",
-                "parent_end",
-                "child_start",
-                "child_end",
-            ):
-                value = metadata.get(key)
-                if isinstance(value, int):
-                    payload[key] = value
 
             points.append(
                 {
