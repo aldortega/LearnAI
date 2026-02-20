@@ -77,19 +77,20 @@ async def get_reports_config(
     suggestions_error: str | None = None
     suggestions_job_id: str | None = None
 
+    if suggestions:
+        suggestions_status = "ready"
+
     if latest_job_doc:
         suggestions_job_id = latest_job_doc["job_id"]
         latest_status = coerce_text(latest_job_doc.get("status"))
         latest_error = coerce_text(latest_job_doc.get("error")) or None
         if latest_status in {"queued", "processing"}:
-            suggestions_status = "generating"
+            if not suggestions or suggestions_is_stale:
+                suggestions_status = "generating"
         elif latest_status == "failed":
             if not suggestions or suggestions_is_stale:
                 suggestions_status = "failed"
                 suggestions_error = latest_error
-
-    if suggestions_status == "missing" and suggestions:
-        suggestions_status = "ready"
 
     return ReportConfigOut(
         has_ready_sources=has_ready_sources,

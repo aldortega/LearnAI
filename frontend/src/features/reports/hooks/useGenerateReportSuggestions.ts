@@ -21,26 +21,40 @@ type Result = {
 export function useGenerateReportSuggestions(notebookId?: string): Result {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const requestTokenRef = useRef(0);
+  const activeRunIdRef = useRef(0);
   const isMountedRef = useRef(true);
+  const isRunningRef = useRef(false);
 
   const clearError = useCallback(() => setError(null), []);
-  const isTokenActive = useCallback(
-    (token: number) =>
-      isMountedRef.current && requestTokenRef.current === token,
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      isRunningRef.current = false;
+      activeRunIdRef.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
+    activeRunIdRef.current += 1;
+    isRunningRef.current = false;
+    setIsGenerating(false);
+    setError(null);
+  }, [notebookId]);
+
+  const startRun = useCallback(
+    () => {
+      const nextRunId = activeRunIdRef.current + 1;
+      activeRunIdRef.current = nextRunId;
+      return nextRunId;
+    },
     [],
   );
 
-  useEffect(() => {
-    requestTokenRef.current += 1;
-    setIsGenerating(false);
-  }, [notebookId]);
-
-  useEffect(
-    () => () => {
-      isMountedRef.current = false;
-      requestTokenRef.current += 1;
-    },
+  const isRunActive = useCallback(
+    (runId: number) => isMountedRef.current && activeRunIdRef.current === runId,
     [],
   );
 
@@ -48,26 +62,30 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
     async (
       jobId: string,
       initial: ReportSuggestionsJobOut,
-      token: number,
-    ): Promise<ReportSuggestionsJobOut> => {
+      runId: number,
+    ): Promise<ReportSuggestionsJobOut | null> => {
       if (!notebookId) return initial;
 
       let latest = initial;
       const deadline = Date.now() + POLL_TIMEOUT_MS;
 
       while (Date.now() < deadline) {
-        if (!isTokenActive(token)) {
-          return latest;
+        if (!isRunActive(runId)) {
+          return null;
         }
         if (latest.status === "done" || latest.status === "failed") {
           return latest;
         }
 
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        if (!isTokenActive(token)) {
-          return latest;
+        if (!isRunActive(runId)) {
+          return null;
         }
         latest = await reportsApi.getSuggestionsGenerationStatus(notebookId, jobId);
+      }
+
+      if (!isRunActive(runId)) {
+        return null;
       }
 
       return {
@@ -76,96 +94,111 @@ export function useGenerateReportSuggestions(notebookId?: string): Result {
         error: "La generacion esta tardando mas de lo esperado.",
       };
     },
-    [notebookId, isTokenActive],
+    [notebookId, isRunActive],
   );
 
   const generate = useCallback(async () => {
     if (!notebookId) return null;
+    if (isRunningRef.current) return null;
 
-    const requestToken = requestTokenRef.current + 1;
-    requestTokenRef.current = requestToken;
-    setIsGenerating(true);
-    setError(null);
+    isRunningRef.current = true;
+    const runId = startRun();
+
+    if (isMountedRef.current) {
+      setIsGenerating(true);
+      setError(null);
+    }
 
     try {
       const job = await reportsApi.generateSuggestions(notebookId);
-      const result = await pollGeneration(job.job_id, job, requestToken);
-      if (!isTokenActive(requestToken)) {
+      if (!isRunActive(runId)) {
         return null;
       }
+
+      const result = await pollGeneration(job.job_id, job, runId);
+      if (!result) return null;
+
       if (result.status === "failed") {
-        setError(result.error ?? "No se pudieron generar sugerencias.");
+        if (isRunActive(runId)) {
+          setError(result.error ?? "No se pudieron generar sugerencias.");
+        }
         return null;
       }
       return result;
     } catch (e) {
-      if (!isTokenActive(requestToken)) {
-        return null;
+      if (isRunActive(runId)) {
+        setError(toNotebookErrorMessage(e));
       }
-      setError(toNotebookErrorMessage(e));
       return null;
     } finally {
-      if (isTokenActive(requestToken)) {
+      isRunningRef.current = false;
+      if (isRunActive(runId)) {
         setIsGenerating(false);
       }
     }
-  }, [notebookId, pollGeneration, isTokenActive]);
+  }, [notebookId, pollGeneration, isRunActive, startRun]);
 
   const resumeLatest = useCallback(
     async (options?: { suppressFailedError?: boolean }) => {
       if (!notebookId) return null;
+      if (isRunningRef.current) return null;
 
       const suppressFailedError = options?.suppressFailedError ?? false;
 
-      const requestToken = requestTokenRef.current + 1;
-      requestTokenRef.current = requestToken;
-      setIsGenerating(true);
-      setError(null);
+      isRunningRef.current = true;
+      const runId = startRun();
+
+      if (isMountedRef.current) {
+        setIsGenerating(true);
+        setError(null);
+      }
 
       try {
         const job = await reportsApi.getLatestSuggestionsGeneration(notebookId);
-        if (!isTokenActive(requestToken)) {
+        if (!isRunActive(runId)) {
           return null;
         }
+
         if (job.status === "done") {
           return job;
         }
         if (job.status === "failed") {
-          if (!suppressFailedError) {
+          if (!suppressFailedError && isRunActive(runId)) {
             setError(job.error ?? "No se pudieron generar sugerencias.");
           }
           return null;
         }
-        const result = await pollGeneration(job.job_id, job, requestToken);
-        if (!isTokenActive(requestToken)) {
-          return null;
-        }
+
+        const result = await pollGeneration(job.job_id, job, runId);
+        if (!result) return null;
+
         if (result.status === "failed") {
-          if (!suppressFailedError) {
+          if (!suppressFailedError && isRunActive(runId)) {
             setError(result.error ?? "No se pudieron generar sugerencias.");
           }
           return null;
         }
         return result;
       } catch (e) {
-        if (!isTokenActive(requestToken)) {
+        if (!isRunActive(runId)) {
           return null;
         }
         const apiError = e as ApiError | undefined;
         if (apiError?.status === 404) {
           return null;
         }
-        if (!suppressFailedError) {
+        if (!suppressFailedError && isRunActive(runId)) {
           setError(toNotebookErrorMessage(e));
         }
         return null;
       } finally {
-        if (isTokenActive(requestToken)) {
+        isRunningRef.current = false;
+        if (isRunActive(runId)) {
           setIsGenerating(false);
         }
       }
     },
-    [notebookId, pollGeneration, isTokenActive],
+    [notebookId, pollGeneration, isRunActive, startRun],
   );
 
   return { generate, resumeLatest, isGenerating, error, clearError };

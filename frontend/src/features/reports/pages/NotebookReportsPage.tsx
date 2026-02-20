@@ -18,6 +18,10 @@ import { useReportsConfig } from "../hooks/useReportsConfig";
 import { hasCachedReports, useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
 import type { ReportFormatType, ReportOut, ReportPromptTemplate, ReportSuggestion } from "../types/reports.types";
+
+const SUGGESTIONS_SYNC_INTERVAL_MS = 2000;
+const SUGGESTIONS_SYNC_TIMEOUT_MS = 180000;
+
 type ReportViewMode = "templates" | "history";
 type HistoryViewMode = "cards" | "detail";
 type EditTarget = { title: string; formatType: ReportFormatType; suggestionId: string | null };
@@ -27,6 +31,7 @@ export function NotebookReportsPage() {
   const { notebook } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasResolvedInitialViewRef = useRef(false);
+  const hasCheckedLatestSuggestionsJobRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
   const [viewMode, setViewMode] = useState<ReportViewMode>(() =>
@@ -38,6 +43,7 @@ export function NotebookReportsPage() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [deleteReportTarget, setDeleteReportTarget] = useState<ReportOut | null>(null);
   const [isRefreshingSuggestions, setIsRefreshingSuggestions] = useState(false);
+  const [suggestionsSyncTimedOut, setSuggestionsSyncTimedOut] = useState(false);
   const {
     fileInputRef,
     documents,
@@ -72,6 +78,7 @@ export function NotebookReportsPage() {
   } = useGenerateReport(notebookId);
   const {
     generate: generateSuggestions,
+    resumeLatest: resumeLatestSuggestions,
     isGenerating: isGeneratingSuggestions,
     error: generateSuggestionsError,
     clearError: clearGenerateSuggestionsError,
@@ -89,14 +96,23 @@ export function NotebookReportsPage() {
   const suggestionsStatus = config?.suggestions_status ?? "missing";
   const suggestionsAreStale = config?.suggestions_is_stale ?? false;
   const generationError = generateError ?? configError;
-  const suggestionsError = generateSuggestionsError ?? config?.suggestions_error ?? null;
+  const suggestionsTimeoutError = suggestionsSyncTimedOut
+    ? "La sincronizacion de sugerencias tardo demasiado. Intenta actualizar nuevamente."
+    : null;
+  const suggestionsError =
+    suggestionsTimeoutError ??
+    generateSuggestionsError ??
+    config?.suggestions_error ??
+    null;
   const isSuggestionsLoading =
-    isConfigLoading ||
-    isRefreshingSuggestions ||
-    isGeneratingSuggestions ||
-    suggestionsStatus === "generating";
+    !suggestionsSyncTimedOut &&
+    (isConfigLoading ||
+      isRefreshingSuggestions ||
+      isGeneratingSuggestions ||
+      suggestionsStatus === "generating");
   useEffect(() => {
     hasResolvedInitialViewRef.current = false;
+    hasCheckedLatestSuggestionsJobRef.current = false;
     hasTriggeredAutoSuggestionsRef.current = false;
     previousReadySignatureRef.current = null;
     setViewMode(hasCachedReports(notebookId) ? "history" : "templates");
@@ -105,11 +121,74 @@ export function NotebookReportsPage() {
     setEditPrompt("");
     setSelectedReportId(null);
     setDeleteReportTarget(null);
+    setSuggestionsSyncTimedOut(false);
     clearGenerateSuggestionsError();
   }, [notebookId, clearGenerateSuggestionsError]);
   useEffect(() => {
     hasTriggeredAutoSuggestionsRef.current = false;
   }, [notebookId, readySignature]);
+  useEffect(() => {
+    if (!notebookId || hasCheckedLatestSuggestionsJobRef.current) return;
+    if (!hasConfigLoaded || isConfigLoading || isGeneratingSuggestions) return;
+    if (suggestionsStatus !== "generating") return;
+
+    hasCheckedLatestSuggestionsJobRef.current = true;
+
+    void (async () => {
+      await resumeLatestSuggestions({ suppressFailedError: true });
+      await reloadConfig();
+    })();
+  }, [
+    notebookId,
+    hasConfigLoaded,
+    isConfigLoading,
+    isGeneratingSuggestions,
+    suggestionsStatus,
+    resumeLatestSuggestions,
+    reloadConfig,
+  ]);
+  useEffect(() => {
+    if (!notebookId || !hasConfigLoaded || isConfigLoading) return;
+    if (suggestionsStatus !== "generating") {
+      if (suggestionsSyncTimedOut) {
+        setSuggestionsSyncTimedOut(false);
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const deadline = Date.now() + SUGGESTIONS_SYNC_TIMEOUT_MS;
+
+    setSuggestionsSyncTimedOut(false);
+
+    const syncSuggestionsConfig = async () => {
+      while (!cancelled && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, SUGGESTIONS_SYNC_INTERVAL_MS));
+        if (cancelled) return;
+
+        const latestConfig = await reloadConfig();
+        if (!latestConfig) continue;
+        if (latestConfig.suggestions_status !== "generating") return;
+      }
+
+      if (!cancelled) {
+        setSuggestionsSyncTimedOut(true);
+      }
+    };
+
+    void syncSuggestionsConfig();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    notebookId,
+    hasConfigLoaded,
+    isConfigLoading,
+    suggestionsStatus,
+    suggestionsSyncTimedOut,
+    reloadConfig,
+  ]);
   useEffect(() => {
     if (!notebookId) return;
     if (previousReadySignatureRef.current === null) {
@@ -131,6 +210,7 @@ export function NotebookReportsPage() {
 
     hasTriggeredAutoSuggestionsRef.current = true;
     void (async () => {
+      setSuggestionsSyncTimedOut(false);
       clearGenerateSuggestionsError();
       await generateSuggestions();
       await reloadConfig();
@@ -229,6 +309,7 @@ export function NotebookReportsPage() {
     if (!notebookId || isRefreshingSuggestions || isGeneratingSuggestions) return;
     setIsRefreshingSuggestions(true);
     try {
+      setSuggestionsSyncTimedOut(false);
       clearGenerateSuggestionsError();
       await generateSuggestions();
       await reloadConfig();
