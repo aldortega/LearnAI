@@ -251,6 +251,17 @@ async def generate_report(
             detail="Tipo de informe invalido",
         )
 
+    active_job_doc = await db.report_generation_jobs.find_one(
+        {
+            "owner_id": user["_id"],
+            "notebook_id": notebook["_id"],
+            "status": {"$in": ["queued", "processing"]},
+        },
+        sort=[("created_at", -1)],
+    )
+    if active_job_doc:
+        return map_report_generation_job(active_job_doc)
+
     job = reports_queue.enqueue(
         process_report_generation,
         str(notebook["_id"]),
