@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from ...config import settings
 from ...db import db
 from .generation_service import generate_mindmap_tree
-from .normalization import flatten_tree_to_nodes
+from .normalization import coerce_text, flatten_tree_to_nodes
 from .repository import compute_sources_fingerprint
 
 logger = logging.getLogger(__name__)
@@ -56,11 +56,19 @@ def resolve_mindmap_error_message(exc: Exception) -> str:
     return "No se pudo generar el mapa mental"
 
 
-def process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_mindmap_generation(notebook_id, owner_id))
+def process_mindmap_generation(
+    notebook_id: str,
+    owner_id: str,
+    prompt: str | None = None,
+) -> None:
+    asyncio.run(_process_mindmap_generation(notebook_id, owner_id, prompt=prompt))
 
 
-async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
+async def _process_mindmap_generation(
+    notebook_id: str,
+    owner_id: str,
+    prompt: str | None = None,
+) -> None:
     from rq import get_current_job
 
     job = get_current_job()
@@ -97,6 +105,15 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
             )
             return
 
+        queued_job_doc = await worker_db.mindmap_generation_jobs.find_one(
+            {"job_id": job_id},
+            {"prompt": 1},
+        )
+        queued_prompt = coerce_text(
+            queued_job_doc.get("prompt") if queued_job_doc else ""
+        ).strip()
+        runtime_prompt = coerce_text(prompt).strip()
+
         fingerprint, ready_count = await compute_sources_fingerprint(
             notebook["title"],
             notebook_object_id,
@@ -111,9 +128,14 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
             )
             return
 
+        effective_topic = (
+            runtime_prompt
+            or queued_prompt
+            or coerce_text(notebook.get("title"))
+        )
         try:
             tree, generation_meta = await generate_mindmap_tree(
-                notebook["title"],
+                effective_topic,
                 notebook_object_id,
                 {
                     "_id": owner_object_id,
@@ -130,6 +152,7 @@ async def _process_mindmap_generation(notebook_id: str, owner_id: str) -> None:
                         "owner_id": owner_object_id,
                         "notebook_id": notebook_object_id,
                         "sources_fingerprint": fingerprint,
+                        "topic": effective_topic,
                         "root_node_id": root_node_id,
                         "nodes": nodes,
                         "generation_meta": generation_meta,

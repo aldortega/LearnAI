@@ -39,6 +39,10 @@ class MindmapGenerationJobOut(BaseModel):
     finished_at: Optional[datetime] = None
 
 
+class MindmapGenerateRequest(BaseModel):
+    prompt: Optional[str] = Field(default=None, max_length=1200)
+
+
 class MindmapNodeDetailOut(BaseModel):
     node_id: str
     explanation: str

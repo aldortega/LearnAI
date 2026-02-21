@@ -8,7 +8,7 @@ type Props = {
   showRefreshAction?: boolean;
   canRefresh?: boolean;
   isRefreshing?: boolean;
-  onRefresh?: () => void;
+  onRefresh?: (prompt?: string) => void;
   showDetailToggle?: boolean;
   isDetailVisible?: boolean;
   onToggleDetail?: () => void;
@@ -36,10 +36,10 @@ export function MindmapShell({
     setIsRegenerateModalOpen(false);
   };
 
-  const handleRefreshConfirm = () => {
+  const handleRefreshConfirm = (prompt?: string) => {
     if (!onRefresh || !canRefresh || isRefreshing) return;
     setIsRegenerateModalOpen(false);
-    onRefresh();
+    onRefresh(prompt);
   };
 
   return (

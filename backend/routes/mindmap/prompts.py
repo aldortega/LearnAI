@@ -7,7 +7,7 @@ from .constants import (
 
 
 def build_mindmap_tree_prompt(
-    notebook_title: str,
+    topic: str,
     context_text: str,
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
@@ -16,12 +16,12 @@ def build_mindmap_tree_prompt(
         f"{TITLES_SCHEMA}"
     )
     user_prompt = (
-        f"Tema central del mapa (usa exactamente este titulo): {notebook_title}\n\n"
+        f"Tema central del mapa (usa exactamente este titulo): {topic}\n\n"
         f"Contexto:\n{context_text}\n\n"
         "Genera un arbol de nodos (title + children) con profundidad variable. "
         "No hay un numero fijo de nodos ni profundidad fija. "
-        "Objetivo de cobertura: intenta producir al menos 6 nodos totales cuando el contexto lo permita. "
-        "En la raiz, prioriza 2 a 4 subtemas principales distintos. "
+        # "Objetivo de cobertura: intenta producir al menos 6 nodos totales cuando el contexto lo permita. "
+        # "En la raiz, prioriza 2 a 4 subtemas principales distintos. "
         "Cada nodo no-hoja debe tener hijos relacionados con su titulo padre sin repetir su prefijo literal. "
         "Evita nodos intermedios genericos: no uses titulos vacios como funcion, detalle, info, general, concepto o tema. "
         "Si ibas a crear un nodo generico con un unico hijo, elimina ese nodo y conecta directo con el hijo especifico. "
@@ -35,7 +35,7 @@ def build_mindmap_tree_prompt(
 
 
 def build_node_detail_prompt(
-    notebook_title: str,
+    topic: str,
     node_title: str,
     context_text: str,
     lineage_titles: list[str],
@@ -54,7 +54,7 @@ def build_node_detail_prompt(
         f"{DETAIL_SCHEMA}"
     )
     user_prompt = (
-        f"Tema general: {notebook_title}\n"
+        f"Tema general: {topic}\n"
         f"Nodo seleccionado: {node_title}\n\n"
         f"Ruta del nodo: {lineage_path}\n"
         f"Padre inmediato: {parent_title or '(sin padre)'}\n"

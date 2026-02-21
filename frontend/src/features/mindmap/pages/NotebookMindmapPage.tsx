@@ -122,10 +122,10 @@ export function NotebookMindmapPage() {
     }
   }, [mindmap, selectedNodeId]);
 
-  const handleGenerateMindmap = async () => {
+  const handleGenerateMindmap = async (prompt?: string) => {
     if (!notebookId) return;
     clearGenerateError();
-    const result = await generate();
+    const result = await generate({ prompt });
     if (!result) return;
     clearAll();
     setSelectedNodeId(null);
@@ -210,8 +210,8 @@ export function NotebookMindmapPage() {
         showDetailToggle={!isEmpty && Boolean(mindmap?.root_node_id)}
         isDetailVisible={isDetailPanelVisible}
         onToggleDetail={() => setIsDetailPanelVisible((previous) => !previous)}
-        onRefresh={() => {
-          void handleGenerateMindmap();
+        onRefresh={(prompt) => {
+          void handleGenerateMindmap(prompt);
         }}
       >
         {isMindmapLoading && !mindmap ? (

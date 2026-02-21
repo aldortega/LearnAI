@@ -33,6 +33,10 @@ export type MindmapGenerationJobOut = {
   finished_at?: string | null;
 };
 
+export type MindmapGenerateRequest = {
+  prompt?: string;
+};
+
 export type MindmapNodeDetailOut = {
   node_id: string;
   explanation: string;

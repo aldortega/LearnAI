@@ -3,13 +3,18 @@ import { useCallback, useState } from "react";
 import type { ApiError } from "../../../shared/lib/apiClient";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { mindmapApi } from "../api/mindmapApi";
-import type { MindmapGenerationJobOut } from "../types/mindmap.types";
+import type {
+  MindmapGenerateRequest,
+  MindmapGenerationJobOut,
+} from "../types/mindmap.types";
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 180000;
 
 type Result = {
-  generate: () => Promise<MindmapGenerationJobOut | null>;
+  generate: (
+    payload?: MindmapGenerateRequest,
+  ) => Promise<MindmapGenerationJobOut | null>;
   resumeLatest: (options?: {
     suppressFailedError?: boolean;
   }) => Promise<MindmapGenerationJobOut | null>;
@@ -51,14 +56,14 @@ export function useGenerateMindmap(notebookId?: string): Result {
     [notebookId],
   );
 
-  const generate = useCallback(async () => {
+  const generate = useCallback(async (payload?: MindmapGenerateRequest) => {
     if (!notebookId) return null;
 
     setIsGenerating(true);
     setError(null);
 
     try {
-      const job = await mindmapApi.generateMindmap(notebookId);
+      const job = await mindmapApi.generateMindmap(notebookId, payload);
       const result = await pollGeneration(job.job_id, job);
       if (result.status === "failed") {
         setError(result.error ?? "No se pudo generar el mapa mental.");

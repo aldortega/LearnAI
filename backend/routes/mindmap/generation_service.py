@@ -51,11 +51,11 @@ def _parse_json_object_from_response(response: object) -> dict:
 
 
 async def generate_mindmap_tree(
-    notebook_title: str,
+    topic: str,
     notebook_object_id: ObjectId,
     user: dict,
 ) -> tuple[dict, dict]:
-    question = f"Mapa mental completo sobre {notebook_title}"
+    question = f"Mapa mental completo sobre {topic}"
     context_lines, _, _, _ = await retrieve_context(
         question,
         notebook_object_id,
@@ -63,7 +63,7 @@ async def generate_mindmap_tree(
         top_k=12,
     )
     context_text = compact_context(context_lines, max_chars=5500)
-    system_message, user_message = build_mindmap_tree_prompt(notebook_title, context_text)
+    system_message, user_message = build_mindmap_tree_prompt(topic, context_text)
     llm = create_llm()
     structured_llm = llm.with_structured_output(
         schema=MindmapTreePayloadLLM.model_json_schema(),
@@ -99,7 +99,7 @@ async def generate_mindmap_tree(
         logger.info("Mindmap estructurado:\n%s", json.dumps(payload_data, ensure_ascii=False))
         tree, generation_meta = normalize_tree_payload(
             payload_data,
-            notebook_title,
+            topic,
             context_lines=context_lines,
         )
         logger.info(
@@ -116,7 +116,7 @@ async def generate_mindmap_tree(
 
 
 async def generate_node_detail(
-    notebook_title: str,
+    topic: str,
     node_title: str,
     notebook_object_id: ObjectId,
     user: dict,
@@ -127,13 +127,13 @@ async def generate_node_detail(
         [title.strip() for title in lineage_titles if isinstance(title, str) and title.strip()]
     )
     question = (
-        f"Explica brevemente el concepto {node_title} en {notebook_title}. "
+        f"Explica brevemente el concepto {node_title} en {topic}. "
         f"Ruta conceptual: {lineage_path or node_title}"
     )
     context_lines, _, _, _ = await retrieve_context(question, notebook_object_id, user)
     context_text = compact_context(context_lines, max_chars=4200)
     system_message, user_message = build_node_detail_prompt(
-        notebook_title,
+        topic,
         node_title,
         context_text,
         lineage_titles=lineage_titles,

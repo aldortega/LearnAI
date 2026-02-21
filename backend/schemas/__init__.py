@@ -17,6 +17,7 @@ from .flashcards import (
     FlashcardsOut,
 )
 from .mindmap import (
+    MindmapGenerateRequest,
     MindmapGenerationJobOut,
     MindmapNodeDetailOut,
     MindmapNodeOut,

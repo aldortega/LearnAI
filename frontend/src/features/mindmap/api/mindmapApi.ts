@@ -1,5 +1,6 @@
 import { apiRequest } from "../../../shared/lib/apiClient";
 import type {
+  MindmapGenerateRequest,
   MindmapGenerationJobOut,
   MindmapNodeDetailOut,
   MindmapOut,
@@ -14,11 +15,13 @@ export const mindmapApi = {
 
   generateMindmap: async (
     notebookId: string,
+    payload?: MindmapGenerateRequest,
   ): Promise<MindmapGenerationJobOut> => {
     return apiRequest<MindmapGenerationJobOut>(
       `/notebooks/${notebookId}/mindmap/generate`,
       {
         method: "POST",
+        body: payload,
       },
     );
   },

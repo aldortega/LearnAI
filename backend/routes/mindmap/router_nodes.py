@@ -10,7 +10,7 @@ from .normalization import coerce_text, strip_parent_prefix
 from .repository import resolve_mindmap_node_context
 
 router = APIRouter(tags=["mindmap"])
-DETAIL_CACHE_VERSION = 2
+DETAIL_CACHE_VERSION = 3
 
 
 def _build_sanitized_title_map(nodes: list[dict]) -> dict[str, str]:
@@ -131,15 +131,23 @@ async def get_mindmap_node_detail(
         "node_id": node_id,
         "sources_fingerprint": fingerprint,
     }
+    detail_topic = coerce_text(mindmap_doc.get("topic")).strip() or coerce_text(
+        notebook.get("title")
+    )
     cached_detail = await db.mindmap_node_details.find_one(detail_filter)
     if cached_detail:
         cached_explanation = coerce_text(cached_detail.get("explanation"))
+        cached_topic = coerce_text(cached_detail.get("topic")).strip()
         detail_version = (
             cached_detail.get("detail_version")
             if isinstance(cached_detail.get("detail_version"), int)
             else 0
         )
-        if detail_version >= DETAIL_CACHE_VERSION and cached_explanation:
+        if (
+            detail_version >= DETAIL_CACHE_VERSION
+            and cached_explanation
+            and cached_topic == detail_topic
+        ):
             return MindmapNodeDetailOut(node_id=node_id, explanation=cached_explanation)
 
     nodes = mindmap_doc.get("nodes", []) if isinstance(mindmap_doc, dict) else []
@@ -156,7 +164,7 @@ async def get_mindmap_node_detail(
     )
 
     explanation = await generate_node_detail(
-        notebook["title"],
+        detail_topic,
         selected_node_title,
         notebook["_id"],
         user,
@@ -172,6 +180,7 @@ async def get_mindmap_node_detail(
                 "notebook_id": notebook["_id"],
                 "node_id": node_id,
                 "sources_fingerprint": fingerprint,
+                "topic": detail_topic,
                 "explanation": explanation,
                 "detail_version": DETAIL_CACHE_VERSION,
                 "updated_at": now,

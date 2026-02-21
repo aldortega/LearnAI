@@ -1,12 +1,15 @@
 import { Network } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "../../../shared/ui/Button";
+
+const PROMPT_MAX_LENGTH = 1200;
 
 type Props = {
   isGenerating: boolean;
   canGenerate: boolean;
   error: string | null;
-  onGenerate: () => void;
+  onGenerate: (prompt?: string) => void;
 };
 
 export function MindmapEmptyState({
@@ -15,6 +18,13 @@ export function MindmapEmptyState({
   error,
   onGenerate,
 }: Props) {
+  const [prompt, setPrompt] = useState("");
+
+  const handleGenerate = () => {
+    const trimmedPrompt = prompt.trim();
+    onGenerate(trimmedPrompt ? trimmedPrompt : undefined);
+  };
+
   return (
     <div className="flex h-full items-center justify-center px-6">
       <div className="w-full max-w-2xl rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
@@ -25,10 +35,31 @@ export function MindmapEmptyState({
         <p className="mt-2 text-sm text-muted-foreground">
           Genera un mapa mental de tu notebook y explora sus ramas de forma interactiva.
         </p>
+        <div className="mt-6 space-y-2 text-left">
+          <label
+            htmlFor="mindmap-topic-prompt"
+            className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
+            Tema especifico (opcional)
+          </label>
+          <textarea
+            id="mindmap-topic-prompt"
+            value={prompt}
+            disabled={isGenerating || !canGenerate}
+            onChange={(event) => setPrompt(event.target.value)}
+            rows={4}
+            maxLength={PROMPT_MAX_LENGTH}
+            placeholder="Ejemplo: Arquitectura cliente-servidor en redes"
+            className="w-full rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <p className="text-right text-xs text-muted-foreground">
+            {prompt.length}/{PROMPT_MAX_LENGTH}
+          </p>
+        </div>
         <div className="mt-6">
           <Button
             variant="primary"
-            onClick={onGenerate}
+            onClick={handleGenerate}
             loading={isGenerating}
             disabled={!canGenerate || isGenerating}
           >
