@@ -169,33 +169,36 @@ export function QuickstartTopicDetailView({
                       Puntos adicionales
                     </p>
                     {additionalPoints.length > 0 ? (
-                      <div className="flex flex-col gap-2">
+                      <div className="overflow-hidden rounded-xl border border-border bg-surface">
                         {additionalPoints.map((point, index) => (
-                          <div key={`${topic.id}-additional-point-${index}`}>
+                          <div
+                            key={`${topic.id}-additional-point-${index}`}
+                            className={index > 0 ? "border-t border-border" : ""}
+                          >
                             <button
                               type="button"
-                              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-sm transition ${
+                              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition ${
                                 isSelected("additional_key_point", point)
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border bg-surface text-foreground/80 hover:border-primary/30 hover:bg-primary/5 hover:text-foreground"
+                                  ? "bg-muted text-foreground"
+                                  : "text-foreground hover:bg-muted/60"
                               }`}
                               aria-expanded={shouldShowExpanded("additional_key_point", point)}
                               onClick={() => onSelectDetail("additional_key_point", point)}
                             >
-                              <span className="min-w-0 flex-1">
+                              <span className="min-w-0 flex-1 text-[15px] leading-tight">
                                 <span className={markdownInlineClass}>
                                   <Streamdown>{point}</Streamdown>
                                 </span>
                               </span>
                               {shouldShowExpanded("additional_key_point", point) ? (
-                                <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
+                                <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                               ) : (
-                                <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                               )}
                             </button>
 
                             {shouldShowExpanded("additional_key_point", point) ? (
-                              <div className="mt-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm">
+                              <div className="border-t border-border bg-muted/30 px-4 py-3 text-sm">
                                 {isDetailLoading ? (
                                   <div className="flex items-center gap-2 text-foreground/75">
                                     <Spinner className="h-4 w-4 border-green-500/30 border-t-green-600" />
@@ -231,33 +234,36 @@ export function QuickstartTopicDetailView({
                       Preguntas sugeridas
                     </p>
                     {suggestedQuestions.length > 0 ? (
-                      <div className="flex flex-col gap-2">
+                      <div className="overflow-hidden rounded-xl border border-border bg-surface">
                         {suggestedQuestions.map((question, index) => (
-                          <div key={`${topic.id}-suggested-question-${index}`}>
+                          <div
+                            key={`${topic.id}-suggested-question-${index}`}
+                            className={index > 0 ? "border-t border-border" : ""}
+                          >
                             <button
                               type="button"
-                              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left text-sm transition ${
+                              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition ${
                                 isSelected("question", question)
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border bg-surface text-foreground/80 hover:border-primary/30 hover:bg-primary/5 hover:text-foreground"
+                                  ? "bg-muted text-foreground"
+                                  : "text-foreground hover:bg-muted/60"
                               }`}
                               aria-expanded={shouldShowExpanded("question", question)}
                               onClick={() => onSelectDetail("question", question)}
                             >
-                              <span className="min-w-0 flex-1">
+                              <span className="min-w-0 flex-1 text-[15px] leading-tight">
                                 <span className={markdownInlineClass}>
                                   <Streamdown>{question}</Streamdown>
                                 </span>
                               </span>
                               {shouldShowExpanded("question", question) ? (
-                                <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
+                                <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                               ) : (
-                                <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                               )}
                             </button>
 
                             {shouldShowExpanded("question", question) ? (
-                              <div className="mt-2 rounded-xl border border-border bg-muted/30 px-3 py-3 text-sm">
+                              <div className="border-t border-border bg-muted/30 px-4 py-3 text-sm">
                                 {isDetailLoading ? (
                                   <div className="flex items-center gap-2 text-foreground/75">
                                     <Spinner className="h-4 w-4 border-green-500/30 border-t-green-600" />
