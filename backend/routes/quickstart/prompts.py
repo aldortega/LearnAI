@@ -27,7 +27,8 @@ def build_quickstart_prompt(
         f"Contexto:\n{context_text}\n\n"
         "Genera un notebook_summary general de 2 parrafos breves. "
         f"Genera un inicio rapido con exactamente {TOPIC_COUNT} temas. "
-        "Cada tema debe tener un resumen breve y una lista de 3 a 5 puntos clave."
+        "Cada tema debe tener un resumen breve, un emoji representativo (solo emoji) "
+        "y una lista de 3 a 5 puntos clave."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
@@ -55,8 +56,10 @@ def build_expansion_prompt(
         f"Contexto:\n{context_text}\n\n"
         "Expande el tema en detalle. En content entrega informacion general "
         "adicional y util para estudio (no repitas literal el resumen actual), "
-        "en 1 a 3 parrafos claros. Incluye tambien puntos clave adicionales y "
-        "preguntas sugeridas."
+        "en 2 a 4 parrafos claros. Cada parrafo debe tener 2 a 4 oraciones y "
+        "debe estar separado por una linea en blanco (\\n\\n). "
+        "No devuelvas todo el contenido en un solo bloque corrido. "
+        "Incluye tambien puntos clave adicionales y preguntas sugeridas."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
@@ -87,7 +90,9 @@ def build_topic_detail_prompt(
         f"Texto del item: {item_text}\n\n"
         f"Contexto:\n{context_text}\n\n"
         "Explica el item de forma clara y concreta para estudio autonomo. "
-        "Entrega 1 a 3 parrafos, con ejemplos breves cuando aporten valor."
+        "Entrega 2 a 3 parrafos, separados por una linea en blanco (\\n\\n), "
+        "con ejemplos breves cuando aporten valor. "
+        "No devuelvas todo en un solo parrafo."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
@@ -136,7 +141,8 @@ def build_single_topic_prompt(
         "Temas ya existentes:\n"
         f"{existing_titles_text or '- (sin temas)'}\n\n"
         f"Contexto:\n{context_text}\n\n"
-        "Genera un unico tema nuevo con ese titulo exacto, un resumen breve y 3 a 5 "
-        "puntos clave concretos. No repitas temas existentes."
+        "Genera un unico tema nuevo con ese titulo exacto, un resumen breve, un emoji "
+        "representativo (solo emoji) y 3 a 5 puntos clave concretos. No repitas temas "
+        "existentes."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
