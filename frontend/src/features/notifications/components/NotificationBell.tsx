@@ -124,10 +124,10 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setIsOpen((previous) => !previous)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full  bg-surface text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
         aria-label="Notificaciones"
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-5 w-5" />
         {unreadCount > 0 ? (
           <span className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] font-semibold leading-none text-primary-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}

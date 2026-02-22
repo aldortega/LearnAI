@@ -28,7 +28,7 @@ export function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-primary/15 text-primary ring-2 ring-transparent transition-all hover:bg-primary/20 focus:outline-none focus:ring-primary/30"
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-primary/15 text-primary ring-2 ring-transparent transition-all hover:bg-primary/20 focus:outline-none focus:ring-primary/30 cursor-pointer"
         aria-label="User menu"
       >
         {showAvatarPhoto ? (
