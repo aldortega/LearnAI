@@ -162,7 +162,6 @@ export function QuickstartOverview({
         <QuickstartTopicsList
           topics={quickstart.topics}
           notebookId={notebookId}
-          isStale={isStale}
           canDelete={Boolean(notebookId)}
           canReorder={Boolean(notebookId)}
           isReordering={isReordering}

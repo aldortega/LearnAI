@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { Streamdown } from "streamdown";
 import type {
   QuickstartDetailItemType,
   QuickstartExpansionOut,
@@ -6,7 +7,6 @@ import type {
   QuickstartTopicDetailOut,
 } from "../types/quickstart.types";
 import { Spinner } from "../../../shared/ui/Spinner";
-
 type SelectedDetail = {
   itemType: QuickstartDetailItemType;
   itemText: string;
@@ -29,6 +29,11 @@ function normalizeItemText(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+const markdownBlockClass =
+  "text-sm leading-6 text-foreground/80 [&_p]:my-2 [&_strong]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1";
+const markdownInlineClass =
+  "text-sm leading-6 [&_p]:m-0 [&_strong]:font-semibold [&_ul]:m-0 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-0.5";
+
 export function QuickstartTopicDetailView({
   topic,
   isStale,
@@ -43,11 +48,6 @@ export function QuickstartTopicDetailView({
 }: Props) {
   const additionalPoints = expansion?.key_points ?? [];
   const suggestedQuestions = expansion?.example_questions ?? [];
-  const generalInfoParagraphs = (expansion?.content ?? "")
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-
   const isSelected = (itemType: QuickstartDetailItemType, itemText: string) => {
     if (!selectedDetail) return false;
     return (
@@ -65,7 +65,9 @@ export function QuickstartTopicDetailView({
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
         <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-foreground">{topic.title}</h2>
-          <p className="text-sm leading-6 text-foreground/80">{topic.summary}</p>
+          <div className={markdownBlockClass}>
+            <Streamdown>{topic.summary}</Streamdown>
+          </div>
         </div>
 
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -74,7 +76,11 @@ export function QuickstartTopicDetailView({
           </p>
           <ul className="list-disc space-y-1 pl-5 text-sm text-foreground/80">
             {topic.key_points.map((point, index) => (
-              <li key={`${topic.id}-key-point-${index}`}>{point}</li>
+              <li key={`${topic.id}-key-point-${index}`}>
+                <div className={markdownInlineClass}>
+                  <Streamdown>{point}</Streamdown>
+                </div>
+              </li>
             ))}
           </ul>
         </div>
@@ -146,16 +152,9 @@ export function QuickstartTopicDetailView({
                   <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
                     Informacion general
                   </p>
-                  {generalInfoParagraphs.length > 0 ? (
-                    <div className="space-y-3">
-                      {generalInfoParagraphs.map((paragraph, index) => (
-                        <p
-                          key={`${topic.id}-general-info-${index}`}
-                          className="text-sm leading-6 text-foreground/80"
-                        >
-                          {paragraph}
-                        </p>
-                      ))}
+                  {expansion.content.trim() ? (
+                    <div className={markdownBlockClass}>
+                      <Streamdown>{expansion.content}</Streamdown>
                     </div>
                   ) : (
                     <p className="text-sm text-foreground/75">
@@ -183,7 +182,11 @@ export function QuickstartTopicDetailView({
                               aria-expanded={shouldShowExpanded("additional_key_point", point)}
                               onClick={() => onSelectDetail("additional_key_point", point)}
                             >
-                              <span>{point}</span>
+                              <span className="min-w-0 flex-1">
+                                <span className={markdownInlineClass}>
+                                  <Streamdown>{point}</Streamdown>
+                                </span>
+                              </span>
                               {shouldShowExpanded("additional_key_point", point) ? (
                                 <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
                               ) : (
@@ -207,7 +210,9 @@ export function QuickstartTopicDetailView({
                                 ) : null}
 
                                 {!isDetailLoading && !detailError && detail ? (
-                                  <p className="leading-6 text-foreground/80">{detail.content}</p>
+                                  <div className={markdownBlockClass}>
+                                    <Streamdown>{detail.content}</Streamdown>
+                                  </div>
                                 ) : null}
                               </div>
                             ) : null}
@@ -239,7 +244,11 @@ export function QuickstartTopicDetailView({
                               aria-expanded={shouldShowExpanded("question", question)}
                               onClick={() => onSelectDetail("question", question)}
                             >
-                              <span>{question}</span>
+                              <span className="min-w-0 flex-1">
+                                <span className={markdownInlineClass}>
+                                  <Streamdown>{question}</Streamdown>
+                                </span>
+                              </span>
                               {shouldShowExpanded("question", question) ? (
                                 <ChevronUp className="h-4 w-4 shrink-0" aria-hidden />
                               ) : (
@@ -263,7 +272,9 @@ export function QuickstartTopicDetailView({
                                 ) : null}
 
                                 {!isDetailLoading && !detailError && detail ? (
-                                  <p className="leading-6 text-foreground/80">{detail.content}</p>
+                                  <div className={markdownBlockClass}>
+                                    <Streamdown>{detail.content}</Streamdown>
+                                  </div>
                                 ) : null}
                               </div>
                             ) : null}

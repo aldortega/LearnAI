@@ -1,7 +1,7 @@
-﻿import { RefreshCw } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { Plus, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
 
-import { Button } from "../../../shared/ui/Button";
+import { AddQuickstartTopicModal } from "./AddQuickstartTopicModal";
 
 type Props = {
   suggestions: string[];
@@ -28,19 +28,16 @@ export function QuickstartTopicSuggestions({
   onRefresh,
   onAddTopic,
 }: Props) {
-  const [customTopic, setCustomTopic] = useState("");
-  const trimmedTopic = customTopic.trim();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const remaining = useMemo(
     () => Math.max(topicLimit - topicCount, 0),
     [topicLimit, topicCount],
   );
   const isDisabled = !canAddTopics || isStale || remaining <= 0 || isAdding;
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!trimmedTopic || isDisabled) return;
-    await onAddTopic(trimmedTopic, "custom");
-    setCustomTopic("");
+  const handleConfirmCustomTopic = async (title: string) => {
+    await onAddTopic(title, "custom");
+    setIsAddModalOpen(false);
   };
 
   return (
@@ -101,42 +98,42 @@ export function QuickstartTopicSuggestions({
             </span>
           </>
         ) : (
-          suggestions.map((suggestion) => (
+          <>
+            {suggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => {
+                  void onAddTopic(suggestion, "suggestion");
+                }}
+                disabled={isDisabled}
+                className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {suggestion}
+              </button>
+            ))}
             <button
-              key={suggestion}
               type="button"
-              onClick={() => {
-                void onAddTopic(suggestion, "suggestion");
-              }}
+              aria-label="Agregar tema personalizado"
+              title="Agregar tema"
               disabled={isDisabled}
-              className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-muted text-foreground/80 transition hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {suggestion}
+              <Plus className="h-4 w-4" />
             </button>
-          ))
+          </>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
-        <input
-          type="text"
-          value={customTopic}
-          onChange={(event) => setCustomTopic(event.target.value)}
-          maxLength={120}
-          placeholder="Escribe un tema para agregar"
-          disabled={isDisabled}
-          className="w-full rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-        />
-        <Button
-          type="submit"
-          loading={isAdding}
-          disabled={!trimmedTopic || isDisabled}
-          className="sm:self-start"
-        >
-          Agregar tema
-        </Button>
-      </form>
+      <AddQuickstartTopicModal
+        isOpen={isAddModalOpen}
+        isAdding={isAdding}
+        isDisabled={isDisabled}
+        error={error}
+        onCancel={() => setIsAddModalOpen(false)}
+        onConfirm={handleConfirmCustomTopic}
+      />
     </section>
   );
 }
-
