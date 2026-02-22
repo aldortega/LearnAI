@@ -45,3 +45,14 @@ class FlashcardsGenerationJobOut(BaseModel):
     error: Optional[str] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+
+
+class FlashcardExplainRequest(BaseModel):
+    card_id: str = Field(min_length=1, max_length=120)
+
+
+class FlashcardExplainOut(BaseModel):
+    card_id: str
+    explanation_markdown: str
+    cached: bool
+    generated_at: datetime

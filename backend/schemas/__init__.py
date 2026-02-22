@@ -9,6 +9,8 @@ from .auth import (
 from .documents import DocumentCreate, DocumentCreateResponse, DocumentOut
 from .flashcards import (
     FlashcardCountPreset,
+    FlashcardExplainOut,
+    FlashcardExplainRequest,
     FlashcardDifficulty,
     FlashcardOut,
     FlashcardSourceRef,

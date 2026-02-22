@@ -92,6 +92,9 @@ async def delete_flashcards(notebook_id: str, request: Request) -> None:
     await db.flashcard_sets.delete_one(
         {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
     )
+    await db.flashcard_explanations.delete_many(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
 
 
 @router.post(

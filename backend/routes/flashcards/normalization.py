@@ -1,9 +1,12 @@
+import re
+
 from ...schemas.flashcards import FlashcardSourceRef
 from ...schemas.rag import RagSource
 from .constants import (
     CARD_COUNT_VALUES,
     DIFFICULTY_GUIDANCE,
     DIFFICULTY_LABELS,
+    MAX_EXPLANATION_MARKDOWN_CHARS,
     MAX_CONTEXT_CHARS,
     MAX_DEFINITION_CHARS,
     MAX_TERM_CHARS,
@@ -124,3 +127,24 @@ def source_to_ref(source: RagSource) -> FlashcardSourceRef:
         file_name=source.file_name,
         page=source.page,
     )
+
+
+def normalize_explanation_markdown(value: object | None) -> str:
+    markdown = coerce_text(value).replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not markdown:
+        return "No se pudo generar una explicacion para esta flashcard."
+
+    cleaned_lines: list[str] = []
+    for line in markdown.split("\n"):
+        stripped = line.strip()
+        if stripped.lower().startswith("<") and stripped.lower().endswith(">"):
+            continue
+        cleaned_lines.append(line.rstrip())
+
+    cleaned = "\n".join(cleaned_lines).strip()
+    cleaned = re.sub(r"<[^>]+>", "", cleaned)
+    if not cleaned:
+        return "No se pudo generar una explicacion para esta flashcard."
+    if len(cleaned) > MAX_EXPLANATION_MARKDOWN_CHARS:
+        cleaned = cleaned[:MAX_EXPLANATION_MARKDOWN_CHARS].rstrip() + "..."
+    return cleaned

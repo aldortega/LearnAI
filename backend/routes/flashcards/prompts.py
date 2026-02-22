@@ -35,3 +35,19 @@ def build_flashcards_prompt(
         "general confiable sobre el tema pedido."
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def build_flashcard_explain_question(
+    notebook_title: str,
+    term: str,
+    definition: str,
+) -> str:
+    return (
+        f'Notebook: "{notebook_title}".\n'
+        f'Termino de la flashcard: "{term}".\n'
+        f'Definicion actual: "{definition}".\n\n'
+        "Explica este termino con mas detalle en espanol, con markdown basico "
+        "(parrafos, negritas o listas simples). "
+        "No uses HTML, no uses tablas, no uses bloques de codigo. "
+        "Mantén la explicacion corta y util para estudio (aprox. 120-220 palabras)."
+    )

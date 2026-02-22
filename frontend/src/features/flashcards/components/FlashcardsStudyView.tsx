@@ -1,6 +1,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { FlashcardExplainModal } from "./FlashcardExplainModal";
+import { useFlashcardExplanation } from "../hooks/useFlashcardExplanation";
 import type { FlashcardsOut } from "../types/flashcards.types";
 
 type Props = {
@@ -29,6 +31,15 @@ export function FlashcardsStudyView({
   const [navigationDirection, setNavigationDirection] = useState<"prev" | "next">(
     "next",
   );
+  const {
+    isOpen: isExplainModalOpen,
+    isLoading: isExplainLoading,
+    error: explainError,
+    activeTerm,
+    explanationMarkdown,
+    openExplanation,
+    closeExplanation,
+  } = useFlashcardExplanation(flashcards.notebook_id);
 
   const cards = flashcards.cards;
   const currentCard = cards[currentIndex] ?? null;
@@ -54,6 +65,16 @@ export function FlashcardsStudyView({
   const toggleCardFace = useCallback(() => {
     setIsFlipped((previous) => !previous);
   }, []);
+
+  useEffect(() => {
+    closeExplanation();
+  }, [currentCard?.id, closeExplanation]);
+
+  useEffect(() => {
+    if (!isFlipped) {
+      closeExplanation();
+    }
+  }, [isFlipped, closeExplanation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -170,7 +191,33 @@ export function FlashcardsStudyView({
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
+
+        <div className="mx-auto flex w-full max-w-2xl items-center justify-end">
+          {isFlipped ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (!currentCard) return;
+                void openExplanation(currentCard);
+              }}
+              className="inline-flex items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground shadow-sm transition hover:border-border-strong hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isExplainLoading}
+              aria-label="Explicar termino"
+            >
+              {isExplainLoading ? "Explicando..." : "Explicar"}
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      <FlashcardExplainModal
+        isOpen={isExplainModalOpen}
+        isLoading={isExplainLoading}
+        error={explainError}
+        term={activeTerm}
+        explanationMarkdown={explanationMarkdown}
+        onClose={closeExplanation}
+      />
     </div>
   );
 }

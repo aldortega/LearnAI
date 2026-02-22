@@ -1,5 +1,6 @@
 import { apiRequest } from "../../../shared/lib/apiClient";
 import type {
+  FlashcardExplainOut,
   FlashcardsGenerateRequest,
   FlashcardsGenerationJobOut,
   FlashcardsOut,
@@ -50,6 +51,19 @@ export const flashcardsApi = {
       `/notebooks/${notebookId}/flashcards/generate/${jobId}`,
       {
         method: "GET",
+      },
+    );
+  },
+
+  explain: async (
+    notebookId: string,
+    cardId: string,
+  ): Promise<FlashcardExplainOut> => {
+    return apiRequest<FlashcardExplainOut>(
+      `/notebooks/${notebookId}/flashcards/explain`,
+      {
+        method: "POST",
+        body: { card_id: cardId },
       },
     );
   },

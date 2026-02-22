@@ -31,3 +31,10 @@ export type FlashcardsGenerationJobOut = {
   started_at?: string | null;
   finished_at?: string | null;
 };
+
+export type FlashcardExplainOut = {
+  card_id: string;
+  explanation_markdown: string;
+  cached: boolean;
+  generated_at: string;
+};
