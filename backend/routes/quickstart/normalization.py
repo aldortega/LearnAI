@@ -78,6 +78,7 @@ def normalize_topics(payload: dict, title: str) -> list[dict]:
                 "id": f"t{index}",
                 "title": topic_title,
                 "summary": summary,
+                "emoji": normalize_topic_emoji(topic.get("emoji")),
                 "key_points": key_points,
             }
         )
@@ -90,6 +91,7 @@ def normalize_topics(payload: dict, title: str) -> list[dict]:
                     "id": f"t{index}",
                     "title": topic_title,
                     "summary": f"Conceptos generales sobre {title}.",
+                    "emoji": "📘",
                     "key_points": normalize_list(
                         [],
                         TOPIC_MIN_KEY_POINTS,
@@ -104,6 +106,13 @@ def normalize_topics(payload: dict, title: str) -> list[dict]:
 
 def normalize_topic_title(title: str) -> str:
     return " ".join(title.split()).strip()
+
+
+def normalize_topic_emoji(value: object | None) -> str:
+    emoji = coerce_text(value).strip()
+    if not emoji:
+        return "📘"
+    return emoji[:16]
 
 
 def normalize_item_text(item_text: str) -> str:
@@ -267,7 +276,12 @@ def normalize_single_topic(payload: dict, requested_title: str) -> dict:
         TOPIC_MAX_KEY_POINTS,
         DEFAULT_TOPIC_KEY_POINTS,
     )
-    return {"title": title, "summary": summary, "key_points": key_points}
+    return {
+        "title": title,
+        "summary": summary,
+        "emoji": normalize_topic_emoji(payload.get("emoji")),
+        "key_points": key_points,
+    }
 
 
 def coerce_payload(payload: object, model: type[BaseModel]) -> dict:
@@ -276,3 +290,4 @@ def coerce_payload(payload: object, model: type[BaseModel]) -> dict:
     if isinstance(payload, dict):
         return payload
     return model.model_validate(payload).model_dump()
+

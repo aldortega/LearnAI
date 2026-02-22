@@ -34,6 +34,7 @@ QUICKSTART_SCHEMA = (
     "    {\n"
     '      "title": "string",\n'
     '      "summary": "string",\n'
+    '      "emoji": "string",\n'
     '      "key_points": ["string"]\n'
     "    }\n"
     "  ]\n"
@@ -58,6 +59,7 @@ SINGLE_TOPIC_SCHEMA = (
     "{\n"
     '  "title": "string",\n'
     '  "summary": "string",\n'
+    '  "emoji": "string",\n'
     '  "key_points": ["string"]\n'
     "}\n"
 )
@@ -72,6 +74,7 @@ DETAIL_SCHEMA = (
 class QuickstartTopicLLM(BaseModel):
     title: str
     summary: str
+    emoji: str
     key_points: list[str] = Field(min_length=1, max_length=8)
 
 
@@ -93,6 +96,7 @@ class QuickstartSuggestionsLLM(BaseModel):
 class QuickstartSingleTopicLLM(BaseModel):
     title: str
     summary: str
+    emoji: str
     key_points: list[str] = Field(min_length=1, max_length=8)
 
 

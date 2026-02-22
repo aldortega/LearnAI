@@ -2,6 +2,7 @@ export type QuickstartTopic = {
   id: string;
   title: string;
   summary: string;
+  emoji?: string | null;
   key_points: string[];
 };
 

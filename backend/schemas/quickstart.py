@@ -8,6 +8,7 @@ class QuickstartTopicOut(BaseModel):
     id: str
     title: str
     summary: str
+    emoji: Optional[str] = Field(default=None, max_length=16)
     key_points: list[str] = Field(default_factory=list)
 
 

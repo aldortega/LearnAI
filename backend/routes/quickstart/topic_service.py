@@ -16,6 +16,7 @@ def topic_to_out(topic: dict) -> QuickstartTopicOut:
         id=str(topic.get("id", "")),
         title=coerce_text(topic.get("title")),
         summary=coerce_text(topic.get("summary")),
+        emoji=coerce_text(topic.get("emoji")) or None,
         key_points=[coerce_text(point) for point in topic.get("key_points", [])],
     )
 

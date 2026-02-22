@@ -105,6 +105,7 @@ async def add_quickstart_topic(
         "id": build_next_topic_id(topics_list),
         "title": final_title,
         "summary": generated_topic["summary"],
+        "emoji": generated_topic["emoji"],
         "key_points": generated_topic["key_points"],
     }
 
