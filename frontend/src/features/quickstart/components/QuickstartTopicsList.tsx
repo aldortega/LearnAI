@@ -40,10 +40,9 @@ export function QuickstartTopicsList({
   });
 
   return (
-    <div className="rounded-xl border border-border bg-surface">
-      {topics.map((topic, index) => (
-        <div key={topic.id}>
-          {index > 0 ? <div className="mx-4 border-t border-border" /> : null}
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {topics.map((topic) => (
+        <div key={topic.id} className="rounded-xl border border-border bg-surface">
           <QuickstartTopicCard
             topic={topic}
             notebookId={notebookId}

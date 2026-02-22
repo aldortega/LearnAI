@@ -59,9 +59,9 @@ export function QuickstartOverview({
     summaryParagraphs.length > 0
       ? summaryParagraphs
       : quickstart.topics
-          .map((topic) => topic.summary.trim())
-          .filter(Boolean)
-          .slice(0, 2);
+        .map((topic) => topic.summary.trim())
+        .filter(Boolean)
+        .slice(0, 2);
 
   useEffect(() => {
     void loadIfMissing();
@@ -113,13 +113,11 @@ export function QuickstartOverview({
   return (
     <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
-          <div>
-            <h2 className="mt-2 text-xl font-semibold text-foreground">
-              De que trata esta notebook
-            </h2>
-          </div>
+        <h2 className="text-lg font-bold text-foreground">
+          Resumen de la notebook
+        </h2>
 
+        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           {isStale ? (
             <div
               className="rounded-xl border border-warning bg-warning/10 px-4 py-3 text-sm text-warning"
@@ -151,13 +149,9 @@ export function QuickstartOverview({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-muted-hover" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-            Temas principales
-          </p>
-          <div className="h-px flex-1 bg-muted-hover" />
-        </div>
+        <h2 className="text-md font-bold text-foreground">
+          Temas principales
+        </h2>
 
         <QuickstartTopicsList
           topics={quickstart.topics}
