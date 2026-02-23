@@ -159,10 +159,8 @@ export function useGenerateFlashcards(notebookId?: string): Result {
       const runId = startRun();
 
       const suppressFailedError = options?.suppressFailedError ?? false;
-
       if (isMountedRef.current) {
         setError(null);
-        setIsGenerating(true);
       }
 
       try {
@@ -180,6 +178,9 @@ export function useGenerateFlashcards(notebookId?: string): Result {
             setError(job.error ?? "No se pudieron generar las flashcards.");
           }
           return null;
+        }
+        if (isRunActive(runId)) {
+          setIsGenerating(true);
         }
 
         const result = await pollGeneration(job.job_id, job, runId);

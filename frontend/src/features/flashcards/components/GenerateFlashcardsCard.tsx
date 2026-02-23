@@ -65,7 +65,7 @@ export function GenerateFlashcardsCard({
           {isGenerating ? "Generando flashcards..." : "Todavia no hay flashcards"}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Genera tarjetas de termino y definicion para estudiar esta notebook.
+          Genera tarjetas mixtas de estudio: definiciones, preguntas y completar espacios.
         </p>
 
         {showConfiguration ? (

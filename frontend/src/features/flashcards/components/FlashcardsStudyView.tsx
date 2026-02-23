@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { FlashcardExplainModal } from "./FlashcardExplainModal";
@@ -151,34 +151,52 @@ export function FlashcardsStudyView({
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          <button
-            type="button"
-            onClick={toggleCardFace}
-            className="aspect-[3/2] w-full text-left [perspective:1200px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:aspect-[4/3]"
-            aria-label={isFlipped ? "Mostrar termino" : "Mostrar definicion"}
-          >
-            <div
-              key={currentIndex}
-              className={`h-full w-full motion-reduce:animate-none ${cardChangeAnimationClass}`}
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={toggleCardFace}
+              className="aspect-[3/2] w-full text-left [perspective:1200px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:aspect-[4/3]"
+              aria-label={isFlipped ? "Mostrar frente" : "Mostrar reverso"}
             >
               <div
-                className={`relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out motion-reduce:transition-none ${
-                  isFlipped ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
-                }`}
+                key={currentIndex}
+                className={`h-full w-full motion-reduce:animate-none ${cardChangeAnimationClass}`}
               >
-                <div className="absolute inset-0 flex items-center justify-center rounded-xl border border-border bg-muted px-4 py-4 shadow-sm transition [backface-visibility:hidden] hover:border-border-strong hover:shadow-md">
-                  <p className="text-center text-base font-semibold text-foreground sm:text-lg">
-                    {currentCard.term}
-                  </p>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center overflow-y-auto rounded-xl border border-border bg-muted px-4 py-4 shadow-sm transition [backface-visibility:hidden] [transform:rotateY(180deg)] hover:border-border-strong hover:shadow-md">
-                  <p className="text-base font-semibold text-foreground sm:text-lg">
-                    {currentCard.definition}
-                  </p>
+                <div
+                  className={`relative h-full w-full [transform-style:preserve-3d] transition-transform duration-500 ease-out motion-reduce:transition-none ${
+                    isFlipped ? "[transform:rotateY(180deg)]" : "[transform:rotateY(0deg)]"
+                  }`}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center overflow-y-auto rounded-xl border border-border bg-muted px-4 py-4 shadow-sm transition [backface-visibility:hidden] hover:border-border-strong hover:shadow-md">
+                    <p className="w-full text-center text-base font-semibold leading-relaxed text-foreground sm:text-lg">
+                      {currentCard.term}
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center overflow-y-auto rounded-xl border border-border bg-muted px-4 py-4 pb-14 shadow-sm transition [backface-visibility:hidden] [transform:rotateY(180deg)] hover:border-border-strong hover:shadow-md">
+                    <p className="w-full text-center text-base font-semibold leading-relaxed text-foreground sm:text-lg">
+                      {currentCard.definition}
+                    </p>
+                    <div className="absolute bottom-3 right-3 z-10">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!currentCard) return;
+                          void openExplanation(currentCard);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface/95 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition hover:border-border-strong hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                        disabled={isExplainLoading}
+                        aria-label="Explicar tarjeta"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {isExplainLoading ? "Explicando..." : "Explicar"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </button>
+            </button>
+          </div>
 
           <button
             type="button"
@@ -192,22 +210,6 @@ export function FlashcardsStudyView({
           </button>
         </div>
 
-        <div className="mx-auto flex w-full max-w-2xl items-center justify-end">
-          {isFlipped ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (!currentCard) return;
-                void openExplanation(currentCard);
-              }}
-              className="inline-flex items-center justify-center rounded-xl border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground shadow-sm transition hover:border-border-strong hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isExplainLoading}
-              aria-label="Explicar termino"
-            >
-              {isExplainLoading ? "Explicando..." : "Explicar"}
-            </button>
-          ) : null}
-        </div>
       </div>
 
       <FlashcardExplainModal

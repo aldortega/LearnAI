@@ -61,11 +61,49 @@ def normalize_term(value: object | None, fallback_index: int) -> str:
     return term[:MAX_TERM_CHARS]
 
 
+def is_question_front(term: str) -> bool:
+    return term.endswith("?")
+
+
+def is_cloze_front(term: str) -> bool:
+    return "___" in term or "[____]" in term
+
+
+def ensure_cloze_blank(term: str, definition: str) -> str:
+    if is_cloze_front(term) or not definition:
+        return term
+
+    answer = " ".join(definition.split()).strip()
+    if not answer:
+        return term
+
+    escaped_answer = re.escape(answer)
+    with_boundaries = rf"\b{escaped_answer}\b"
+    if re.search(with_boundaries, term, flags=re.IGNORECASE):
+        return re.sub(with_boundaries, "___", term, count=1, flags=re.IGNORECASE)
+
+    fallback = answer.split(" ", maxsplit=1)[0]
+    if len(fallback) >= 3:
+        escaped_fallback = re.escape(fallback)
+        with_boundaries = rf"\b{escaped_fallback}\b"
+        if re.search(with_boundaries, term, flags=re.IGNORECASE):
+            return re.sub(with_boundaries, "___", term, count=1, flags=re.IGNORECASE)
+
+    return term
+
+
 def normalize_definition(value: object | None, term: str) -> str:
     definition = " ".join(coerce_text(value).split()).strip()
     if not definition:
-        definition = f"Definicion basica de {term.lower()}."
-    if len(definition) < MIN_DEFINITION_CHARS:
+        if is_question_front(term) or is_cloze_front(term):
+            definition = "Respuesta principal."
+        else:
+            definition = f"Definicion basica de {term.lower()}."
+    if (
+        len(definition) < MIN_DEFINITION_CHARS
+        and not is_question_front(term)
+        and not is_cloze_front(term)
+    ):
         definition = (
             f"{definition} Este concepto es importante para comprender el tema."
         )
@@ -86,6 +124,9 @@ def normalize_cards(
         if not isinstance(raw_card, dict):
             continue
         term = normalize_term(raw_card.get("term"), len(normalized_cards) + 1)
+        raw_definition = coerce_text(raw_card.get("definition"))
+        term = ensure_cloze_blank(term, raw_definition)
+        definition = normalize_definition(raw_definition, term)
         term_key = term.casefold()
         if term_key in seen_terms:
             continue
@@ -94,7 +135,7 @@ def normalize_cards(
             {
                 "id": f"card-{len(normalized_cards) + 1}",
                 "term": term,
-                "definition": normalize_definition(raw_card.get("definition"), term),
+                "definition": definition,
             }
         )
 
