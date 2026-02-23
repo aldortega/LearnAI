@@ -56,14 +56,14 @@ function TemplateCard({
       onClick={handleActivate}
       onKeyDown={handleKeyDown}
       className={cn(
-        "h-[168px] flex-1 basis-0 rounded-2xl border border-border bg-surface p-4 text-left shadow-sm transition",
+        "h-[168px] flex-1 basis-0 overflow-hidden rounded-2xl border border-border bg-surface p-4 text-left shadow-sm transition",
         "flex flex-col",
         "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-sm font-semibold leading-5 text-foreground">{title}</p>
         {onEdit ? (
           <button
             type="button"
@@ -85,9 +85,11 @@ function TemplateCard({
           </button>
         ) : null}
       </div>
-      <p className="mt-2 flex-1 overflow-hidden text-xs leading-5 text-muted-foreground">
-        {description}
-      </p>
+      <div className="mt-2 min-h-0 flex-1 overflow-hidden">
+        <p className="line-clamp-3 text-xs leading-5 text-muted-foreground">
+          {description}
+        </p>
+      </div>
     </div>
   );
 }
