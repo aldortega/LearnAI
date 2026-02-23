@@ -20,7 +20,7 @@ export function NotebookMindmapPage() {
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasCheckedLatestJobRef = useRef(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isDetailPanelVisible, setIsDetailPanelVisible] = useState(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -63,7 +63,7 @@ export function NotebookMindmapPage() {
   useEffect(() => {
     queueMicrotask(() => {
       setSelectedNodeId(null);
-      setIsDetailPanelVisible(false);
+      setIsDetailModalVisible(false);
       setExpandedNodeIds(new Set());
     });
   }, [notebookId]);
@@ -203,17 +203,14 @@ export function NotebookMindmapPage() {
         />
       }
     >
-      <MindmapShell
-        showRefreshAction={!isEmpty}
-        canRefresh={hasReadySources}
-        isRefreshing={isGenerating}
-        showDetailToggle={!isEmpty && Boolean(mindmap?.root_node_id)}
-        isDetailVisible={isDetailPanelVisible}
-        onToggleDetail={() => setIsDetailPanelVisible((previous) => !previous)}
-        onRefresh={(prompt) => {
-          void handleGenerateMindmap(prompt);
-        }}
-      >
+        <MindmapShell
+          showRefreshAction={!isEmpty}
+          canRefresh={hasReadySources}
+          isRefreshing={isGenerating}
+          onRefresh={(prompt) => {
+            void handleGenerateMindmap(prompt);
+          }}
+        >
         {isMindmapLoading && !mindmap ? (
           <div className="flex h-full items-center justify-center px-6">
             <p className="text-sm text-muted-foreground">Cargando mapa mental...</p>
@@ -226,56 +223,54 @@ export function NotebookMindmapPage() {
             onGenerate={handleGenerateMindmap}
           />
         ) : mindmap?.root_node_id ? (
-          <div className="flex h-full min-h-0 flex-col lg:flex-row">
-            <div className="flex min-h-0 flex-1 flex-col">
-              {isStale ? (
-                <p className="border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground">
-                  Tu mapa mental esta desactualizado porque cambiaron las fuentes.
-                  Regeneralo para actualizar nodos y explicaciones.
-                </p>
-              ) : null}
-              {usedGenericFallback ? (
-                <p className="border-b border-border bg-amber-50 px-4 py-2 text-xs text-amber-800">
-                  Se detecto estructura limitada en la generacion. Puedes regenerar
-                  el mapa para intentar mejorar la cobertura de nodos.
-                </p>
-              ) : null}
-              <div className="min-h-0 flex-1">
-                <MindmapCanvas
-                  nodes={mindmap.nodes}
-                  rootNodeId={mindmap.root_node_id ?? null}
-                  selectedNodeId={selectedNodeId}
-                  expandedNodeIds={expandedNodeIds}
-                  onToggleNode={(nodeId) => {
-                    setExpandedNodeIds((previous) => {
-                      const next = new Set(previous);
-                      if (next.has(nodeId)) {
-                        next.delete(nodeId);
-                      } else {
-                        next.add(nodeId);
-                      }
-                      return next;
-                    });
-                  }}
-                  onSelectNode={(nodeId) => {
-                    setSelectedNodeId(nodeId);
-                    setIsDetailPanelVisible(true);
-                    clearNodeError(nodeId);
-                    if (mindmap.status === "stale") return;
-                    void getDetail(nodeId);
-                  }}
-                />
-              </div>
-            </div>
-            {isDetailPanelVisible ? (
-              <MindmapDetailPanel
-                selectedNodeTitle={selectedNode?.title ?? null}
-                explanation={selectedExplanation}
-                isLoading={isDetailLoading}
-                error={selectedDetailError}
-                isStale={Boolean(isStale)}
-              />
+          <div className="flex h-full min-h-0 flex-col">
+            {isStale ? (
+              <p className="border-b border-border bg-muted px-4 py-2 text-xs text-muted-foreground">
+                Tu mapa mental esta desactualizado porque cambiaron las fuentes.
+                Regeneralo para actualizar nodos y explicaciones.
+              </p>
             ) : null}
+            {usedGenericFallback ? (
+              <p className="border-b border-border bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                Se detecto estructura limitada en la generacion. Puedes regenerar
+                el mapa para intentar mejorar la cobertura de nodos.
+              </p>
+            ) : null}
+            <div className="min-h-0 flex-1">
+              <MindmapCanvas
+                nodes={mindmap.nodes}
+                rootNodeId={mindmap.root_node_id ?? null}
+                selectedNodeId={selectedNodeId}
+                expandedNodeIds={expandedNodeIds}
+                onToggleNode={(nodeId) => {
+                  setExpandedNodeIds((previous) => {
+                    const next = new Set(previous);
+                    if (next.has(nodeId)) {
+                      next.delete(nodeId);
+                    } else {
+                      next.add(nodeId);
+                    }
+                    return next;
+                  });
+                }}
+                onSelectNode={(nodeId) => {
+                  setSelectedNodeId(nodeId);
+                  setIsDetailModalVisible(true);
+                  clearNodeError(nodeId);
+                  if (mindmap.status === "stale") return;
+                  void getDetail(nodeId);
+                }}
+              />
+            </div>
+            <MindmapDetailPanel
+              isOpen={isDetailModalVisible}
+              onClose={() => setIsDetailModalVisible(false)}
+              selectedNodeTitle={selectedNode?.title ?? null}
+              explanation={selectedExplanation}
+              isLoading={isDetailLoading}
+              error={selectedDetailError}
+              isStale={Boolean(isStale)}
+            />
           </div>
         ) : (
           <div className="flex h-full items-center justify-center px-6">

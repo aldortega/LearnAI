@@ -13,7 +13,7 @@ type Result = {
 
 export function useMindmap(notebookId?: string): Result {
   const [mindmap, setMindmap] = useState<MindmapOut | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => Boolean(notebookId));
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
 
@@ -58,6 +58,7 @@ export function useMindmap(notebookId?: string): Result {
       setIsLoading(false);
       return;
     }
+    setIsLoading(true);
     void reload();
   }, [notebookId, reload]);
 

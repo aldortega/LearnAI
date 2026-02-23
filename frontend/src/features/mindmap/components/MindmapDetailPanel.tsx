@@ -1,4 +1,8 @@
+import { Modal } from "../../../shared/ui/Modal";
+
 type Props = {
+  isOpen: boolean;
+  onClose: () => void;
   selectedNodeTitle: string | null;
   explanation: string | null;
   isLoading: boolean;
@@ -7,6 +11,8 @@ type Props = {
 };
 
 export function MindmapDetailPanel({
+  isOpen,
+  onClose,
   selectedNodeTitle,
   explanation,
   isLoading,
@@ -14,12 +20,16 @@ export function MindmapDetailPanel({
   isStale,
 }: Props) {
   return (
-    <aside className="w-full shrink-0 border-t border-border bg-muted/40 lg:w-[320px] lg:border-t-0 lg:border-l">
-      <div className="h-full overflow-y-auto p-4">
-        <h3 className="text-sm font-semibold text-foreground">Detalle del nodo</h3>
-
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={selectedNodeTitle ?? "Detalle del nodo"}
+      maxWidth="3xl"
+      className="max-h-[72vh] motion-reduce:animate-none [animation:ft-slideUp_280ms_cubic-bezier(0.22,1,0.36,1)]"
+    >
+      <div className="min-h-[240px] max-h-[58vh] overflow-y-auto pr-1">
         {isStale ? (
-          <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+          <p className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
             Este mapa esta desactualizado. Regeneralo para obtener explicaciones nuevas.
           </p>
         ) : null}
@@ -28,10 +38,6 @@ export function MindmapDetailPanel({
           <p className="mt-4 text-sm text-muted-foreground">
             Selecciona un nodo para ver su explicacion.
           </p>
-        ) : null}
-
-        {selectedNodeTitle ? (
-          <p className="mt-3 break-words text-sm font-medium text-foreground">{selectedNodeTitle}</p>
         ) : null}
 
         {isLoading ? (
@@ -65,6 +71,6 @@ export function MindmapDetailPanel({
           </div>
         ) : null}
       </div>
-    </aside>
+    </Modal>
   );
 }

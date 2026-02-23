@@ -1,4 +1,4 @@
-import { Eye, EyeOff, RefreshCcw } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { RegenerateMindmapModal } from "./RegenerateMindmapModal";
@@ -9,9 +9,6 @@ type Props = {
   canRefresh?: boolean;
   isRefreshing?: boolean;
   onRefresh?: (prompt?: string) => void;
-  showDetailToggle?: boolean;
-  isDetailVisible?: boolean;
-  onToggleDetail?: () => void;
 };
 
 export function MindmapShell({
@@ -20,9 +17,6 @@ export function MindmapShell({
   canRefresh = false,
   isRefreshing = false,
   onRefresh,
-  showDetailToggle = false,
-  isDetailVisible = true,
-  onToggleDetail,
 }: Props) {
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
 
@@ -47,21 +41,6 @@ export function MindmapShell({
       <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
         <h2 className="text-sm font-semibold text-foreground">Mapa mental</h2>
         <div className="flex items-center gap-2">
-          {showDetailToggle ? (
-            <button
-              type="button"
-              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              onClick={onToggleDetail}
-              aria-label={isDetailVisible ? "Ocultar detalle del nodo" : "Mostrar detalle del nodo"}
-              title={isDetailVisible ? "Ocultar detalle del nodo" : "Mostrar detalle del nodo"}
-            >
-              {isDetailVisible ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          ) : null}
           {showRefreshAction ? (
             <button
               type="button"

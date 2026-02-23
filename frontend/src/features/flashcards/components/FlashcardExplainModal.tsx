@@ -25,7 +25,7 @@ export function FlashcardExplainModal({
       onClose={onClose}
       title={term || "Tema"}
       maxWidth="4xl"
-      className="max-h-[72vh] motion-reduce:animate-none [animation:ft-dropIn_280ms_cubic-bezier(0.22,1,0.36,1)]"
+      className="max-h-[72vh] motion-reduce:animate-none [animation:ft-slideUp_280ms_cubic-bezier(0.22,1,0.36,1)]"
     >
       <div className="min-h-[320px] max-h-[58vh] overflow-y-auto pr-1">
         {isLoading ? (

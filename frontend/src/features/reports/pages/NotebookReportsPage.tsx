@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Download, FileText, LoaderCircle, Plus } from "lucide-react";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
@@ -392,7 +392,10 @@ export function NotebookReportsPage() {
     [clearDeleteReportError],
   );
   const activeReport = useMemo(
-    () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
+    () => {
+      if (!selectedReportId) return null;
+      return reports.find((report) => report.id === selectedReportId) ?? null;
+    },
     [reports, selectedReportId],
   );
   const handleDownloadReportPdf = useCallback(() => {
@@ -612,7 +615,7 @@ export function NotebookReportsPage() {
                   <>
                     <ReportsHistoryList
                       reports={reports}
-                      selectedReportId={activeReport?.id ?? null}
+                      selectedReportId={null}
                       deletingReportId={deletingReportId}
                       onSelectReport={handleSelectReport}
                       onDeleteReport={handleDeleteReport}
@@ -635,4 +638,3 @@ export function NotebookReportsPage() {
     </NotebookShell>
   );
 }
-
