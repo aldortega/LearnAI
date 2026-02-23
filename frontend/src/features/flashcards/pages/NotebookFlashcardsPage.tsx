@@ -17,7 +17,7 @@ import type { FlashcardsGenerateRequest } from "../types/flashcards.types";
 export function NotebookFlashcardsPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
-  const { notebook } = useNotebook(notebookId);
+  const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasCheckedLatestJobRef = useRef(false);
   const [configViewNotebookId, setConfigViewNotebookId] = useState<string | null>(
@@ -134,6 +134,7 @@ export function NotebookFlashcardsPage() {
       title={notebook?.title}
       documents={documents}
       canManageDocuments={canManageDocuments}
+      isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={() => {

@@ -9,6 +9,7 @@ import {
   useDocuments,
   useDocumentStream,
   useNotebook,
+  useNotebookReadySources,
   useUploadDocument,
 } from "../../notebooks";
 import { QuickstartEmptyState } from "../components/QuickstartEmptyState";
@@ -22,7 +23,11 @@ const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 export function NotebookQuickstartPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
-  const { notebook } = useNotebook(notebookId);
+  const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
+  const {
+    hasReadySources,
+    isResolving: isResolvingReadySources,
+  } = useNotebookReadySources(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [streamKey, setStreamKey] = useState(0);
@@ -158,7 +163,6 @@ export function NotebookQuickstartPage() {
     }
   };
 
-  const hasReadySources = documents.some((doc) => doc.status === "done");
   const readySignature = useMemo(
     () =>
       documents
@@ -206,12 +210,29 @@ export function NotebookQuickstartPage() {
 
   const isEmpty = !quickstart || quickstart.status === "missing";
   const combinedError = generateError ?? quickstartError;
+  const isResolvingInitialQuickstartView =
+    isNotebookLoading ||
+    isResolvingReadySources ||
+    (!quickstart && !combinedError);
+
+  if (isResolvingInitialQuickstartView) {
+    return (
+      <div className="min-h-screen bg-primary/10">
+        <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4">
+          <div className="rounded-3xl bg-surface/70 px-6 py-5 text-sm font-semibold text-primary ring-1 ring-border backdrop-blur-xl dark:ring-primary/30">
+            Cargando notebook...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <NotebookShell
       title={notebook?.title}
       documents={documents}
       canManageDocuments={canManageDocuments}
+      isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}

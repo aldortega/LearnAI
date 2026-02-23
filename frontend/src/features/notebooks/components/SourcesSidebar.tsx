@@ -17,6 +17,7 @@ import type { Document, DocumentStatus } from "../types/documents.types";
 type Props = {
   documents: Document[];
   canManageDocuments: boolean;
+  isNotebookLoading?: boolean;
   isUploading: boolean;
   deletingDocumentIds: Set<string>;
   onAddSource: () => void;
@@ -26,6 +27,7 @@ type Props = {
 export function SourcesSidebar({
   documents,
   canManageDocuments,
+  isNotebookLoading = false,
   isUploading,
   deletingDocumentIds,
   onAddSource,
@@ -90,12 +92,12 @@ export function SourcesSidebar({
               leftIcon={isUploading ? undefined : <Plus className="h-4 w-4" />}
               onClick={onAddSource}
               loading={isUploading}
-              disabled={!canManageDocuments}
+              disabled={!canManageDocuments || isNotebookLoading}
             >
               {isUploading ? "Subiendo…" : "Añadir fuente"}
             </Button>
 
-            {!canManageDocuments ? (
+            {!isNotebookLoading && !canManageDocuments ? (
               <p className="mb-4 text-xs text-muted-foreground" role="alert">
                 Tienes acceso de solo lectura para documentos.
               </p>
@@ -165,7 +167,7 @@ export function SourcesSidebar({
               className="rounded-md bg-primary p-2 text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               title="Añadir fuente"
               onClick={onAddSource}
-              disabled={isUploading || !canManageDocuments}
+              disabled={isUploading || !canManageDocuments || isNotebookLoading}
             >
               <Plus className="h-4 w-4" />
             </button>

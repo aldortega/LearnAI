@@ -29,7 +29,7 @@ type EditTarget = { title: string; formatType: ReportFormatType; suggestionId: s
 export function NotebookReportsPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
-  const { notebook } = useNotebook(notebookId);
+  const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasResolvedInitialViewRef = useRef(false);
   const hasCheckedLatestSuggestionsJobRef = useRef(false);
@@ -466,6 +466,7 @@ export function NotebookReportsPage() {
       title={notebook?.title}
       documents={documents}
       canManageDocuments={canManageDocuments}
+      isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={() => {

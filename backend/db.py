@@ -96,6 +96,10 @@ async def ensure_indexes() -> None:
         unique=True,
     )
     await db.quickstart_expansions.create_index("updated_at")
+    await db.quickstart_suggestions.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.quickstart_suggestions.create_index("updated_at")
     await db.quickstart_topic_details.create_index(
         [
             ("owner_id", 1),

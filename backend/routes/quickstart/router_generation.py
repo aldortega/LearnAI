@@ -116,8 +116,51 @@ async def get_quickstart_suggestions(
         for topic in topics_list
         if normalize_topic_title(coerce_text(topic.get("title")))
     ]
+    existing_title_keys = {title.lower() for title in existing_titles}
+
+    cached_suggestions = await db.quickstart_suggestions.find_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    )
+
+    if cached_suggestions:
+        raw_suggestions = cached_suggestions.get("suggestions", [])
+        normalized_suggestions: list[str] = []
+        seen_keys: set[str] = set()
+        if isinstance(raw_suggestions, list):
+            for suggestion in raw_suggestions:
+                title = normalize_topic_title(coerce_text(suggestion))
+                if not title:
+                    continue
+                key = title.lower()
+                if key in existing_title_keys or key in seen_keys:
+                    continue
+                normalized_suggestions.append(title)
+                seen_keys.add(key)
+        return QuickstartSuggestionsOut(
+            suggestions=normalized_suggestions,
+            topic_count=topic_count,
+            topic_limit=TOPIC_LIMIT,
+            can_add_topics=True,
+        )
+
     suggestions = await generate_quickstart_suggestions(
         notebook["title"], existing_titles, notebook["_id"], user
+    )
+    now = datetime.now(timezone.utc)
+    await db.quickstart_suggestions.update_one(
+        {"owner_id": user["_id"], "notebook_id": notebook["_id"]},
+        {
+            "$set": {
+                "suggestions": suggestions,
+                "updated_at": now,
+            },
+            "$setOnInsert": {
+                "owner_id": user["_id"],
+                "notebook_id": notebook["_id"],
+                "created_at": now,
+            },
+        },
+        upsert=True,
     )
     return QuickstartSuggestionsOut(
         suggestions=suggestions,

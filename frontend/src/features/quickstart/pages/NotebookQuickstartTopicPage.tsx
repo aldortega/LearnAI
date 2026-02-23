@@ -28,7 +28,7 @@ function normalizeDetailItem(value: string): string {
 export function NotebookQuickstartTopicPage() {
   const { notebookId, topicId } = useParams();
   const navigate = useNavigate();
-  const { notebook } = useNotebook(notebookId);
+  const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [streamKey, setStreamKey] = useState(0);
@@ -228,6 +228,7 @@ export function NotebookQuickstartTopicPage() {
       title={notebook?.title}
       documents={documents}
       canManageDocuments={canManageDocuments}
+      isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}

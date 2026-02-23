@@ -17,6 +17,7 @@ type Props = {
   title?: string;
   documents: Document[];
   canManageDocuments: boolean;
+  isNotebookLoading?: boolean;
   isUploading: boolean;
   deletingDocumentIds: Set<string>;
   onAddSource: () => void;
@@ -48,6 +49,7 @@ export function NotebookShell({
   title,
   documents,
   canManageDocuments,
+  isNotebookLoading = false,
   isUploading,
   deletingDocumentIds,
   onAddSource,
@@ -83,6 +85,7 @@ export function NotebookShell({
         <SourcesSidebar
           documents={documents}
           canManageDocuments={canManageDocuments}
+          isNotebookLoading={isNotebookLoading}
           isUploading={isUploading}
           deletingDocumentIds={deletingDocumentIds}
           onAddSource={onAddSource}

@@ -7,7 +7,13 @@ import { DeleteDocumentModal } from "../components/DeleteDocumentModal";
 import { NotebookShell } from "../components/NotebookShell";
 import { NotebookSourcesEmptyState } from "../components/NotebookSourcesEmptyState";
 import type { Document } from "../types/documents.types";
-import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../index";
+import {
+  useDocuments,
+  useDocumentStream,
+  useNotebook,
+  useNotebookReadySources,
+  useUploadDocument,
+} from "../index";
 
 const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
@@ -18,7 +24,8 @@ type Props = {
 export function NotebookPage({ redirectWhenReady = false }: Props) {
   const { notebookId } = useParams();
   const navigate = useNavigate();
-  const { notebook } = useNotebook(notebookId);
+  const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
+  const { isResolving, hasProcessingDocuments } = useNotebookReadySources(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [streamKey, setStreamKey] = useState(0);
@@ -163,6 +170,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       title={notebook?.title}
       documents={documents}
       canManageDocuments={canManageDocuments}
+      isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}
@@ -236,6 +244,28 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
           onClearChat={clearConversation}
           onDropFile={handleDropFile}
         />
+      ) : isResolving ? (
+        <div className="grid min-h-[320px] place-items-center px-6 py-10">
+          <div className="max-w-md rounded-2xl border border-border bg-surface px-6 py-5 text-center">
+            <h2 className="text-base font-semibold text-foreground">
+              Verificando fuentes...
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Estamos comprobando el estado de tus documentos.
+            </p>
+          </div>
+        </div>
+      ) : hasProcessingDocuments ? (
+        <div className="grid min-h-[320px] place-items-center px-6 py-10">
+          <div className="max-w-md rounded-2xl border border-border bg-surface px-6 py-5 text-center">
+            <h2 className="text-base font-semibold text-foreground">
+              Tus fuentes se estan procesando
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Cuando termine la ingesta, el studio se habilitara automaticamente.
+            </p>
+          </div>
+        </div>
       ) : (
         <NotebookSourcesEmptyState
           canManageDocuments={canManageDocuments}

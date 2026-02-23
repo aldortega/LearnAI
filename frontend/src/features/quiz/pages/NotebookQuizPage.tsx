@@ -24,7 +24,7 @@ export function NotebookQuizPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { notebook } = useNotebook(notebookId);
+  const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
@@ -302,6 +302,7 @@ export function NotebookQuizPage() {
       title={notebook?.title}
       documents={documents}
       canManageDocuments={canManageDocuments}
+      isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
       onAddSource={handlePickFile}

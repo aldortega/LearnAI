@@ -56,10 +56,14 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 function NotebookEntryRoute() {
   const { notebookId } = useParams();
-  const { hasReadySources } = useNotebookReadySources(notebookId);
+  const { hasReadySources, isResolving } = useNotebookReadySources(notebookId);
 
   if (!notebookId) {
     return <Navigate to="/" replace />;
+  }
+
+  if (isResolving) {
+    return <LoadingState message="Cargando notebook..." />;
   }
 
   if (hasReadySources) {
@@ -71,10 +75,14 @@ function NotebookEntryRoute() {
 
 function RequireReadySources({ children }: { children: ReactNode }) {
   const { notebookId } = useParams();
-  const { hasReadySources } = useNotebookReadySources(notebookId);
+  const { hasReadySources, isResolving } = useNotebookReadySources(notebookId);
 
   if (!notebookId) {
     return <Navigate to="/" replace />;
+  }
+
+  if (isResolving) {
+    return <LoadingState message="Cargando notebook..." />;
   }
 
   if (!hasReadySources) {
