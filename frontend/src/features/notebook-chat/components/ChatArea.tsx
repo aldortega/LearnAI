@@ -289,9 +289,7 @@ export function ChatArea({
               Enviar
             </Button>
           </div>
-          <p className="text-center text-xs text-muted-foreground">
-            La IA puede cometer errores. Verifica la información importante.
-          </p>
+
         </div>
       </div>
     </div>
