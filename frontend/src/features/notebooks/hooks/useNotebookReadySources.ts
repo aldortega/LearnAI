@@ -10,7 +10,6 @@ type Result = {
   hasAnyDocuments: boolean;
   hasProcessingDocuments: boolean;
   isResolving: boolean;
-  isLoading: boolean;
   error: string | null;
 };
 
@@ -60,14 +59,11 @@ export function useNotebookReadySources(notebookId?: string): Result {
   }, [notebookId, hasSnapshot, hasReadySources]);
 
   const isResolving = shouldFetch && isFetching;
-  const isLoading = isResolving;
-
   return {
     hasReadySources,
     hasAnyDocuments,
     hasProcessingDocuments,
     isResolving,
-    isLoading,
     error,
   };
 }

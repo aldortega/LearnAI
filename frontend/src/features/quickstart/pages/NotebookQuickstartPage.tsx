@@ -15,8 +15,10 @@ import {
 import { QuickstartEmptyState } from "../components/QuickstartEmptyState";
 import { QuickstartOverview } from "../components/QuickstartOverview";
 import { QuickstartShell } from "../components/QuickstartShell";
+import { useQuickstartBootstrapState } from "../hooks/useQuickstartBootstrapState";
 import { useGenerateQuickstart } from "../hooks/useGenerateQuickstart";
 import { useQuickstart } from "../hooks/useQuickstart";
+import { NotebookLoadingScreen } from "../../../shared/ui/NotebookLoadingScreen";
 
 const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
@@ -210,21 +212,15 @@ export function NotebookQuickstartPage() {
 
   const isEmpty = !quickstart || quickstart.status === "missing";
   const combinedError = generateError ?? quickstartError;
-  const isResolvingInitialQuickstartView =
-    isNotebookLoading ||
-    isResolvingReadySources ||
-    (!quickstart && !combinedError);
+  const isResolvingInitialQuickstartView = useQuickstartBootstrapState({
+    isNotebookLoading,
+    isResolvingReadySources,
+    quickstart,
+    error: combinedError,
+  });
 
   if (isResolvingInitialQuickstartView) {
-    return (
-      <div className="min-h-screen bg-primary/10">
-        <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4">
-          <div className="rounded-3xl bg-surface/70 px-6 py-5 text-sm font-semibold text-primary ring-1 ring-border backdrop-blur-xl dark:ring-primary/30">
-            Cargando notebook...
-          </div>
-        </div>
-      </div>
-    );
+    return <NotebookLoadingScreen />;
   }
 
   return (
