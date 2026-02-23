@@ -6,9 +6,15 @@ type Props = {
   report: ReportOut | null;
   isLoading: boolean;
   error: string | null;
+  downloadPdfError: string | null;
 };
 
-export function ReportViewer({ report, isLoading, error }: Props) {
+export function ReportViewer({
+  report,
+  isLoading,
+  error,
+  downloadPdfError,
+}: Props) {
   if (isLoading) {
     return (
       <section className="h-full rounded-2xl border border-border bg-surface p-6 shadow-sm">
@@ -40,6 +46,11 @@ export function ReportViewer({ report, isLoading, error }: Props) {
   return (
     <section className="flex h-full flex-col rounded-2xl border border-border bg-surface shadow-sm">
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        {downloadPdfError ? (
+          <p className="mb-3 text-sm text-error" role="alert">
+            {downloadPdfError}
+          </p>
+        ) : null}
         <div
           className="
             max-w-none text-sm leading-relaxed text-foreground

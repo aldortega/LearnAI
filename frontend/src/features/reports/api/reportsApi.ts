@@ -1,4 +1,9 @@
-import { apiRequest } from "../../../shared/lib/apiClient";
+import {
+  type ApiError,
+  apiRequest,
+  getApiBaseUrl,
+  getApiErrorMessage,
+} from "../../../shared/lib/apiClient";
 import type {
   ReportConfigOut,
   ReportGenerateRequest,
@@ -95,9 +100,56 @@ export const reportsApi = {
     });
   },
 
+  downloadReportPdf: async (
+    notebookId: string,
+    reportId: string,
+  ): Promise<{ blob: Blob; fileName: string }> => {
+    const response = await fetch(
+      `${getApiBaseUrl()}/notebooks/${notebookId}/reports/${reportId}/pdf`,
+      {
+        method: "GET",
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok) {
+      let payload: unknown = null;
+      try {
+        payload = (await response.json()) as unknown;
+      } catch {
+        payload = null;
+      }
+      const error: ApiError = {
+        status: response.status,
+        message: getApiErrorMessage(payload, response.status),
+        detail: payload,
+      };
+      throw error;
+    }
+
+    const contentDisposition = response.headers.get("content-disposition");
+    const fileName = parsePdfFilename(contentDisposition) ?? `informe-${reportId}.pdf`;
+    const blob = await response.blob();
+    return { blob, fileName };
+  },
+
   deleteReport: async (notebookId: string, reportId: string): Promise<void> => {
     await apiRequest<void>(`/notebooks/${notebookId}/reports/${reportId}`, {
       method: "DELETE",
     });
   },
 };
+
+function parsePdfFilename(contentDisposition: string | null): string | null {
+  if (!contentDisposition) return null;
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {
+      return utf8Match[1];
+    }
+  }
+  const asciiMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return asciiMatch?.[1] ?? null;
+}

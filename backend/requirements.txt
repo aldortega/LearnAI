@@ -19,4 +19,6 @@ supabase
 python-multipart
 google-auth
 resend
+markdown-it-py
+playwright
 

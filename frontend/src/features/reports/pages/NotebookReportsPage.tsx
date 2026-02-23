@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Plus } from "lucide-react";
+import { Download, FileText, LoaderCircle, Plus } from "lucide-react";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import { useNotebook } from "../../notebooks/hooks/useNotebook";
@@ -14,6 +14,7 @@ import { ReportViewer } from "../components/ReportViewer";
 import { useDeleteReport } from "../hooks/useDeleteReport";
 import { useGenerateReport } from "../hooks/useGenerateReport";
 import { useGenerateReportSuggestions } from "../hooks/useGenerateReportSuggestions";
+import { useDownloadReportPdf } from "../hooks/useDownloadReportPdf";
 import { useReportsConfig } from "../hooks/useReportsConfig";
 import { hasCachedReports, useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
@@ -89,6 +90,12 @@ export function NotebookReportsPage() {
     error: deleteReportError,
     clearError: clearDeleteReportError,
   } = useDeleteReport(notebookId);
+  const {
+    downloadReportPdf,
+    downloadingReportId,
+    error: downloadReportError,
+    clearError: clearDownloadReportError,
+  } = useDownloadReportPdf(notebookId);
   const templates = useMemo(() => (config?.templates ?? []).slice(0, 4), [config]);
   const suggestions = useMemo(() => (config?.suggestions ?? []).slice(0, 4), [config]);
   const hasConfigLoaded = Boolean(config);
@@ -384,6 +391,15 @@ export function NotebookReportsPage() {
     },
     [clearDeleteReportError],
   );
+  const activeReport = useMemo(
+    () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
+    [reports, selectedReportId],
+  );
+  const handleDownloadReportPdf = useCallback(() => {
+    if (!activeReport) return;
+    clearDownloadReportError();
+    void downloadReportPdf(activeReport.id);
+  }, [activeReport, clearDownloadReportError, downloadReportPdf]);
   const handleStudioNavChat = useCallback(() => {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/chat`);
@@ -405,10 +421,6 @@ export function NotebookReportsPage() {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/flashcards`);
   }, [notebookId, navigate]);
-  const activeReport = useMemo(
-    () => reports.find((report) => report.id === selectedReportId) ?? reports[0] ?? null,
-    [reports, selectedReportId],
-  );
   const canReturnToHistory = reports.length > 0;
   const isHeaderActionDisabled =
     viewMode === "history"
@@ -520,26 +532,44 @@ export function NotebookReportsPage() {
     >
       <ReportsShell
         headerAction={
-          <button
-            type="button"
-            onClick={handleHeaderAction}
-            disabled={isHeaderActionDisabled}
-            aria-label={headerActionLabel}
-            title={headerActionLabel}
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {viewMode === "history" ? historyView === "detail" ? (
-              <FileText className="h-4 w-4" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            ) : (
-              <FileText className="h-4 w-4" />
-            )}
-          </button>
+          <div className="inline-flex items-center gap-1">
+            {viewMode === "history" && historyView === "detail" ? (
+              <button
+                type="button"
+                onClick={handleDownloadReportPdf}
+                disabled={!activeReport || downloadingReportId === activeReport.id}
+                aria-label="Descargar PDF"
+                title={downloadingReportId === activeReport?.id ? "Descargando PDF..." : "Descargar PDF"}
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {downloadingReportId === activeReport?.id ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleHeaderAction}
+              disabled={isHeaderActionDisabled}
+              aria-label={headerActionLabel}
+              title={headerActionLabel}
+              className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {viewMode === "history" ? historyView === "detail" ? (
+                <FileText className="h-4 w-4" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         }
       >
         <div className="relative h-full overflow-y-auto p-6">
-          <div className="mx-auto w-full max-w-6xl">
+          <div className="mx-auto w-full max-w-4xl">
             {viewMode === "templates" ? (
               <div className="space-y-4">
                 <ReportTemplatesGrid
@@ -593,6 +623,7 @@ export function NotebookReportsPage() {
                     report={activeReport}
                     isLoading={false}
                     error={null}
+                    downloadPdfError={downloadReportError}
                   />
                 )}
               </div>

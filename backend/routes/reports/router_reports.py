@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from ...db import db
 from ...schemas.reports import ReportListOut, ReportOut
 from ..auth import get_current_user
+from .pdf_export import PdfExportError, build_report_pdf_bytes, build_report_pdf_filename
 from .service import (
     coerce_text,
     compute_sources_fingerprint,
@@ -39,27 +40,7 @@ async def get_report(
 ) -> ReportOut:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
-
-    try:
-        report_object_id = ObjectId(report_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Reporte invalido",
-        ) from exc
-
-    report_doc = await db.reports.find_one(
-        {
-            "_id": report_object_id,
-            "owner_id": user["_id"],
-            "notebook_id": notebook["_id"],
-        }
-    )
-    if not report_doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reporte no encontrado",
-        )
+    report_doc = await _get_report_doc_or_404(report_id, user["_id"], notebook["_id"])
 
     current_fingerprint, _ = await compute_sources_fingerprint(
         coerce_text(notebook.get("title")),
@@ -67,6 +48,34 @@ async def get_report(
         notebook["owner_id"],
     )
     return report_doc_to_out(report_doc, current_fingerprint)
+
+
+@router.get("/{notebook_id}/reports/{report_id}/pdf")
+async def download_report_pdf(
+    notebook_id: str,
+    report_id: str,
+    request: Request,
+) -> Response:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+    report_doc = await _get_report_doc_or_404(report_id, user["_id"], notebook["_id"])
+
+    title = coerce_text(report_doc.get("title")).strip() or "Informe"
+    content = coerce_text(report_doc.get("content"))
+    try:
+        pdf_bytes = await build_report_pdf_bytes(title, content)
+    except PdfExportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    filename = build_report_pdf_filename(title)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.delete(
@@ -103,3 +112,31 @@ async def delete_report(
         )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+async def _get_report_doc_or_404(
+    report_id: str,
+    owner_id: ObjectId,
+    notebook_id: ObjectId,
+) -> dict:
+    try:
+        report_object_id = ObjectId(report_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reporte invalido",
+        ) from exc
+
+    report_doc = await db.reports.find_one(
+        {
+            "_id": report_object_id,
+            "owner_id": owner_id,
+            "notebook_id": notebook_id,
+        }
+    )
+    if not report_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reporte no encontrado",
+        )
+    return report_doc
