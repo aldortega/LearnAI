@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 
 import { AuthProvider } from "./app/providers/AuthProvider";
+import { GenerationMonitorProvider } from "./shared/generation/GenerationMonitorProvider";
 import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { AuthPage } from "./features/auth/pages/AuthPage";
 import { CompleteProfilePage } from "./features/auth/pages/CompleteProfilePage";
@@ -24,6 +25,7 @@ import { NotebookQuizPage } from "./features/quiz/pages/NotebookQuizPage";
 import { NotebookPresentationsPage } from "./features/presentations/pages/NotebookPresentationsPage";
 import { NotebookReportsPage } from "./features/reports/pages/NotebookReportsPage";
 import { useAuth } from "./shared/hooks/useAuth";
+import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { NotebookLoadingScreen } from "./shared/ui/NotebookLoadingScreen";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -87,110 +89,114 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public routes (no auth required) */}
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <ToastProvider>
+            <GenerationMonitorProvider>
+              <Routes>
+                {/* Public routes (no auth required) */}
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId"
-              element={
-                <ProtectedRoute>
-                  <NotebookEntryRoute />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/chat"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/quickstart"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookQuickstartPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/quickstart/topic/:topicId"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookQuickstartTopicPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/quiz"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookQuizPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/reports"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookReportsPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/presentations"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookPresentationsPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/flashcards"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookFlashcardsPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook/:notebookId/mindmap"
-              element={
-                <ProtectedRoute>
-                  <RequireReadySources>
-                    <NotebookMindmapPage />
-                  </RequireReadySources>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+                {/* Protected routes */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <HomePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId"
+                  element={
+                    <ProtectedRoute>
+                      <NotebookEntryRoute />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/chat"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/quickstart"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookQuickstartPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/quickstart/topic/:topicId"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookQuickstartTopicPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/quiz"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookQuizPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/reports"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookReportsPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/presentations"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookPresentationsPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/flashcards"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookFlashcardsPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/mindmap"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookMindmapPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </GenerationMonitorProvider>
+          </ToastProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
