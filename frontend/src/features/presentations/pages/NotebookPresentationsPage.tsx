@@ -107,12 +107,9 @@ export function NotebookPresentationsPage() {
       const result = await resumeLatest({ suppressFailedError: true });
       if (result?.status !== "done") return;
       const updated = await reloadPresentations();
-      const nextId = result.presentation_id ?? updated[0]?.id ?? null;
-      if (!nextId) return;
-      setSelectedPresentationId(nextId);
-      setSelectedSlideIndex(0);
+      if (!updated.length) return;
       setViewMode("history");
-      setHistoryView("detail");
+      setHistoryView("cards");
     })();
   }, [notebookId, isGenerating, isPresentationsLoading, reloadPresentations, resumeLatest]);
 
@@ -126,7 +123,7 @@ export function NotebookPresentationsPage() {
       }
       setViewMode("history");
       setHistoryView("cards");
-      setSelectedPresentationId(presentations[0].id);
+      setSelectedPresentationId(null);
       setSelectedSlideIndex(0);
     });
   }, [notebookId, isPresentationsLoading, presentations]);
@@ -134,15 +131,16 @@ export function NotebookPresentationsPage() {
   const runGeneration = useCallback(async () => {
     if (!notebookId || !canGeneratePresentations || !topic.trim()) return;
     clearGenerateError();
+    setViewMode("history");
+    setHistoryView("cards");
+    setSelectedPresentationId(null);
+    setSelectedSlideIndex(0);
     const result = await generate({ topic: topic.trim(), style: selectedStyle, detail_level: detailLevel });
     if (!result) return;
     const updated = await reloadPresentations();
-    const nextId = result.presentation_id ?? updated[0]?.id ?? null;
-    if (!nextId) return;
-    setSelectedPresentationId(nextId);
-    setSelectedSlideIndex(0);
+    if (!updated.length) return;
     setViewMode("history");
-    setHistoryView("detail");
+    setHistoryView("cards");
   }, [notebookId, canGeneratePresentations, topic, selectedStyle, detailLevel, clearGenerateError, generate, reloadPresentations]);
 
   const activePresentation = useMemo(() => {

@@ -2,9 +2,11 @@ import { MonitorPlay } from "lucide-react";
 
 import type { PresentationOut } from "../types/presentations.types";
 import { PresentationPreviewCard } from "./PresentationPreviewCard";
+import { PresentationPreviewSkeletonCard } from "./PresentationPreviewSkeletonCard";
 
 type Props = {
   presentations: PresentationOut[];
+  isGenerating: boolean;
   deletingPresentationId: string | null;
   onSelectPresentation: (presentationId: string) => void;
   onDeletePresentation: (presentation: PresentationOut) => void;
@@ -12,6 +14,7 @@ type Props = {
 
 export function PresentationsHistoryList({
   presentations,
+  isGenerating,
   deletingPresentationId,
   onSelectPresentation,
   onDeletePresentation,
@@ -25,7 +28,7 @@ export function PresentationsHistoryList({
         </span>
       </h3>
 
-      {presentations.length === 0 ? (
+      {presentations.length === 0 && !isGenerating ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-surface px-6 py-14 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
             <MonitorPlay className="h-7 w-7 text-muted-foreground" />
@@ -51,6 +54,7 @@ export function PresentationsHistoryList({
               onDeletePresentation={onDeletePresentation}
             />
           ))}
+          {isGenerating ? <PresentationPreviewSkeletonCard /> : null}
         </div>
       )}
     </section>

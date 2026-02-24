@@ -1,5 +1,4 @@
 import { GeneratePresentationPanel } from "./GeneratePresentationPanel";
-import { PresentationGenerationOverlay } from "./PresentationGenerationOverlay";
 import { PresentationsHistoryList } from "./PresentationsHistoryList";
 import { PresentationViewer } from "./PresentationViewer";
 import type {
@@ -86,7 +85,6 @@ export function PresentationsContent({
           onDetailLevelChange={onDetailLevelChange}
           onGenerate={onGenerate}
         />
-        <PresentationGenerationOverlay isVisible={isGenerating} />
       </div>
     );
   }
@@ -97,6 +95,7 @@ export function PresentationsContent({
         {historyView === "cards" ? (
           <PresentationsHistoryList
             presentations={presentations}
+            isGenerating={isGenerating}
             deletingPresentationId={deletingPresentationId}
             onSelectPresentation={onSelectPresentation}
             onDeletePresentation={onDeletePresentation}
@@ -116,7 +115,6 @@ export function PresentationsContent({
           />
         )}
       </div>
-      <PresentationGenerationOverlay isVisible={isGenerating} />
     </div>
   );
 }
