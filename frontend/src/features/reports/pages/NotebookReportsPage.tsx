@@ -6,7 +6,6 @@ import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import { useNotebook } from "../../notebooks/hooks/useNotebook";
 import { DeleteReportModal } from "../components/DeleteReportModal";
 import { EditReportPromptModal } from "../components/EditReportPromptModal";
-import { ReportGenerationOverlay } from "../components/ReportGenerationOverlay";
 import { ReportsHistoryList } from "../components/ReportsHistoryList";
 import { ReportsShell } from "../components/ReportsShell";
 import { ReportTemplatesGrid } from "../components/ReportTemplatesGrid";
@@ -32,6 +31,7 @@ export function NotebookReportsPage() {
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasResolvedInitialViewRef = useRef(false);
+  const hasCheckedLatestReportJobRef = useRef(false);
   const hasCheckedLatestSuggestionsJobRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
@@ -73,6 +73,7 @@ export function NotebookReportsPage() {
   } = useReportsHistory(notebookId);
   const {
     generate,
+    resumeLatest,
     isGenerating,
     error: generateError,
     clearError: clearGenerateError,
@@ -119,6 +120,7 @@ export function NotebookReportsPage() {
       suggestionsStatus === "generating");
   useEffect(() => {
     hasResolvedInitialViewRef.current = false;
+    hasCheckedLatestReportJobRef.current = false;
     hasCheckedLatestSuggestionsJobRef.current = false;
     hasTriggeredAutoSuggestionsRef.current = false;
     previousReadySignatureRef.current = null;
@@ -235,6 +237,32 @@ export function NotebookReportsPage() {
     reloadConfig,
   ]);
   useEffect(() => {
+    if (!notebookId || hasCheckedLatestReportJobRef.current) return;
+    if (isGenerating || isReportsLoading) return;
+
+    hasCheckedLatestReportJobRef.current = true;
+
+    void (async () => {
+      const result = await resumeLatest({ suppressFailedError: true });
+      if (result?.status !== "done") return;
+      const updatedReports = await reloadReports();
+      if (updatedReports.length === 0) return;
+      setViewMode("history");
+      setHistoryView("cards");
+      setSelectedReportId((prev) =>
+        prev && updatedReports.some((report) => report.id === prev)
+          ? prev
+          : result.report_id ?? updatedReports[0].id,
+      );
+    })();
+  }, [
+    notebookId,
+    isGenerating,
+    isReportsLoading,
+    reloadReports,
+    resumeLatest,
+  ]);
+  useEffect(() => {
     if (!notebookId || isReportsLoading || hasResolvedInitialViewRef.current) return;
     hasResolvedInitialViewRef.current = true;
     if (reports.length === 0) {
@@ -252,6 +280,9 @@ export function NotebookReportsPage() {
     async (formatType: ReportFormatType, prompt: string, suggestionId: string | null = null) => {
       if (!notebookId || !prompt.trim() || !canGenerateReports) return false;
       clearGenerateError();
+      setViewMode("history");
+      setHistoryView("cards");
+      setSelectedReportId(null);
       const result = await generate({
         format_type: formatType,
         prompt: prompt.trim(),
@@ -623,6 +654,7 @@ export function NotebookReportsPage() {
                   <>
                     <ReportsHistoryList
                       reports={reports}
+                      isGenerating={isGenerating}
                       selectedReportId={null}
                       deletingReportId={deletingReportId}
                       onSelectReport={handleSelectReport}
@@ -640,7 +672,6 @@ export function NotebookReportsPage() {
               </div>
             )}
           </div>
-          <ReportGenerationOverlay isVisible={isGenerating} />
         </div>
       </ReportsShell>
     </NotebookShell>

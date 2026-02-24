@@ -7,6 +7,7 @@ import type { ReportOut } from "../types/reports.types";
 
 type Props = {
   reports: ReportOut[];
+  isGenerating: boolean;
   selectedReportId: string | null;
   deletingReportId: string | null;
   onSelectReport: (reportId: string) => void;
@@ -111,6 +112,7 @@ function ReportPreviewCard({
 
 export function ReportsHistoryList({
   reports,
+  isGenerating,
   selectedReportId,
   deletingReportId,
   onSelectReport,
@@ -122,12 +124,30 @@ export function ReportsHistoryList({
         Informes generados{" "}
         <span className="font-normal text-muted-foreground">({reports.length})</span>
       </h3>
-      {reports.length === 0 ? (
+      {reports.length === 0 && !isGenerating ? (
         <div className="rounded-xl border border-border bg-surface px-4 py-8 text-center text-sm text-muted-foreground">
           Aun no hay informes generados.
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface">
+          {isGenerating ? (
+            <div>
+              <div className="group flex items-start gap-4 px-4 py-3.5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <FileText className="h-5 w-5 animate-pulse" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-2 pt-1">
+                  <div className="relative h-3 w-2/3 overflow-hidden rounded-full bg-muted/70">
+                    <div className="h-full w-1/2 animate-[report-skeleton-shimmer_1.4s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-background/60 to-transparent" />
+                  </div>
+                  <div className="relative h-2.5 w-5/6 overflow-hidden rounded-full bg-muted/60">
+                    <div className="h-full w-1/2 animate-[report-skeleton-shimmer_1.4s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-background/60 to-transparent" />
+                  </div>
+                </div>
+              </div>
+              {reports.length > 0 ? <div className="mx-4 border-t border-border" /> : null}
+            </div>
+          ) : null}
           {reports.map((report) => {
             return (
               <div key={report.id}>
