@@ -184,6 +184,26 @@ def _build_presentation_html(
         font-weight: 700;
       }}
 
+      .slide-content table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 4mm;
+        font-size: 0.82em;
+      }}
+
+      .slide-content th,
+      .slide-content td {{
+        border: 1px solid color-mix(in srgb, {palette["text"]} 24%, transparent);
+        text-align: left;
+        padding: 2.2mm 2.6mm;
+        vertical-align: top;
+      }}
+
+      .slide-content th {{
+        font-weight: 700;
+        background: color-mix(in srgb, {palette["accent"]} 12%, {palette["surface"]});
+      }}
+
       .slide-content h2,
       .slide-content h3 {{
         margin: 0 0 3mm;
