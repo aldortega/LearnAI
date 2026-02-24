@@ -91,10 +91,6 @@ def _build_presentation_html(
         slide_sections.append(
             f"""
             <section class="slide">
-              <header class="slide-header">
-                <p class="deck-title">{safe_deck_title}</p>
-                <p class="slide-counter">{slide.index} / {len(slides)}</p>
-              </header>
               <main class="slide-main">
                 <h1 class="slide-title">{escape(coerce_text(slide.title))}</h1>
                 {subtitle_html}
@@ -145,28 +141,6 @@ def _build_presentation_html(
 
       .slide:last-child {{
         page-break-after: auto;
-      }}
-
-      .slide-header {{
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8mm;
-        border-bottom: 1px solid color-mix(in srgb, {palette["text"]} 18%, transparent);
-        padding-bottom: 4mm;
-      }}
-
-      .deck-title {{
-        margin: 0;
-        font-size: 12px;
-        color: {palette["accent"]};
-        font-weight: 600;
-      }}
-
-      .slide-counter {{
-        margin: 0;
-        font-size: 11px;
-        color: color-mix(in srgb, {palette["text"]} 72%, transparent);
       }}
 
       .slide-main {{

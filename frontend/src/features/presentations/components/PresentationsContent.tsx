@@ -28,11 +28,16 @@ type Props = {
   deletingPresentationId: string | null;
   presentationsError: string | null;
   activePresentation: PresentationOut | null;
+  selectedSlideIndex: number;
+  isFirstSlide: boolean;
+  isLastSlide: boolean;
   downloadPdfError: string | null;
   onTopicChange: (value: string) => void;
   onSelectStyle: (style: PresentationStyle) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
   onGenerate: () => void;
+  onPreviousSlide: () => void;
+  onNextSlide: () => void;
   onSelectPresentation: (presentationId: string) => void;
   onDeletePresentation: (presentation: PresentationOut) => void;
 };
@@ -53,11 +58,16 @@ export function PresentationsContent({
   deletingPresentationId,
   presentationsError,
   activePresentation,
+  selectedSlideIndex,
+  isFirstSlide,
+  isLastSlide,
   downloadPdfError,
   onTopicChange,
   onSelectStyle,
   onDetailLevelChange,
   onGenerate,
+  onPreviousSlide,
+  onNextSlide,
   onSelectPresentation,
   onDeletePresentation,
 }: Props) {
@@ -101,6 +111,11 @@ export function PresentationsContent({
           <PresentationViewer
             key={activePresentation?.id ?? "none"}
             presentation={activePresentation}
+            selectedSlideIndex={selectedSlideIndex}
+            isFirstSlide={isFirstSlide}
+            isLastSlide={isLastSlide}
+            onPreviousSlide={onPreviousSlide}
+            onNextSlide={onNextSlide}
             isLoading={false}
             error={presentationsError}
             downloadPdfError={downloadPdfError}

@@ -30,6 +30,7 @@ export function NotebookPresentationsPage() {
   const [viewMode, setViewMode] = useState<PresentationViewMode>(() => hasCachedPresentations(notebookId) ? "history" : "generate");
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
+  const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<PresentationOut | null>(null);
   const [topic, setTopic] = useState("");
   const [detailLevel, setDetailLevel] = useState<PresentationDetailLevel>("concise");
@@ -73,6 +74,7 @@ export function NotebookPresentationsPage() {
       setViewMode(hasCachedPresentations(notebookId) ? "history" : "generate");
       setHistoryView("cards");
       setSelectedPresentationId(null);
+      setSelectedSlideIndex(0);
       setDeleteTarget(null);
       setTopic("");
       setDetailLevel("concise");
@@ -108,6 +110,7 @@ export function NotebookPresentationsPage() {
       const nextId = result.presentation_id ?? updated[0]?.id ?? null;
       if (!nextId) return;
       setSelectedPresentationId(nextId);
+      setSelectedSlideIndex(0);
       setViewMode("history");
       setHistoryView("detail");
     })();
@@ -124,6 +127,7 @@ export function NotebookPresentationsPage() {
       setViewMode("history");
       setHistoryView("cards");
       setSelectedPresentationId(presentations[0].id);
+      setSelectedSlideIndex(0);
     });
   }, [notebookId, isPresentationsLoading, presentations]);
 
@@ -136,6 +140,7 @@ export function NotebookPresentationsPage() {
     const nextId = result.presentation_id ?? updated[0]?.id ?? null;
     if (!nextId) return;
     setSelectedPresentationId(nextId);
+    setSelectedSlideIndex(0);
     setViewMode("history");
     setHistoryView("detail");
   }, [notebookId, canGeneratePresentations, topic, selectedStyle, detailLevel, clearGenerateError, generate, reloadPresentations]);
@@ -144,6 +149,19 @@ export function NotebookPresentationsPage() {
     if (!selectedPresentationId) return null;
     return presentations.find((item) => item.id === selectedPresentationId) ?? null;
   }, [presentations, selectedPresentationId]);
+  const slideCount = activePresentation ? activePresentation.slides.length + 1 : 0;
+  const maxSlideIndex = Math.max(0, slideCount - 1);
+  const safeSlideIndex = Math.min(selectedSlideIndex, maxSlideIndex);
+  const isFirstSlide = safeSlideIndex === 0;
+  const isLastSlide = safeSlideIndex >= maxSlideIndex;
+
+  const handlePreviousSlide = useCallback(() => {
+    setSelectedSlideIndex(Math.max(0, safeSlideIndex - 1));
+  }, [safeSlideIndex]);
+
+  const handleNextSlide = useCallback(() => {
+    setSelectedSlideIndex(Math.min(maxSlideIndex, safeSlideIndex + 1));
+  }, [maxSlideIndex, safeSlideIndex]);
 
   const handleDeletePresentationConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -161,6 +179,7 @@ export function NotebookPresentationsPage() {
     }
     if (selectedPresentationId === deletedId) {
       setSelectedPresentationId(updated[0].id);
+      setSelectedSlideIndex(0);
       setHistoryView("cards");
     }
   }, [deleteTarget, deletePresentation, removePresentation, reloadPresentations, selectedPresentationId]);
@@ -236,6 +255,10 @@ export function NotebookPresentationsPage() {
             presentationsCount={presentations.length}
             activePresentation={activePresentation}
             downloadingPresentationId={downloadingPresentationId}
+            isFirstSlide={isFirstSlide}
+            isLastSlide={isLastSlide}
+            onPreviousSlide={handlePreviousSlide}
+            onNextSlide={handleNextSlide}
             onDownloadPdf={() => {
               if (!activePresentation) return;
               clearDownloadPdfError();
@@ -261,13 +284,19 @@ export function NotebookPresentationsPage() {
           deletingPresentationId={deletingPresentationId}
           presentationsError={presentationsError}
           activePresentation={activePresentation}
+          selectedSlideIndex={safeSlideIndex}
+          isFirstSlide={isFirstSlide}
+          isLastSlide={isLastSlide}
           downloadPdfError={downloadPdfError}
           onTopicChange={setTopic}
           onSelectStyle={setSelectedStyle}
           onDetailLevelChange={setDetailLevel}
           onGenerate={() => void runGeneration()}
+          onPreviousSlide={handlePreviousSlide}
+          onNextSlide={handleNextSlide}
           onSelectPresentation={(presentationId) => {
             setSelectedPresentationId(presentationId);
+            setSelectedSlideIndex(0);
             setHistoryView("detail");
           }}
           onDeletePresentation={(presentation) => {
