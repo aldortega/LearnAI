@@ -181,3 +181,15 @@ async def ensure_indexes() -> None:
     )
     await db.report_suggestions.create_index("sources_fingerprint")
     await db.report_suggestions.create_index("updated_at")
+    await db.presentations.create_index(
+        [("owner_id", 1), ("notebook_id", 1), ("created_at", -1)]
+    )
+    await db.presentations.create_index("owner_id")
+    await db.presentations.create_index("notebook_id")
+    await db.presentations.create_index("created_at")
+    await db.presentations.create_index("sources_fingerprint")
+    await db.presentation_generation_jobs.create_index("job_id", unique=True)
+    await db.presentation_generation_jobs.create_index("owner_id")
+    await db.presentation_generation_jobs.create_index("notebook_id")
+    await db.presentation_generation_jobs.create_index("status")
+    await db.presentation_generation_jobs.create_index("created_at")

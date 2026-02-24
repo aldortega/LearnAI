@@ -89,3 +89,15 @@ from .reports import (
     ReportSuggestionOut,
     ReportSuggestionsJobOut,
 )
+from .presentations import (
+    PresentationConfigOut,
+    PresentationDetailLevel,
+    PresentationGenerateRequest,
+    PresentationGenerationJobOut,
+    PresentationListOut,
+    PresentationOut,
+    PresentationSlideOut,
+    PresentationSourceRef,
+    PresentationStyle,
+    PresentationStyleTemplateOut,
+)

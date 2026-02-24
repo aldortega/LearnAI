@@ -5,6 +5,7 @@ import {
   FileText,
   Layers,
   MessageSquare,
+  Monitor,
   Network,
   Sparkles,
 } from "lucide-react";
@@ -13,7 +14,14 @@ import { useEffect, useState } from "react";
 import { cn } from "../../../shared/lib/cn";
 import { Button } from "../../../shared/ui/Button";
 
-type Mode = "chat" | "quiz" | "quickstart" | "reports" | "mindmap" | "flashcards";
+type Mode =
+  | "chat"
+  | "quiz"
+  | "quickstart"
+  | "reports"
+  | "presentations"
+  | "mindmap"
+  | "flashcards";
 
 type Props = {
   mode: Mode;
@@ -24,6 +32,8 @@ type Props = {
   isGeneratingQuickstart: boolean;
   canStartReports: boolean;
   isGeneratingReports: boolean;
+  canStartPresentations: boolean;
+  isGeneratingPresentations: boolean;
   canStartMindmap: boolean;
   isGeneratingMindmap: boolean;
   canStartFlashcards: boolean;
@@ -32,6 +42,7 @@ type Props = {
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
   onGoReports: () => void;
+  onGoPresentations: () => void;
   onGoMindmap: () => void;
   onGoFlashcards: () => void;
 };
@@ -45,6 +56,8 @@ export function StudioSidebar({
   isGeneratingQuickstart,
   canStartReports,
   isGeneratingReports,
+  canStartPresentations,
+  isGeneratingPresentations,
   canStartMindmap,
   isGeneratingMindmap,
   canStartFlashcards,
@@ -53,6 +66,7 @@ export function StudioSidebar({
   onGoQuiz,
   onGoQuickstart,
   onGoReports,
+  onGoPresentations,
   onGoMindmap,
   onGoFlashcards,
 }: Props) {
@@ -65,13 +79,73 @@ export function StudioSidebar({
     localStorage.setItem("studioSidebarOpen", String(isOpen));
   }, [isOpen]);
 
-  const isQuickstartDisabled = isStudioLocked || !canStartQuickstart;
-  const isMindmapDisabled = isStudioLocked || !canStartMindmap;
-  const isChatDisabled = isStudioLocked;
-  const isQuizDisabled = isStudioLocked || !canStartQuiz;
-  const isFlashcardsDisabled = isStudioLocked || !canStartFlashcards;
-  const isReportsDisabled = isStudioLocked || !canStartReports;
   const activeMode: Mode | null = isStudioLocked ? null : mode;
+  const items = [
+    {
+      key: "quickstart" as const,
+      label: "Inicio rapido",
+      icon: Sparkles,
+      onClick: onGoQuickstart,
+      disabled: isStudioLocked || !canStartQuickstart,
+      loading: isGeneratingQuickstart,
+    },
+    {
+      key: "mindmap" as const,
+      label: "Mapa mental",
+      icon: Network,
+      onClick: onGoMindmap,
+      disabled: isStudioLocked || !canStartMindmap,
+      loading: isGeneratingMindmap,
+    },
+    {
+      key: "chat" as const,
+      label: "Chat",
+      icon: MessageSquare,
+      onClick: onGoChat,
+      disabled: isStudioLocked,
+      loading: false,
+    },
+    {
+      key: "quiz" as const,
+      label: "Quiz",
+      icon: BookOpenCheck,
+      onClick: onGoQuiz,
+      disabled: isStudioLocked || !canStartQuiz,
+      loading: isGeneratingQuiz,
+    },
+    {
+      key: "flashcards" as const,
+      label: "Flashcards",
+      icon: Layers,
+      onClick: onGoFlashcards,
+      disabled: isStudioLocked || !canStartFlashcards,
+      loading: isGeneratingFlashcards,
+    },
+    {
+      key: "reports" as const,
+      label: "Informes",
+      icon: FileText,
+      onClick: onGoReports,
+      disabled: isStudioLocked || !canStartReports,
+      loading: isGeneratingReports,
+    },
+    {
+      key: "presentations" as const,
+      label: "Presentaciones",
+      icon: Monitor,
+      onClick: onGoPresentations,
+      disabled: isStudioLocked || !canStartPresentations,
+      loading: isGeneratingPresentations,
+    },
+  ];
+
+  const hasAnyBlockedMode =
+    !canStartQuickstart ||
+    !canStartQuiz ||
+    !canStartFlashcards ||
+    !canStartReports ||
+    !canStartPresentations ||
+    !canStartMindmap;
 
   return (
     <div
@@ -89,20 +163,14 @@ export function StudioSidebar({
         )}
       >
         {isOpen ? (
-          <h2 className="text-sm font-semibold text-foreground whitespace-nowrap">
-            Estudio
-          </h2>
+          <h2 className="whitespace-nowrap text-sm font-semibold text-foreground">Estudio</h2>
         ) : null}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="rounded-md p-2 text-muted-foreground hover:bg-muted-hover"
           aria-label={isOpen ? "Cerrar panel" : "Abrir panel"}
         >
-          {isOpen ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
+          {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </div>
 
@@ -111,78 +179,21 @@ export function StudioSidebar({
           <div className="space-y-4">
             <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
               <div className="grid gap-2">
-                <Button
-                  variant={activeMode === "quickstart" ? "primary" : "ghost"}
-                  className="w-full justify-start whitespace-nowrap transition-colors"
-                  leftIcon={<Sparkles className="h-4 w-4" />}
-                  onClick={onGoQuickstart}
-                  disabled={isQuickstartDisabled}
-                  loading={isGeneratingQuickstart}
-                >
-                  Inicio rapido
-                </Button>
-
-                <Button
-                  variant={activeMode === "mindmap" ? "primary" : "ghost"}
-                  className="w-full justify-start whitespace-nowrap transition-colors"
-                  leftIcon={<Network className="h-4 w-4" />}
-                  onClick={onGoMindmap}
-                  disabled={isMindmapDisabled}
-                  loading={isGeneratingMindmap}
-                >
-                  Mapa mental
-                </Button>
-
-                <Button
-                  variant={activeMode === "chat" ? "primary" : "ghost"}
-                  className="w-full justify-start whitespace-nowrap transition-colors"
-                  leftIcon={<MessageSquare className="h-4 w-4" />}
-                  onClick={onGoChat}
-                  disabled={isChatDisabled}
-                >
-                  Chat
-                </Button>
-
-                <Button
-                  variant={activeMode === "quiz" ? "primary" : "ghost"}
-                  className="w-full justify-start whitespace-nowrap transition-colors"
-                  leftIcon={<BookOpenCheck className="h-4 w-4" />}
-                  onClick={onGoQuiz}
-                  disabled={isQuizDisabled}
-                  loading={isGeneratingQuiz}
-                >
-                  Quiz
-                </Button>
-
-                <Button
-                  variant={activeMode === "flashcards" ? "primary" : "ghost"}
-                  className="w-full justify-start whitespace-nowrap transition-colors"
-                  leftIcon={<Layers className="h-4 w-4" />}
-                  onClick={onGoFlashcards}
-                  disabled={isFlashcardsDisabled}
-                  loading={isGeneratingFlashcards}
-                >
-                  Flashcards
-                </Button>
-
-                <Button
-                  variant={activeMode === "reports" ? "primary" : "ghost"}
-                  className="w-full justify-start whitespace-nowrap transition-colors"
-                  leftIcon={<FileText className="h-4 w-4" />}
-                  onClick={onGoReports}
-                  disabled={isReportsDisabled}
-                  loading={isGeneratingReports}
-                >
-                  Informes
-                </Button>
+                {items.map((item) => (
+                  <Button
+                    key={item.key}
+                    variant={activeMode === item.key ? "primary" : "ghost"}
+                    className="w-full justify-start whitespace-nowrap transition-colors"
+                    leftIcon={<item.icon className="h-4 w-4" />}
+                    onClick={item.onClick}
+                    disabled={item.disabled}
+                    loading={item.loading}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
               </div>
-
-              {!isStudioLocked &&
-              (!canStartQuickstart ||
-                !canStartQuiz ||
-                !canStartFlashcards ||
-                !canStartReports ||
-                !canStartMindmap) ? (
+              {!isStudioLocked && hasAnyBlockedMode ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
                   Necesitas al menos una fuente lista para usar el modo estudio.
                 </p>
@@ -191,106 +202,25 @@ export function StudioSidebar({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 pt-4">
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
-                activeMode === "quickstart"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted-hover",
-                (isQuickstartDisabled || isGeneratingQuickstart) &&
-                  "cursor-not-allowed opacity-50",
-              )}
-              onClick={onGoQuickstart}
-              disabled={isQuickstartDisabled || isGeneratingQuickstart}
-              title="Inicio rapido"
-              aria-label="Inicio rapido"
-            >
-              <Sparkles className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
-                activeMode === "mindmap"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted-hover",
-                (isMindmapDisabled || isGeneratingMindmap) &&
-                  "cursor-not-allowed opacity-50",
-              )}
-              onClick={onGoMindmap}
-              disabled={isMindmapDisabled || isGeneratingMindmap}
-              title="Mapa mental"
-              aria-label="Mapa mental"
-            >
-              <Network className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
-                activeMode === "chat"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted-hover",
-                isChatDisabled && "cursor-not-allowed opacity-50",
-              )}
-              onClick={onGoChat}
-              disabled={isChatDisabled}
-              title="Chat"
-              aria-label="Chat"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
-                activeMode === "quiz"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted-hover",
-                (isQuizDisabled || isGeneratingQuiz) && "cursor-not-allowed opacity-50",
-              )}
-              onClick={onGoQuiz}
-              disabled={isQuizDisabled || isGeneratingQuiz}
-              title="Quiz"
-              aria-label="Quiz"
-            >
-              <BookOpenCheck className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
-                activeMode === "flashcards"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted-hover",
-                (isFlashcardsDisabled || isGeneratingFlashcards) &&
-                  "cursor-not-allowed opacity-50",
-              )}
-              onClick={onGoFlashcards}
-              disabled={isFlashcardsDisabled || isGeneratingFlashcards}
-              title="Flashcards"
-              aria-label="Flashcards"
-            >
-              <Layers className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-md p-2 transition-colors",
-                activeMode === "reports"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted-hover",
-                (isReportsDisabled || isGeneratingReports) &&
-                  "cursor-not-allowed opacity-50",
-              )}
-              onClick={onGoReports}
-              disabled={isReportsDisabled || isGeneratingReports}
-              title="Informes"
-              aria-label="Informes"
-            >
-              <FileText className="h-4 w-4" />
-            </button>
+            {items.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={cn(
+                  "rounded-md p-2 transition-colors",
+                  activeMode === item.key
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted-hover",
+                  (item.disabled || item.loading) && "cursor-not-allowed opacity-50",
+                )}
+                onClick={item.onClick}
+                disabled={item.disabled || item.loading}
+                title={item.label}
+                aria-label={item.label}
+              >
+                <item.icon className="h-4 w-4" />
+              </button>
+            ))}
           </div>
         )}
       </div>

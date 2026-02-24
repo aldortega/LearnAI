@@ -17,6 +17,7 @@ from .routes.notebooks import router as notebooks_router
 from .routes.notifications import router as notifications_router
 from .routes.quickstart import router as quickstart_router
 from .routes.rag import router as rag_router
+from .routes.presentations import router as presentations_router
 from .routes.reports import router as reports_router
 from .routes.quiz import router as quiz_router
 
@@ -50,6 +51,7 @@ app.include_router(rag_router)
 app.include_router(quiz_router)
 app.include_router(quickstart_router)
 app.include_router(reports_router)
+app.include_router(presentations_router)
 app.include_router(mindmap_router)
 app.include_router(flashcards_router)
 

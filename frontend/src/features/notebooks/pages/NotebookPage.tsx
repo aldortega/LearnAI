@@ -183,6 +183,8 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       isGeneratingQuickstart={false}
       canStartReports={hasReadySources}
       isGeneratingReports={false}
+      canStartPresentations={hasReadySources}
+      isGeneratingPresentations={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
@@ -201,6 +203,10 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       onGoReports={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/reports`);
+      }}
+      onGoPresentations={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/presentations`);
       }}
       onGoMindmap={() => {
         if (!notebookId) return;

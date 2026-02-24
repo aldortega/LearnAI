@@ -416,6 +416,10 @@ export function NotebookReportsPage() {
     navigate(`/notebook/${notebookId}/quickstart`);
   }, [notebookId, navigate]);
   const handleStudioNavReports = useCallback(() => undefined, []);
+  const handleStudioNavPresentations = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/presentations`);
+  }, [notebookId, navigate]);
   const handleStudioNavMindmap = useCallback(() => {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/mindmap`);
@@ -485,6 +489,8 @@ export function NotebookReportsPage() {
       isGeneratingQuickstart={false}
       canStartReports={hasReadySources}
       isGeneratingReports={isGenerating}
+      canStartPresentations={hasReadySources}
+      isGeneratingPresentations={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
@@ -493,6 +499,7 @@ export function NotebookReportsPage() {
       onGoQuiz={handleStudioNavQuiz}
       onGoQuickstart={handleStudioNavQuickstart}
       onGoReports={handleStudioNavReports}
+      onGoPresentations={handleStudioNavPresentations}
       onGoMindmap={handleStudioNavMindmap}
       onGoFlashcards={handleStudioNavFlashcards}
       beforeMain={

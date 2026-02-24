@@ -200,6 +200,11 @@ export function NotebookQuizPage() {
     navigate(`/notebook/${notebookId}/mindmap`);
   };
 
+  const handleGoPresentations = () => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/presentations`);
+  };
+
   const handleGoFlashcards = () => {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/flashcards`);
@@ -315,6 +320,8 @@ export function NotebookQuizPage() {
       isGeneratingQuickstart={false}
       canStartReports={hasReadySources}
       isGeneratingReports={false}
+      canStartPresentations={hasReadySources}
+      isGeneratingPresentations={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
@@ -323,6 +330,7 @@ export function NotebookQuizPage() {
       onGoQuiz={() => void handleGoQuiz()}
       onGoQuickstart={handleGoQuickstart}
       onGoReports={handleGoReports}
+      onGoPresentations={handleGoPresentations}
       onGoMindmap={handleGoMindmap}
       onGoFlashcards={handleGoFlashcards}
       beforeMain={

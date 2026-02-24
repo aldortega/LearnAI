@@ -5,7 +5,15 @@ from .rq_queue import redis_client
 
 if __name__ == "__main__":
     worker = SimpleWorker(
-        ["ingestion", "quiz", "quickstart", "reports", "mindmap", "flashcards"],
+        [
+            "ingestion",
+            "quiz",
+            "quickstart",
+            "reports",
+            "presentations",
+            "mindmap",
+            "flashcards",
+        ],
         connection=redis_client,
     )
     worker.work()

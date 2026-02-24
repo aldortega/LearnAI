@@ -153,6 +153,8 @@ export function NotebookFlashcardsPage() {
       isGeneratingQuickstart={false}
       canStartReports={hasReadySources}
       isGeneratingReports={false}
+      canStartPresentations={hasReadySources}
+      isGeneratingPresentations={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
@@ -161,6 +163,9 @@ export function NotebookFlashcardsPage() {
       onGoQuiz={() => notebookId && navigate(`/notebook/${notebookId}/quiz`)}
       onGoQuickstart={() => notebookId && navigate(`/notebook/${notebookId}/quickstart`)}
       onGoReports={() => notebookId && navigate(`/notebook/${notebookId}/reports`)}
+      onGoPresentations={() =>
+        notebookId && navigate(`/notebook/${notebookId}/presentations`)
+      }
       onGoMindmap={() => notebookId && navigate(`/notebook/${notebookId}/mindmap`)}
       onGoFlashcards={() => undefined}
       beforeMain={

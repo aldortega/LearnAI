@@ -241,6 +241,8 @@ export function NotebookQuickstartPage() {
       isGeneratingQuickstart={isGenerating}
       canStartReports={hasReadySources}
       isGeneratingReports={false}
+      canStartPresentations={hasReadySources}
+      isGeneratingPresentations={false}
       canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
@@ -259,6 +261,10 @@ export function NotebookQuickstartPage() {
       onGoReports={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/reports`);
+      }}
+      onGoPresentations={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/presentations`);
       }}
       onGoMindmap={() => {
         if (!notebookId) return;

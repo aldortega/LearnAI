@@ -10,6 +10,7 @@ export type NotebookShellMode =
   | "quiz"
   | "quickstart"
   | "reports"
+  | "presentations"
   | "mindmap"
   | "flashcards";
 
@@ -30,6 +31,8 @@ type Props = {
   isGeneratingQuickstart: boolean;
   canStartReports: boolean;
   isGeneratingReports: boolean;
+  canStartPresentations: boolean;
+  isGeneratingPresentations: boolean;
   canStartMindmap: boolean;
   isGeneratingMindmap: boolean;
   canStartFlashcards: boolean;
@@ -38,6 +41,7 @@ type Props = {
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
   onGoReports: () => void;
+  onGoPresentations: () => void;
   onGoMindmap: () => void;
   onGoFlashcards: () => void;
   beforeMain?: ReactNode;
@@ -62,6 +66,8 @@ export function NotebookShell({
   isGeneratingQuickstart,
   canStartReports,
   isGeneratingReports,
+  canStartPresentations,
+  isGeneratingPresentations,
   canStartMindmap,
   isGeneratingMindmap,
   canStartFlashcards,
@@ -70,6 +76,7 @@ export function NotebookShell({
   onGoQuiz,
   onGoQuickstart,
   onGoReports,
+  onGoPresentations,
   onGoMindmap,
   onGoFlashcards,
   beforeMain,
@@ -101,6 +108,8 @@ export function NotebookShell({
           isGeneratingQuickstart={isGeneratingQuickstart}
           canStartReports={canStartReports}
           isGeneratingReports={isGeneratingReports}
+          canStartPresentations={canStartPresentations}
+          isGeneratingPresentations={isGeneratingPresentations}
           canStartMindmap={canStartMindmap}
           isGeneratingMindmap={isGeneratingMindmap}
           canStartFlashcards={canStartFlashcards}
@@ -109,6 +118,7 @@ export function NotebookShell({
           onGoQuiz={onGoQuiz}
           onGoQuickstart={onGoQuickstart}
           onGoReports={onGoReports}
+          onGoPresentations={onGoPresentations}
           onGoMindmap={onGoMindmap}
           onGoFlashcards={onGoFlashcards}
         />
