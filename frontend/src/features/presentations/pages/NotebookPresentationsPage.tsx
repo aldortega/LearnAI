@@ -280,7 +280,6 @@ export function NotebookPresentationsPage() {
           isConfigLoading={isConfigLoading}
           generationError={generationError}
           presentations={presentations}
-          selectedPresentationId={selectedPresentationId}
           deletingPresentationId={deletingPresentationId}
           presentationsError={presentationsError}
           activePresentation={activePresentation}

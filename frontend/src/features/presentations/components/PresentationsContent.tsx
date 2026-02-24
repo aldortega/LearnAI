@@ -24,7 +24,6 @@ type Props = {
   isConfigLoading: boolean;
   generationError: string | null;
   presentations: PresentationOut[];
-  selectedPresentationId: string | null;
   deletingPresentationId: string | null;
   presentationsError: string | null;
   activePresentation: PresentationOut | null;
@@ -54,7 +53,6 @@ export function PresentationsContent({
   isConfigLoading,
   generationError,
   presentations,
-  selectedPresentationId,
   deletingPresentationId,
   presentationsError,
   activePresentation,
@@ -102,7 +100,6 @@ export function PresentationsContent({
         ) : historyView === "cards" ? (
           <PresentationsHistoryList
             presentations={presentations}
-            selectedPresentationId={selectedPresentationId}
             deletingPresentationId={deletingPresentationId}
             onSelectPresentation={onSelectPresentation}
             onDeletePresentation={onDeletePresentation}

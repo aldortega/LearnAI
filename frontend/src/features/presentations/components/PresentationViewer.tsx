@@ -163,7 +163,7 @@ export function PresentationViewer({
               [&_strong]:font-semibold
             "
                 >
-                  <Streamdown>{activeSlide.content_markdown}</Streamdown>
+                  <Streamdown controls={{ table: false, code: false }}>{activeSlide.content_markdown}</Streamdown>
                 </div>
               </div>
             ) : (
