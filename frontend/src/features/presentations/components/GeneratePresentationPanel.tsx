@@ -1,12 +1,25 @@
+import { Presentation } from "lucide-react";
+import { useId } from "react";
+
 import { Button } from "../../../shared/ui/Button";
-import { TextArea } from "../../../shared/ui/TextArea";
-import { cn } from "../../../shared/lib/cn";
-import { PresentationStyleGrid } from "./PresentationStyleGrid";
 import type {
   PresentationDetailLevel,
   PresentationStyle,
   PresentationStyleTemplate,
 } from "../types/presentations.types";
+
+const DETAIL_LEVEL_OPTIONS: { value: PresentationDetailLevel; label: string; hint: string }[] = [
+  { value: "concise", label: "Concisa", hint: "Puntos clave breves para acompanar exposicion oral." },
+  { value: "detailed", label: "Detallada", hint: "Mas contexto y explicaciones para lectura guiada." },
+];
+
+const STYLE_SHORT_LABELS: Record<PresentationStyle, string> = {
+  clean: "Limpio",
+  corporate: "Corp.",
+  creative: "Creativo",
+  academic: "Acad.",
+  minimal: "Minimal",
+};
 
 type Props = {
   topic: string;
@@ -15,6 +28,8 @@ type Props = {
   detailLevel: PresentationDetailLevel;
   disabled: boolean;
   isGenerating: boolean;
+  canGenerate: boolean;
+  error: string | null;
   onTopicChange: (value: string) => void;
   onSelectStyle: (style: PresentationStyle) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
@@ -28,84 +43,142 @@ export function GeneratePresentationPanel({
   detailLevel,
   disabled,
   isGenerating,
+  canGenerate,
+  error,
   onTopicChange,
   onSelectStyle,
   onDetailLevelChange,
   onGenerate,
 }: Props) {
+  const inputId = useId();
+
+  const activeDetailHint = DETAIL_LEVEL_OPTIONS.find((o) => o.value === detailLevel)?.hint ?? "";
+  const activeStyleDescription = styles.find((s) => s.style === selectedStyle)?.description ?? "";
+
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold text-foreground">Nueva presentacion</h3>
-        <p className="text-sm text-muted-foreground">
-          Define tema, estilo visual y densidad del contenido para generar las slides.
-        </p>
-      </div>
-
-      <TextArea
-        label="Tema"
-        name="topic"
-        value={topic}
-        onChange={onTopicChange}
-        placeholder="Ej. Fundamentos de redes neuronales"
-        required
-        rows={3}
-      />
-
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Nivel de detalle</p>
-        <div className="inline-flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onDetailLevelChange("concise")}
-            disabled={disabled}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm transition",
-              detailLevel === "concise"
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border bg-surface text-muted-foreground hover:bg-muted",
-              disabled && "cursor-not-allowed opacity-60",
-            )}
-          >
-            Concisa
-          </button>
-          <button
-            type="button"
-            onClick={() => onDetailLevelChange("detailed")}
-            disabled={disabled}
-            className={cn(
-              "rounded-md border px-3 py-1.5 text-sm transition",
-              detailLevel === "detailed"
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border bg-surface text-muted-foreground hover:bg-muted",
-              disabled && "cursor-not-allowed opacity-60",
-            )}
-          >
-            Detallada
-          </button>
+    <div className="flex h-full overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-10 text-center">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-primary/15 text-primary">
+          <Presentation className="h-6 w-6" />
         </div>
-        <p className="text-xs text-muted-foreground">
-          {detailLevel === "concise"
-            ? "Puntos clave breves para acompanar exposicion oral."
-            : "Mas contexto y explicaciones para lectura guiada."}
+
+        <h2 className="mt-4 text-lg font-semibold text-foreground">
+          {isGenerating ? "Generando presentacion…" : "Todavia no hay presentacion"}
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Define el tema, nivel de detalle y estilo visual para generar slides con tus fuentes.
         </p>
-      </div>
 
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Estilo visual</p>
-        <PresentationStyleGrid
-          styles={styles}
-          selectedStyle={selectedStyle}
-          disabled={disabled}
-          onSelectStyle={onSelectStyle}
-        />
-      </div>
+        <div className="mt-6 space-y-4 text-left">
+          <div className="space-y-1.5">
+            <label htmlFor={inputId} className="block text-sm font-semibold text-foreground">
+              Tema
+            </label>
+            <input
+              id={inputId}
+              type="text"
+              value={topic}
+              onChange={(e) => onTopicChange(e.target.value)}
+              placeholder="Ej. Fundamentos de redes neuronales"
+              disabled={disabled}
+              className={
+                "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground transition-all duration-200 " +
+                "placeholder:text-muted-foreground " +
+                "focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none " +
+                "hover:border-border-strong " +
+                "disabled:cursor-not-allowed disabled:opacity-60"
+              }
+            />
+          </div>
 
-      <div className="flex justify-end">
-        <Button onClick={onGenerate} loading={isGenerating} disabled={disabled || !topic.trim()}>
-          Generar presentacion
-        </Button>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Nivel de detalle</p>
+              <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+                {DETAIL_LEVEL_OPTIONS.map((option) => {
+                  const isActive = option.value === detailLevel;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => onDetailLevelChange(option.value)}
+                      disabled={disabled}
+                      className={
+                        "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                        (isActive
+                          ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                          : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
+                        (disabled ? " cursor-not-allowed opacity-60" : "")
+                      }
+                      aria-pressed={isActive}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {activeDetailHint ? (
+                <p className="mt-2 text-xs text-muted-foreground">{activeDetailHint}</p>
+              ) : null}
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-foreground">Estilo visual</p>
+              <div className="mt-2 grid grid-cols-5 gap-1 rounded-xl bg-muted p-1">
+                {styles.map((style) => {
+                  const isActive = style.style === selectedStyle;
+                  return (
+                    <button
+                      key={style.style}
+                      type="button"
+                      onClick={() => onSelectStyle(style.style)}
+                      disabled={disabled}
+                      className={
+                        "rounded-lg px-2 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                        (isActive
+                          ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                          : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
+                        (disabled ? " cursor-not-allowed opacity-60" : "")
+                      }
+                      aria-pressed={isActive}
+                    >
+                      {STYLE_SHORT_LABELS[style.style] ?? style.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {activeStyleDescription ? (
+                <p className="mt-2 text-xs text-muted-foreground">{activeStyleDescription}</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        {error ? (
+          <div
+            className="mt-4 rounded-xl border border-error bg-error/10 px-4 py-3 text-sm text-error"
+            role="alert"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={onGenerate}
+            loading={isGenerating}
+            disabled={disabled || !topic.trim()}
+          >
+            Generar presentacion
+          </Button>
+        </div>
+
+        {!canGenerate ? (
+          <p className="mt-3 text-xs text-muted-foreground" role="alert">
+            Necesitas al menos una fuente con estado "Listo".
+          </p>
+        ) : null}
       </div>
-    </section>
+    </div>
   );
 }

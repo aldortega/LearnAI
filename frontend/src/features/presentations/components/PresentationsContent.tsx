@@ -69,35 +69,32 @@ export function PresentationsContent({
   onSelectPresentation,
   onDeletePresentation,
 }: Props) {
+  if (viewMode === "generate") {
+    return (
+      <div className="relative h-full">
+        <GeneratePresentationPanel
+          topic={topic}
+          styles={styles}
+          selectedStyle={selectedStyle}
+          detailLevel={detailLevel}
+          disabled={!canGeneratePresentations || isGenerating || isConfigLoading}
+          isGenerating={isGenerating}
+          canGenerate={canGeneratePresentations}
+          error={generationError}
+          onTopicChange={onTopicChange}
+          onSelectStyle={onSelectStyle}
+          onDetailLevelChange={onDetailLevelChange}
+          onGenerate={onGenerate}
+        />
+        <PresentationGenerationOverlay isVisible={isGenerating} />
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full overflow-y-auto p-6">
       <div className="mx-auto w-full max-w-5xl space-y-4">
-        {viewMode === "generate" ? (
-          <>
-            <GeneratePresentationPanel
-              topic={topic}
-              styles={styles}
-              selectedStyle={selectedStyle}
-              detailLevel={detailLevel}
-              disabled={!canGeneratePresentations || isGenerating || isConfigLoading}
-              isGenerating={isGenerating}
-              onTopicChange={onTopicChange}
-              onSelectStyle={onSelectStyle}
-              onDetailLevelChange={onDetailLevelChange}
-              onGenerate={onGenerate}
-            />
-            {!canGeneratePresentations ? (
-              <p className="text-sm text-muted-foreground" role="alert">
-                Necesitas al menos una fuente lista para generar presentaciones.
-              </p>
-            ) : null}
-            {generationError ? (
-              <p className="text-sm text-error" role="alert">
-                {generationError}
-              </p>
-            ) : null}
-          </>
-        ) : historyView === "cards" ? (
+        {historyView === "cards" ? (
           <PresentationsHistoryList
             presentations={presentations}
             deletingPresentationId={deletingPresentationId}
