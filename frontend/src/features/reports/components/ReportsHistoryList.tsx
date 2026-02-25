@@ -124,11 +124,7 @@ export function ReportsHistoryList({
         Informes generados{" "}
         <span className="font-normal text-muted-foreground">({reports.length})</span>
       </h3>
-      {reports.length === 0 && !isGenerating ? (
-        <div className="rounded-xl border border-border bg-surface px-4 py-8 text-center text-sm text-muted-foreground">
-          Aun no hay informes generados.
-        </div>
-      ) : (
+      {reports.length > 0 || isGenerating ? (
         <div className="rounded-xl border border-border bg-surface">
           {isGenerating ? (
             <div>
@@ -166,7 +162,7 @@ export function ReportsHistoryList({
             );
           })}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
