@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { presentationsApi } from "../api/presentationsApi";
 import type { PresentationConfigOut } from "../types/presentations.types";
-
-const presentationsConfigCache = new Map<string, PresentationConfigOut>();
 
 type Result = {
   config: PresentationConfigOut | null;
@@ -14,57 +14,28 @@ type Result = {
 };
 
 export function usePresentationsConfig(notebookId?: string): Result {
-  const [config, setConfig] = useState<PresentationConfigOut | null>(() =>
-    notebookId ? presentationsConfigCache.get(notebookId) ?? null : null,
+  const { data, error, isLoading, mutate } = useSWR<PresentationConfigOut>(
+    notebookId ? swrKeys.presentationsConfig(notebookId) : null,
+    () => presentationsApi.getConfig(notebookId as string),
   );
-  const [isLoading, setIsLoading] = useState(() =>
-    notebookId ? !presentationsConfigCache.has(notebookId) : false,
-  );
-  const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!notebookId) {
-      setConfig(null);
-      setError(null);
-      setIsLoading(false);
       return null;
     }
-
-    setIsLoading(true);
-    setError(null);
 
     try {
-      const data = await presentationsApi.getConfig(notebookId);
-      presentationsConfigCache.set(notebookId, data);
-      setConfig(data);
-      return data;
-    } catch (e) {
-      setError(toNotebookErrorMessage(e));
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId]);
+  }, [mutate, notebookId]);
 
-  useEffect(() => {
-    if (!notebookId) {
-      setConfig(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const cachedConfig = presentationsConfigCache.get(notebookId);
-    if (cachedConfig) {
-      setConfig(cachedConfig);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    setConfig(null);
-    void reload();
-  }, [notebookId, reload]);
-
-  return { config, isLoading, error, reload };
+  return {
+    config: data ?? null,
+    isLoading: isLoading && !data,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

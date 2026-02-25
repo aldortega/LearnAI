@@ -1,16 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import useSWR from "swr";
 
 import { toNotebookErrorMessage } from "../../../shared/lib/apiErrors";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { chatApi, streamChatMessage } from "../api/chatApi";
 import type { ChatMessage } from "../types/chat.types";
-import {
-  appendChatMessage,
-  clearChatMessages,
-  setChatData,
-  useChatStore,
-} from "./useChatStore";
-
-const hydratedNotebookIds = new Set<string>();
 
 type Result = {
   messages: ChatMessage[];
@@ -38,71 +32,39 @@ function buildLocalMessage(content: string, notebookId: string): ChatMessage {
 }
 
 export function useNotebookChat(notebookId?: string): Result {
-  const { messages: cachedMessages } = useChatStore(notebookId);
+  const { error: conversationError, isLoading: isConversationLoading } = useSWR(
+    notebookId ? swrKeys.chatConversation(notebookId) : null,
+    () => chatApi.getConversation(notebookId as string),
+  );
+  const {
+    data: messages,
+    error: messagesError,
+    isLoading: isMessagesLoading,
+    mutate: mutateMessages,
+  } = useSWR<ChatMessage[]>(
+    notebookId ? swrKeys.chatMessages(notebookId) : null,
+    () => chatApi.getMessages(notebookId as string),
+  );
   const [streamingContent, setStreamingContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (!notebookId) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(!hydratedNotebookIds.has(notebookId));
-
-    let isActive = true;
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort();
-    }, 15000);
-
-    const loadConversation = async () => {
-      try {
-        const [conversationData, messagesData] = await Promise.all([
-          chatApi.getConversation(notebookId, controller.signal),
-          chatApi.getMessages(notebookId, controller.signal),
-        ]);
-        if (!isActive) return;
-        setChatData(notebookId, conversationData, messagesData);
-        hydratedNotebookIds.add(notebookId);
-      } catch (err) {
-        if (!isActive) return;
-        if ((err as Error)?.name === "AbortError") {
-          setError("No se pudo cargar la conversación. Intenta de nuevo.");
-        } else {
-          setError(toNotebookErrorMessage(err));
-        }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
-        window.clearTimeout(timeoutId);
-      }
-    };
-
-    void loadConversation();
-
-    return () => {
-      isActive = false;
-      controller.abort();
-      window.clearTimeout(timeoutId);
-    };
-  }, [notebookId]);
 
   const sendMessage = useCallback(
     async (content: string) => {
       const trimmed = content.trim();
       if (!notebookId || !trimmed || isStreaming) return;
 
-      setError(null);
+      setStreamError(null);
       setStreamingContent("");
       setIsStreaming(true);
 
-      appendChatMessage(notebookId, buildLocalMessage(trimmed, notebookId));
+      const localMessage = buildLocalMessage(trimmed, notebookId);
+      await mutateMessages(
+        (currentMessages) => [...(currentMessages ?? []), localMessage],
+        { revalidate: false },
+      );
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -116,12 +78,15 @@ export function useNotebookChat(notebookId?: string): Result {
               setStreamingContent((prev) => prev + chunk);
             },
             onDone: (message) => {
-              appendChatMessage(notebookId, message);
+              void mutateMessages(
+                (currentMessages) => [...(currentMessages ?? []), message],
+                { revalidate: false },
+              );
               setStreamingContent("");
               setIsStreaming(false);
             },
             onError: (message) => {
-              setError(message);
+              setStreamError(message);
               setStreamingContent("");
               setIsStreaming(false);
             },
@@ -134,21 +99,21 @@ export function useNotebookChat(notebookId?: string): Result {
           setIsStreaming(false);
           return;
         }
-        setError(toNotebookErrorMessage(err));
+        setStreamError(toNotebookErrorMessage(err));
         setStreamingContent("");
         setIsStreaming(false);
       } finally {
         setIsStreaming(false);
       }
     },
-    [isStreaming, notebookId],
+    [isStreaming, mutateMessages, notebookId],
   );
 
   const clearConversation = useCallback(async () => {
     if (!notebookId || isClearing) return;
 
     setIsClearing(true);
-    setError(null);
+    setStreamError(null);
 
     abortRef.current?.abort();
     abortRef.current = null;
@@ -157,18 +122,25 @@ export function useNotebookChat(notebookId?: string): Result {
 
     try {
       await chatApi.clearMessages(notebookId);
-      clearChatMessages(notebookId);
+      await mutateMessages([], { revalidate: false });
     } catch (err) {
-      setError(toNotebookErrorMessage(err));
+      setStreamError(toNotebookErrorMessage(err));
     } finally {
       setIsClearing(false);
     }
-  }, [isClearing, notebookId]);
+  }, [isClearing, mutateMessages, notebookId]);
 
-  const resetError = useCallback(() => setError(null), []);
+  const resetError = useCallback(() => setStreamError(null), []);
+
+  const isLoading = notebookId
+    ? (isConversationLoading || isMessagesLoading) && !messages
+    : false;
+  const error = streamError
+    ?? (conversationError ? toNotebookErrorMessage(conversationError) : null)
+    ?? (messagesError ? toNotebookErrorMessage(messagesError) : null);
 
   return {
-    messages: cachedMessages,
+    messages: messages ?? [],
     streamingContent,
     isLoading,
     isStreaming,

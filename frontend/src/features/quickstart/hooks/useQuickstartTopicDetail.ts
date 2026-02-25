@@ -1,5 +1,7 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import useSWR, { mutate as mutateSWR } from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quickstartApi } from "../api/quickstartApi";
 import type {
@@ -24,31 +26,44 @@ type Result = {
   clearDetail: () => void;
 };
 
+type QuickstartTopicDetailKey = ReturnType<typeof swrKeys.quickstartTopicDetail>;
+
 function normalizeItemText(value: string): string {
   return value.trim().replace(/\s+/g, " ");
-}
-
-function buildKey(itemType: QuickstartDetailItemType, itemText: string): string {
-  return `${itemType}:${normalizeItemText(itemText).toLowerCase()}`;
 }
 
 export function useQuickstartTopicDetail(
   notebookId?: string,
   topicId?: string,
 ): Result {
-  const [detail, setDetail] = useState<QuickstartTopicDetailOut | null>(null);
   const [selected, setSelected] = useState<SelectedQuickstartDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const cacheRef = useRef<Map<string, QuickstartTopicDetailOut>>(new Map());
-  const requestIdRef = useRef(0);
+  const requestKey = useMemo<QuickstartTopicDetailKey | null>(() => {
+    if (!notebookId || !topicId || !selected) {
+      return null;
+    }
+
+    return swrKeys.quickstartTopicDetail(
+      notebookId,
+      topicId,
+      selected.itemType,
+      selected.itemText,
+    );
+  }, [notebookId, selected, topicId]);
+  const { data, error, isLoading } = useSWR<QuickstartTopicDetailOut>(
+    requestKey,
+    () => {
+      return quickstartApi.getTopicDetail(notebookId as string, topicId as string, {
+        item_type: selected?.itemType as QuickstartDetailItemType,
+        item_text: selected?.itemText as string,
+      });
+    },
+    {
+      revalidateOnFocus: false,
+    },
+  );
 
   const clearDetail = useCallback(() => {
-    requestIdRef.current += 1;
     setSelected(null);
-    setDetail(null);
-    setError(null);
-    setIsLoading(false);
   }, []);
 
   const loadDetail = useCallback(
@@ -61,49 +76,44 @@ export function useQuickstartTopicDetail(
       const normalizedItemText = normalizeItemText(itemText);
       if (!normalizedItemText) return null;
 
-      const nextSelected: SelectedQuickstartDetail = {
+      const nextSelected = {
         itemType,
         itemText: normalizedItemText,
-      };
+      } satisfies SelectedQuickstartDetail;
       setSelected(nextSelected);
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
 
-      const cacheKey = buildKey(itemType, normalizedItemText);
-      const cached = cacheRef.current.get(cacheKey);
-      if (cached) {
-        setError(null);
-        setDetail(cached);
-        setIsLoading(false);
-        return cached;
-      }
-
-      setIsLoading(true);
-      setError(null);
+      const cacheKey = swrKeys.quickstartTopicDetail(
+        notebookId,
+        topicId,
+        itemType,
+        normalizedItemText,
+      );
 
       try {
-        const result = await quickstartApi.getTopicDetail(notebookId, topicId, {
-          item_type: itemType,
-          item_text: normalizedItemText,
-        });
-        cacheRef.current.set(cacheKey, result);
-        if (requestIdRef.current === requestId) {
-          setDetail(result);
-        }
-        return result;
-      } catch (e) {
-        if (requestIdRef.current === requestId) {
-          setError(toNotebookErrorMessage(e));
-        }
+        const result = await mutateSWR(
+          cacheKey,
+          quickstartApi.getTopicDetail(notebookId, topicId, {
+            item_type: itemType,
+            item_text: normalizedItemText,
+          }),
+          {
+            revalidate: false,
+          },
+        );
+        return result ?? null;
+      } catch {
         return null;
-      } finally {
-        if (requestIdRef.current === requestId) {
-          setIsLoading(false);
-        }
       }
     },
     [notebookId, topicId],
   );
 
-  return { detail, selected, isLoading, error, loadDetail, clearDetail };
+  return {
+    detail: data ?? null,
+    selected,
+    isLoading,
+    error: error ? toNotebookErrorMessage(error) : null,
+    loadDetail,
+    clearDetail,
+  };
 }

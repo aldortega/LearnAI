@@ -15,7 +15,7 @@ import { useGenerateReport } from "../hooks/useGenerateReport";
 import { useGenerateReportSuggestions } from "../hooks/useGenerateReportSuggestions";
 import { useDownloadReportPdf } from "../hooks/useDownloadReportPdf";
 import { useReportsConfig } from "../hooks/useReportsConfig";
-import { hasCachedReports, useReportsHistory } from "../hooks/useReportsHistory";
+import { useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
 import type { ReportFormatType, ReportOut, ReportPromptTemplate, ReportSuggestion } from "../types/reports.types";
 
@@ -35,9 +35,7 @@ export function NotebookReportsPage() {
   const hasCheckedLatestSuggestionsJobRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
-  const [viewMode, setViewMode] = useState<ReportViewMode>(() =>
-    hasCachedReports(notebookId) ? "history" : "templates",
-  );
+  const [viewMode, setViewMode] = useState<ReportViewMode>("templates");
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
@@ -124,7 +122,7 @@ export function NotebookReportsPage() {
     hasCheckedLatestSuggestionsJobRef.current = false;
     hasTriggeredAutoSuggestionsRef.current = false;
     previousReadySignatureRef.current = null;
-    setViewMode(hasCachedReports(notebookId) ? "history" : "templates");
+    setViewMode("templates");
     setHistoryView("cards");
     setEditTarget(null);
     setEditPrompt("");

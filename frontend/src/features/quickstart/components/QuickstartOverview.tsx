@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { useSWRConfig } from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import type { QuickstartOut, QuickstartTopic } from "../types/quickstart.types";
 import { useAddQuickstartTopic } from "../hooks/useAddQuickstartTopic";
 import { useDeleteQuickstartTopic } from "../hooks/useDeleteQuickstartTopic";
 import { useReorderQuickstartTopics } from "../hooks/useReorderQuickstartTopics";
 import { useQuickstartSuggestions } from "../hooks/useQuickstartSuggestions";
-import { appendQuickstartTopic, removeQuickstartTopic } from "../hooks/useQuickstartStore";
 import { DeleteQuickstartTopicModal } from "./DeleteQuickstartTopicModal";
 import { QuickstartTopicSuggestions } from "./QuickstartTopicSuggestions";
 import { QuickstartTopicsList } from "./QuickstartTopicsList";
@@ -21,6 +22,7 @@ export function QuickstartOverview({
   notebookId,
   error,
 }: Props) {
+  const { mutate } = useSWRConfig();
   const [deleteTarget, setDeleteTarget] = useState<QuickstartTopic | null>(null);
   const isStale = quickstart.status === "stale";
   const {
@@ -75,7 +77,24 @@ export function QuickstartOverview({
     clearAddTopicError();
     const newTopic = await addTopic(title);
     if (!newTopic) return;
-    appendQuickstartTopic(notebookId, newTopic);
+
+    await mutate(
+      swrKeys.quickstart(notebookId),
+      (currentQuickstart?: QuickstartOut | null) => {
+        const baseQuickstart = currentQuickstart ?? quickstart;
+        const exists = baseQuickstart.topics.some((topic) => topic.id === newTopic.id);
+        if (exists) {
+          return baseQuickstart;
+        }
+
+        return {
+          ...baseQuickstart,
+          topics: [...baseQuickstart.topics, newTopic],
+        };
+      },
+      { revalidate: false },
+    );
+
     if (source === "suggestion") {
       removeSuggestion(title);
     }
@@ -99,7 +118,18 @@ export function QuickstartOverview({
     const deleted = await deleteTopic(deleteTarget.id);
     if (!deleted) return;
 
-    removeQuickstartTopic(notebookId, deleteTarget.id);
+    await mutate(
+      swrKeys.quickstart(notebookId),
+      (currentQuickstart?: QuickstartOut | null) => {
+        const baseQuickstart = currentQuickstart ?? quickstart;
+        return {
+          ...baseQuickstart,
+          topics: baseQuickstart.topics.filter((topic) => topic.id !== deleteTarget.id),
+        };
+      },
+      { revalidate: false },
+    );
+
     setDeleteTarget(null);
     await reload();
   };

@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
+import { useSWRConfig } from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quickstartApi } from "../api/quickstartApi";
 import type { QuickstartOut } from "../types/quickstart.types";
-import { reorderQuickstartTopics, setQuickstart } from "./useQuickstartStore";
 
 type Result = {
   reorderTopics: (topicIds: string[]) => Promise<boolean>;
@@ -16,6 +17,7 @@ export function useReorderQuickstartTopics(
   notebookId: string | undefined,
   quickstart: QuickstartOut,
 ): Result {
+  const { mutate } = useSWRConfig();
   const [isReordering, setIsReordering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,25 +34,51 @@ export function useReorderQuickstartTopics(
         return true;
       }
 
-      reorderQuickstartTopics(notebookId, topicIds);
+      const topicById = new Map(previousTopics.map((topic) => [topic.id, topic]));
+      const reorderedTopics = topicIds
+        .map((topicId) => topicById.get(topicId))
+        .filter((topic): topic is QuickstartOut["topics"][number] => Boolean(topic));
+      if (reorderedTopics.length !== previousTopics.length) {
+        return false;
+      }
+
+      const optimisticQuickstart: QuickstartOut = {
+        ...quickstart,
+        topics: reorderedTopics,
+      };
 
       setIsReordering(true);
       setError(null);
       try {
-        await quickstartApi.reorderTopics(notebookId, { topic_ids: topicIds });
+        await mutate(
+          swrKeys.quickstart(notebookId),
+          async (currentQuickstart?: QuickstartOut | null) => {
+            await quickstartApi.reorderTopics(notebookId, { topic_ids: topicIds });
+
+            if (!currentQuickstart) {
+              return optimisticQuickstart;
+            }
+
+            return {
+              ...currentQuickstart,
+              topics: reorderedTopics,
+            };
+          },
+          {
+            optimisticData: optimisticQuickstart,
+            rollbackOnError: true,
+            revalidate: false,
+          },
+        );
         return true;
       } catch (e) {
-        setQuickstart(notebookId, {
-          ...quickstart,
-          topics: previousTopics,
-        });
         setError(toNotebookErrorMessage(e));
         return false;
       } finally {
         setIsReordering(false);
       }
     },
-    [isReordering, notebookId, quickstart],
+    [isReordering, mutate, notebookId, quickstart],
   );
 
   return {

@@ -10,11 +10,12 @@ export { useLeaveNotebook } from "./hooks/useLeaveNotebook";
 export { useDocumentStream } from "./hooks/useDocumentStream";
 export { useNotebook } from "./hooks/useNotebook";
 export { useNotebookReadySources } from "./hooks/useNotebookReadySources";
+export { useNotebookPrefetch } from "./hooks/useNotebookPrefetch";
+export { useNotebookStudioSources } from "./hooks/useNotebookStudioSources";
 export { useInviteUser } from "./hooks/useInviteUser";
 export { useUserSearch } from "./hooks/useUserSearch";
 export { NotebookShell } from "./components/NotebookShell";
 export { InviteUserModal } from "./components/InviteUserModal";
-export { useNotebookDocumentsStore } from "./hooks/useNotebookDocumentsStore";
 export type {
   Notebook,
   NotebookCreate,

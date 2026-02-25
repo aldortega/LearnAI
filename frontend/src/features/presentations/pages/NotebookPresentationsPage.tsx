@@ -10,7 +10,7 @@ import { PresentationsShell } from "../components/PresentationsShell";
 import { useDeletePresentation } from "../hooks/useDeletePresentation";
 import { useDownloadPresentationPdf } from "../hooks/useDownloadPresentationPdf";
 import { useGeneratePresentation } from "../hooks/useGeneratePresentation";
-import { hasCachedPresentations, usePresentationsHistory } from "../hooks/usePresentationsHistory";
+import { usePresentationsHistory } from "../hooks/usePresentationsHistory";
 import { usePresentationsConfig } from "../hooks/usePresentationsConfig";
 import { usePresentationsNotebookSources } from "../hooks/usePresentationsNotebookSources";
 import type { PresentationDetailLevel, PresentationOut, PresentationStyle } from "../types/presentations.types";
@@ -27,7 +27,7 @@ export function NotebookPresentationsPage() {
   const hasResolvedInitialViewRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
 
-  const [viewMode, setViewMode] = useState<PresentationViewMode>(() => hasCachedPresentations(notebookId) ? "history" : "generate");
+  const [viewMode, setViewMode] = useState<PresentationViewMode>("generate");
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
@@ -71,7 +71,7 @@ export function NotebookPresentationsPage() {
       hasCheckedLatestJobRef.current = false;
       hasResolvedInitialViewRef.current = false;
       previousReadySignatureRef.current = null;
-      setViewMode(hasCachedPresentations(notebookId) ? "history" : "generate");
+      setViewMode("generate");
       setHistoryView("cards");
       setSelectedPresentationId(null);
       setSelectedSlideIndex(0);

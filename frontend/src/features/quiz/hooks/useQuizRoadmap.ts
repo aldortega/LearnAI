@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 
 import { quizApi } from "../api/quizApi";
 import type { RoadmapOut } from "../types/quiz.types";
-import { setRoadmap, useRoadmapStore } from "./useRoadmapStore";
 
 
 type Result = {
@@ -17,85 +18,47 @@ type Result = {
 };
 
 export function useQuizRoadmap(notebookId?: string): Result {
-  const cachedRoadmap = useRoadmapStore(notebookId);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isNotFound, setIsNotFound] = useState(false);
-  const hasFetchedRef = useRef<string | null>(null);
-  const shouldPoll = useMemo(() => {
-    if (!cachedRoadmap) return false;
-    return cachedRoadmap.units.some((unit) =>
-      unit.levels.some((level) => {
-        const status = level.questions_status ?? "idle";
-        return status === "generating";
-      }),
-    );
-  }, [cachedRoadmap]);
+  const { data, error, isLoading, mutate } = useSWR<RoadmapOut | null>(
+    notebookId ? swrKeys.roadmap(notebookId) : null,
+    () => quizApi.getRoadmap(notebookId as string),
+    {
+      refreshInterval: (roadmap) => {
+        if (!roadmap) {
+          return 0;
+        }
+
+        const shouldPoll = roadmap.units.some((unit) =>
+          unit.levels.some((level) => {
+            const status = level.questions_status ?? "idle";
+            return status === "generating";
+          }),
+        );
+
+        return shouldPoll ? 3000 : 0;
+      },
+      revalidateOnFocus: false,
+    },
+  );
+  const apiError = error as ApiError | undefined;
+  const isNotFound = apiError?.status === 404;
 
   const reload = useCallback(async () => {
     if (!notebookId) {
-      setIsNotFound(false);
-      setError(null);
       return null;
     }
-
-    setIsLoading(true);
-    setError(null);
-    setIsNotFound(false);
 
     try {
-      const data = await quizApi.getRoadmap(notebookId);
-      if (!data) {
-        setIsNotFound(true);
-        return null;
-      }
-      setRoadmap(notebookId, data);
-      return data;
-    } catch (e) {
-      const apiError = e as ApiError | undefined;
-      if (apiError?.status === 404) {
-        setIsNotFound(true);
-        return null;
-      }
-      setError(toNotebookErrorMessage(e));
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId]);
-
-  useEffect(() => {
-    if (!notebookId) return;
-
-    // Skip if we already have cached data or already fetched
-    if (cachedRoadmap || hasFetchedRef.current === notebookId) {
-      return;
-    }
-
-    hasFetchedRef.current = notebookId;
-    void reload();
-  }, [notebookId, cachedRoadmap, reload]);
-
-  // Reset hasFetchedRef when notebookId changes
-  useEffect(() => {
-    if (notebookId && hasFetchedRef.current !== notebookId && !cachedRoadmap) {
-      hasFetchedRef.current = null;
-    }
-  }, [notebookId, cachedRoadmap]);
-
-  useEffect(() => {
-    if (!notebookId || !shouldPoll) return;
-    const intervalId = window.setInterval(() => {
-      void reload();
-    }, 3000);
-
-    return () => window.clearInterval(intervalId);
-  }, [notebookId, reload, shouldPoll]);
+  }, [mutate, notebookId]);
 
   return {
-    roadmap: cachedRoadmap,
-    isLoading: isLoading && !cachedRoadmap,
-    error,
+    roadmap: data ?? null,
+    isLoading: isLoading && !data,
+    error: error && !isNotFound ? toNotebookErrorMessage(error) : null,
     isNotFound,
     reload,
   };
