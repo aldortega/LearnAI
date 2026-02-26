@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
 import { useNotebook } from "../../notebooks";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import { PresentationsContent } from "../components/PresentationsContent";
@@ -10,7 +9,7 @@ import { PresentationsShell } from "../components/PresentationsShell";
 import { useDeletePresentation } from "../hooks/useDeletePresentation";
 import { useDownloadPresentationPdf } from "../hooks/useDownloadPresentationPdf";
 import { useGeneratePresentation } from "../hooks/useGeneratePresentation";
-import { hasCachedPresentations, usePresentationsHistory } from "../hooks/usePresentationsHistory";
+import { usePresentationsHistory } from "../hooks/usePresentationsHistory";
 import { usePresentationsConfig } from "../hooks/usePresentationsConfig";
 import { usePresentationsNotebookSources } from "../hooks/usePresentationsNotebookSources";
 import type { PresentationDetailLevel, PresentationOut, PresentationStyle } from "../types/presentations.types";
@@ -18,7 +17,11 @@ import type { PresentationDetailLevel, PresentationOut, PresentationStyle } from
 type PresentationViewMode = "generate" | "history";
 type HistoryViewMode = "cards" | "detail";
 
-export function NotebookPresentationsPage() {
+type Props = {
+  routeMode?: "list" | "new";
+};
+
+export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
@@ -27,7 +30,9 @@ export function NotebookPresentationsPage() {
   const hasResolvedInitialViewRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
 
-  const [viewMode, setViewMode] = useState<PresentationViewMode>(() => hasCachedPresentations(notebookId) ? "history" : "generate");
+  const [viewMode, setViewMode] = useState<PresentationViewMode>(() =>
+    routeMode === "new" ? "generate" : "history",
+  );
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
@@ -51,8 +56,14 @@ export function NotebookPresentationsPage() {
   } = usePresentationsNotebookSources(notebookId);
 
   const { config, isLoading: isConfigLoading, error: configError, reload: reloadConfig } = usePresentationsConfig(notebookId);
-  const { presentations, isLoading: isPresentationsLoading, error: presentationsError, reload: reloadPresentations, removePresentation } =
-    usePresentationsHistory(notebookId);
+  const {
+    presentations,
+    isLoading: isPresentationsLoading,
+    hasResolved: hasResolvedPresentations,
+    error: presentationsError,
+    reload: reloadPresentations,
+    removePresentation,
+  } = usePresentationsHistory(notebookId);
   const { generate, resumeLatest, isGenerating, error: generateError, clearError: clearGenerateError } = useGeneratePresentation(notebookId);
   const { deletePresentation, deletingPresentationId, error: deleteError, clearError: clearDeleteError } = useDeletePresentation(notebookId);
   const {
@@ -71,7 +82,7 @@ export function NotebookPresentationsPage() {
       hasCheckedLatestJobRef.current = false;
       hasResolvedInitialViewRef.current = false;
       previousReadySignatureRef.current = null;
-      setViewMode(hasCachedPresentations(notebookId) ? "history" : "generate");
+      setViewMode(routeMode === "new" ? "generate" : "history");
       setHistoryView("cards");
       setSelectedPresentationId(null);
       setSelectedSlideIndex(0);
@@ -80,7 +91,7 @@ export function NotebookPresentationsPage() {
       setDetailLevel("concise");
       clearGenerateError();
     });
-  }, [notebookId, clearGenerateError]);
+  }, [notebookId, clearGenerateError, routeMode]);
 
   useEffect(() => {
     if (!styleOptions.length || styleOptions.some((item) => item.style === selectedStyle)) return;
@@ -102,6 +113,7 @@ export function NotebookPresentationsPage() {
 
   useEffect(() => {
     if (!notebookId || hasCheckedLatestJobRef.current || isGenerating || isPresentationsLoading) return;
+    if (routeMode === "new") return;
     hasCheckedLatestJobRef.current = true;
     void (async () => {
       const result = await resumeLatest({ suppressFailedError: true });
@@ -111,14 +123,27 @@ export function NotebookPresentationsPage() {
       setViewMode("history");
       setHistoryView("cards");
     })();
-  }, [notebookId, isGenerating, isPresentationsLoading, reloadPresentations, resumeLatest]);
+  }, [
+    notebookId,
+    isGenerating,
+    isPresentationsLoading,
+    reloadPresentations,
+    resumeLatest,
+    routeMode,
+  ]);
 
   useEffect(() => {
     if (!notebookId || isPresentationsLoading || hasResolvedInitialViewRef.current) return;
     queueMicrotask(() => {
       hasResolvedInitialViewRef.current = true;
-      if (!presentations.length) {
+
+      if (routeMode === "new") {
         setViewMode("generate");
+        return;
+      }
+
+      if (!presentations.length) {
+        navigate(`/notebook/${notebookId}/presentations/new`, { replace: true });
         return;
       }
       setViewMode("history");
@@ -126,7 +151,7 @@ export function NotebookPresentationsPage() {
       setSelectedPresentationId(null);
       setSelectedSlideIndex(0);
     });
-  }, [notebookId, isPresentationsLoading, presentations]);
+  }, [notebookId, isPresentationsLoading, presentations, routeMode, navigate]);
 
   const runGeneration = useCallback(async () => {
     if (!notebookId || !canGeneratePresentations || !topic.trim()) return;
@@ -139,9 +164,23 @@ export function NotebookPresentationsPage() {
     if (!result) return;
     const updated = await reloadPresentations();
     if (!updated.length) return;
+    if (routeMode === "new") {
+      navigate(`/notebook/${notebookId}/presentations`, { replace: true });
+    }
     setViewMode("history");
     setHistoryView("cards");
-  }, [notebookId, canGeneratePresentations, topic, selectedStyle, detailLevel, clearGenerateError, generate, reloadPresentations]);
+  }, [
+    notebookId,
+    canGeneratePresentations,
+    topic,
+    selectedStyle,
+    detailLevel,
+    clearGenerateError,
+    generate,
+    reloadPresentations,
+    routeMode,
+    navigate,
+  ]);
 
   const activePresentation = useMemo(() => {
     if (!selectedPresentationId) return null;
@@ -172,7 +211,7 @@ export function NotebookPresentationsPage() {
     if (!updated.length) {
       setSelectedPresentationId(null);
       setHistoryView("cards");
-      setViewMode("generate");
+      navigate(`/notebook/${notebookId}/presentations/new`, { replace: true });
       return;
     }
     if (selectedPresentationId === deletedId) {
@@ -180,7 +219,15 @@ export function NotebookPresentationsPage() {
       setSelectedSlideIndex(0);
       setHistoryView("cards");
     }
-  }, [deleteTarget, deletePresentation, removePresentation, reloadPresentations, selectedPresentationId]);
+  }, [
+    deleteTarget,
+    deletePresentation,
+    removePresentation,
+    reloadPresentations,
+    selectedPresentationId,
+    notebookId,
+    navigate,
+  ]);
 
   const handleToggleView = useCallback(() => {
     if (viewMode === "history" && historyView === "detail") {
@@ -188,13 +235,14 @@ export function NotebookPresentationsPage() {
       return;
     }
     if (viewMode === "history") {
-      setViewMode("generate");
+      if (!notebookId) return;
+      navigate(`/notebook/${notebookId}/presentations/new`);
       return;
     }
     if (!presentations.length) return;
-    setViewMode("history");
-    setHistoryView("cards");
-  }, [viewMode, historyView, presentations.length]);
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/presentations`);
+  }, [viewMode, historyView, presentations.length, notebookId, navigate]);
 
   return (
     <NotebookShell
@@ -224,7 +272,7 @@ export function NotebookPresentationsPage() {
       onGoQuiz={() => notebookId && navigate(`/notebook/${notebookId}/quiz`)}
       onGoQuickstart={() => notebookId && navigate(`/notebook/${notebookId}/quickstart`)}
       onGoReports={() => notebookId && navigate(`/notebook/${notebookId}/reports`)}
-      onGoPresentations={() => undefined}
+      onGoPresentations={() => notebookId && navigate(`/notebook/${notebookId}/presentations`)}
       onGoMindmap={() => notebookId && navigate(`/notebook/${notebookId}/mindmap`)}
       onGoFlashcards={() => notebookId && navigate(`/notebook/${notebookId}/flashcards`)}
       beforeMain={<input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.docx,.txt,.pptx" onChange={handleFileChange} />}
@@ -275,6 +323,8 @@ export function NotebookPresentationsPage() {
           detailLevel={detailLevel}
           canGeneratePresentations={canGeneratePresentations}
           isGenerating={isGenerating}
+          isPresentationsLoading={isPresentationsLoading}
+          hasResolvedPresentations={hasResolvedPresentations}
           isConfigLoading={isConfigLoading}
           generationError={generationError}
           presentations={presentations}

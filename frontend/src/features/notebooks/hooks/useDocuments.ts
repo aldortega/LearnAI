@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import type { Document } from "../types/documents.types";
 import { documentsApi } from "../api/documentsApi";
 import { toNotebookErrorMessage } from "../utils/notebookErrors";
-import { setNotebookDocuments } from "./useNotebookDocumentsStore";
 
 type Result = {
   documents: Document[];
@@ -13,36 +14,26 @@ type Result = {
 };
 
 export function useDocuments(notebookId?: string, enabled = true): Result {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading, mutate } = useSWR<Document[]>(
+    notebookId ? swrKeys.documents(notebookId) : null,
+    () => documentsApi.list(notebookId as string),
+    {
+      isPaused: () => !enabled,
+    },
+  );
 
   const reload = useCallback(async () => {
     if (!notebookId || !enabled) {
-      if (!notebookId) {
-        setDocuments([]);
-      }
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    await mutate();
+  }, [enabled, mutate, notebookId]);
 
-    try {
-      const data = await documentsApi.list(notebookId);
-      setDocuments(data);
-      setNotebookDocuments(notebookId, data);
-    } catch (e) {
-      setError(toNotebookErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [notebookId, enabled]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    void reload();
-  }, [reload, enabled]);
-
-  return { documents, isLoading, error, reload };
+  return {
+    documents: data ?? [],
+    isLoading: enabled ? isLoading && !data : false,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

@@ -13,7 +13,6 @@ import { RoadmapView } from "../components/RoadmapView";
 import { QuizShell } from "../components/QuizShell";
 import { useDeleteQuizRoadmap } from "../hooks/useDeleteQuizRoadmap";
 import { useGenerateQuizRoadmap } from "../hooks/useGenerateQuizRoadmap";
-import { clearRoadmap } from "../hooks/useRoadmapStore";
 import { useQuizRoadmap } from "../hooks/useQuizRoadmap";
 import { useResetQuizAttempts } from "../hooks/useResetQuizAttempts";
 import type { QuizGenerateRequest } from "../types/quiz.types";
@@ -239,7 +238,6 @@ export function NotebookQuizPage() {
     const wasDeleted = await deleteQuizRoadmap();
     if (!wasDeleted) return;
 
-    clearRoadmap(notebookId);
     setIsRegenerateModalOpen(false);
     navigate(`/notebook/${notebookId}/quiz`);
     await reloadRoadmap();

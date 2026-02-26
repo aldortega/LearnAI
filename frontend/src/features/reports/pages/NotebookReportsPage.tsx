@@ -15,7 +15,7 @@ import { useGenerateReport } from "../hooks/useGenerateReport";
 import { useGenerateReportSuggestions } from "../hooks/useGenerateReportSuggestions";
 import { useDownloadReportPdf } from "../hooks/useDownloadReportPdf";
 import { useReportsConfig } from "../hooks/useReportsConfig";
-import { hasCachedReports, useReportsHistory } from "../hooks/useReportsHistory";
+import { useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
 import type { ReportFormatType, ReportOut, ReportPromptTemplate, ReportSuggestion } from "../types/reports.types";
 
@@ -25,7 +25,12 @@ const SUGGESTIONS_SYNC_TIMEOUT_MS = 180000;
 type ReportViewMode = "templates" | "history";
 type HistoryViewMode = "cards" | "detail";
 type EditTarget = { title: string; formatType: ReportFormatType; suggestionId: string | null };
-export function NotebookReportsPage() {
+
+type Props = {
+  routeMode?: "list" | "new";
+};
+
+export function NotebookReportsPage({ routeMode = "list" }: Props) {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
@@ -36,7 +41,7 @@ export function NotebookReportsPage() {
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
   const [viewMode, setViewMode] = useState<ReportViewMode>(() =>
-    hasCachedReports(notebookId) ? "history" : "templates",
+    routeMode === "new" ? "templates" : "history",
   );
   const [historyView, setHistoryView] = useState<HistoryViewMode>("cards");
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
@@ -67,6 +72,7 @@ export function NotebookReportsPage() {
   const {
     reports,
     isLoading: isReportsLoading,
+    hasResolved: hasResolvedReports,
     error: reportsError,
     reload: reloadReports,
     removeReport,
@@ -124,7 +130,7 @@ export function NotebookReportsPage() {
     hasCheckedLatestSuggestionsJobRef.current = false;
     hasTriggeredAutoSuggestionsRef.current = false;
     previousReadySignatureRef.current = null;
-    setViewMode(hasCachedReports(notebookId) ? "history" : "templates");
+    setViewMode(routeMode === "new" ? "templates" : "history");
     setHistoryView("cards");
     setEditTarget(null);
     setEditPrompt("");
@@ -132,7 +138,7 @@ export function NotebookReportsPage() {
     setDeleteReportTarget(null);
     setSuggestionsSyncTimedOut(false);
     clearGenerateSuggestionsError();
-  }, [notebookId, clearGenerateSuggestionsError]);
+  }, [notebookId, clearGenerateSuggestionsError, routeMode]);
   useEffect(() => {
     hasTriggeredAutoSuggestionsRef.current = false;
   }, [notebookId, readySignature]);
@@ -239,6 +245,7 @@ export function NotebookReportsPage() {
   useEffect(() => {
     if (!notebookId || hasCheckedLatestReportJobRef.current) return;
     if (isGenerating || isReportsLoading) return;
+    if (routeMode === "new") return;
 
     hasCheckedLatestReportJobRef.current = true;
 
@@ -261,12 +268,19 @@ export function NotebookReportsPage() {
     isReportsLoading,
     reloadReports,
     resumeLatest,
+    routeMode,
   ]);
   useEffect(() => {
     if (!notebookId || isReportsLoading || hasResolvedInitialViewRef.current) return;
     hasResolvedInitialViewRef.current = true;
-    if (reports.length === 0) {
+
+    if (routeMode === "new") {
       setViewMode("templates");
+      return;
+    }
+
+    if (reports.length === 0) {
+      navigate(`/notebook/${notebookId}/reports/new`, { replace: true });
       return;
     }
 
@@ -275,7 +289,7 @@ export function NotebookReportsPage() {
     setSelectedReportId((prev) =>
       prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
     );
-  }, [notebookId, isReportsLoading, reports]);
+  }, [notebookId, isReportsLoading, reports, routeMode, navigate]);
   const runGeneration = useCallback(
     async (formatType: ReportFormatType, prompt: string, suggestionId: string | null = null) => {
       if (!notebookId || !prompt.trim() || !canGenerateReports) return false;
@@ -295,13 +309,24 @@ export function NotebookReportsPage() {
       } else if (updatedReports.length > 0) {
         setSelectedReportId(updatedReports[0].id);
       }
+      if (routeMode === "new") {
+        navigate(`/notebook/${notebookId}/reports`, { replace: true });
+      }
       setViewMode("history");
       setHistoryView("cards");
       setEditTarget(null);
       setEditPrompt("");
       return true;
     },
-    [notebookId, canGenerateReports, clearGenerateError, generate, reloadReports],
+    [
+      notebookId,
+      canGenerateReports,
+      clearGenerateError,
+      generate,
+      reloadReports,
+      routeMode,
+      navigate,
+    ],
   );
   const handleEditTemplate = useCallback(
     (template: ReportPromptTemplate) => {
@@ -377,7 +402,7 @@ export function NotebookReportsPage() {
     if (updatedReports.length === 0) {
       setSelectedReportId(null);
       setHistoryView("cards");
-      setViewMode("templates");
+      navigate(`/notebook/${notebookId}/reports/new`, { replace: true });
       return;
     }
     if (selectedReportId === deletedReportId) {
@@ -393,6 +418,8 @@ export function NotebookReportsPage() {
     removeReport,
     reloadReports,
     selectedReportId,
+    notebookId,
+    navigate,
   ]);
   const handleDeleteDocumentCancel = useCallback(() => {
     setDeleteTarget(null);
@@ -446,7 +473,10 @@ export function NotebookReportsPage() {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/quickstart`);
   }, [notebookId, navigate]);
-  const handleStudioNavReports = useCallback(() => undefined, []);
+  const handleStudioNavReports = useCallback(() => {
+    if (!notebookId) return;
+    navigate(`/notebook/${notebookId}/reports`);
+  }, [notebookId, navigate]);
   const handleStudioNavPresentations = useCallback(() => {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/presentations`);
@@ -478,23 +508,26 @@ export function NotebookReportsPage() {
       return;
     }
     if (viewMode === "history") {
-      setViewMode("templates");
+      if (!notebookId) {
+        return;
+      }
+      navigate(`/notebook/${notebookId}/reports/new`);
       clearGenerateError();
       return;
     }
     if (!canReturnToHistory) return;
-    setViewMode("history");
-    setHistoryView("cards");
-    setSelectedReportId((prev) =>
-      prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
-    );
+    if (!notebookId) {
+      return;
+    }
+    navigate(`/notebook/${notebookId}/reports`);
     clearGenerateError();
   }, [
     viewMode,
     historyView,
     canReturnToHistory,
-    reports,
     clearGenerateError,
+    notebookId,
+    navigate,
   ]);
   return (
     <NotebookShell
@@ -654,6 +687,8 @@ export function NotebookReportsPage() {
                   <>
                     <ReportsHistoryList
                       reports={reports}
+                      isLoading={isReportsLoading}
+                      hasResolved={hasResolvedReports}
                       isGenerating={isGenerating}
                       selectedReportId={null}
                       deletingReportId={deletingReportId}

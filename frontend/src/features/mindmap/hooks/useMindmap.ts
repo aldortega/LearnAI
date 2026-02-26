@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { mindmapApi } from "../api/mindmapApi";
 import type { MindmapOut } from "../types/mindmap.types";
@@ -12,55 +14,28 @@ type Result = {
 };
 
 export function useMindmap(notebookId?: string): Result {
-  const [mindmap, setMindmap] = useState<MindmapOut | null>(null);
-  const [isLoading, setIsLoading] = useState(() => Boolean(notebookId));
-  const [error, setError] = useState<string | null>(null);
-  const requestIdRef = useRef(0);
+  const { data, error, isLoading, mutate } = useSWR<MindmapOut>(
+    notebookId ? swrKeys.mindmap(notebookId) : null,
+    () => mindmapApi.getMindmap(notebookId as string),
+  );
 
   const reload = useCallback(async () => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-
     if (!notebookId) {
-      if (requestIdRef.current === requestId) {
-        setMindmap(null);
-        setError(null);
-        setIsLoading(false);
-      }
       return null;
     }
 
-    setIsLoading(true);
-    setError(null);
     try {
-      const data = await mindmapApi.getMindmap(notebookId);
-      if (requestIdRef.current === requestId) {
-        setMindmap(data);
-      }
-      return data;
-    } catch (e) {
-      if (requestIdRef.current === requestId) {
-        setError(toNotebookErrorMessage(e));
-      }
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      if (requestIdRef.current === requestId) {
-        setIsLoading(false);
-      }
     }
-  }, [notebookId]);
+  }, [mutate, notebookId]);
 
-  useEffect(() => {
-    if (!notebookId) {
-      requestIdRef.current += 1;
-      setMindmap(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    void reload();
-  }, [notebookId, reload]);
-
-  return { mindmap, isLoading, error, reload };
+  return {
+    mindmap: data ?? null,
+    isLoading: isLoading && !data,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

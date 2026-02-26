@@ -16,7 +16,7 @@ import { ForgotPasswordPage } from "./features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./features/auth/pages/ResetPasswordPage";
 import { NotebookFlashcardsPage } from "./features/flashcards/pages/NotebookFlashcardsPage";
 import { HomePage } from "./features/home/pages/HomePage";
-import { useNotebookReadySources } from "./features/notebooks";
+import { useNotebookPrefetch, useNotebookReadySources } from "./features/notebooks";
 import { NotebookMindmapPage } from "./features/mindmap/pages/NotebookMindmapPage";
 import { NotebookPage } from "./features/notebooks/pages/NotebookPage";
 import { NotebookQuickstartPage } from "./features/quickstart/pages/NotebookQuickstartPage";
@@ -49,12 +49,13 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 function NotebookEntryRoute() {
   const { notebookId } = useParams();
   const { hasReadySources, isResolving } = useNotebookReadySources(notebookId);
+  const { isPrefetching } = useNotebookPrefetch(notebookId, hasReadySources);
 
   if (!notebookId) {
     return <Navigate to="/" replace />;
   }
 
-  if (isResolving) {
+  if (isResolving || (hasReadySources && isPrefetching)) {
     return <NotebookLoadingScreen />;
   }
 
@@ -68,12 +69,13 @@ function NotebookEntryRoute() {
 function RequireReadySources({ children }: { children: ReactNode }) {
   const { notebookId } = useParams();
   const { hasReadySources, isResolving } = useNotebookReadySources(notebookId);
+  const { isPrefetching } = useNotebookPrefetch(notebookId, hasReadySources);
 
   if (!notebookId) {
     return <Navigate to="/" replace />;
   }
 
-  if (isResolving) {
+  if (isResolving || (hasReadySources && isPrefetching)) {
     return <NotebookLoadingScreen />;
   }
 
@@ -158,7 +160,17 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <RequireReadySources>
-                        <NotebookReportsPage />
+                        <NotebookReportsPage routeMode="list" />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/reports/new"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookReportsPage routeMode="new" />
                       </RequireReadySources>
                     </ProtectedRoute>
                   }
@@ -168,7 +180,17 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <RequireReadySources>
-                        <NotebookPresentationsPage />
+                        <NotebookPresentationsPage routeMode="list" />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/presentations/new"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookPresentationsPage routeMode="new" />
                       </RequireReadySources>
                     </ProtectedRoute>
                   }

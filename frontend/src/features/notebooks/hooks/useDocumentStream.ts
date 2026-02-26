@@ -1,13 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 
 import { getApiBaseUrl } from "../../../shared/lib/apiClient";
+import { swrKeys } from "../../../shared/lib/swrKeys";
+import { documentsApi } from "../api/documentsApi";
 import type { Document } from "../types/documents.types";
-import {
-  setNotebookDocuments,
-  setNotebookDocumentsError,
-  setNotebookStreaming,
-  useNotebookDocumentsStore,
-} from "./useNotebookDocumentsStore";
 
 const STREAM_ERROR_MESSAGE = "No se pudo conectar al stream";
 
@@ -21,44 +18,73 @@ export function useDocumentStream(
   notebookId?: string,
   streamKey = 0,
 ): Result {
-  const { documents, isStreaming, error } = useNotebookDocumentsStore(notebookId);
+  const { data, mutate } = useSWR<Document[]>(
+    notebookId ? swrKeys.documents(notebookId) : null,
+    () => documentsApi.list(notebookId as string),
+    {
+      revalidateOnMount: false,
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+    },
+  );
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const latestDocumentsRef = useRef<Document[]>([]);
+
+  useEffect(() => {
+    latestDocumentsRef.current = data ?? [];
+  }, [data]);
 
   useEffect(() => {
     if (!notebookId) {
       return;
     }
 
+    let isActive = true;
     const baseUrl = getApiBaseUrl();
     const streamUrl = `${baseUrl}/notebooks/${notebookId}/documents/stream?key=${streamKey}`;
     const eventSource = new EventSource(streamUrl, { withCredentials: true });
 
     queueMicrotask(() => {
-      setNotebookStreaming(notebookId, true);
-      setNotebookDocumentsError(notebookId, null);
+      if (!isActive) {
+        return;
+      }
+
+      setIsStreaming(true);
+      setError(null);
     });
 
     const handleDocuments = (event: MessageEvent) => {
+      if (!isActive) {
+        return;
+      }
+
       try {
         const data = JSON.parse(event.data) as Document[];
         latestDocumentsRef.current = data;
-        setNotebookDocuments(notebookId, data);
+        setError(null);
+        void mutate(data, { revalidate: false });
       } catch {
-        setNotebookDocumentsError(notebookId, STREAM_ERROR_MESSAGE);
+        setIsStreaming(false);
+        setError(STREAM_ERROR_MESSAGE);
         eventSource.close();
       }
     };
 
     const handleError = () => {
+      if (!isActive) {
+        return;
+      }
+
       const latestDocuments = latestDocumentsRef.current;
       const allDone =
         latestDocuments.length > 0 &&
         latestDocuments.every((doc) => doc.status === "done");
 
       eventSource.close();
-      setNotebookStreaming(notebookId, false);
+      setIsStreaming(false);
       if (!allDone) {
-        setNotebookDocumentsError(notebookId, STREAM_ERROR_MESSAGE);
+        setError(STREAM_ERROR_MESSAGE);
       }
     };
 
@@ -66,11 +92,17 @@ export function useDocumentStream(
     eventSource.addEventListener("error", handleError as EventListener);
 
     return () => {
+      isActive = false;
       eventSource.close();
       eventSource.removeEventListener("documents", handleDocuments);
       eventSource.removeEventListener("error", handleError as EventListener);
+      setIsStreaming(false);
     };
-  }, [notebookId, streamKey]);
+  }, [mutate, notebookId, streamKey]);
 
-  return { documents, isStreaming, error };
+  return {
+    documents: data ?? [],
+    isStreaming: notebookId ? isStreaming : false,
+    error: notebookId ? error : null,
+  };
 }

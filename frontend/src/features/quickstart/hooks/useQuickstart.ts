@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quickstartApi } from "../api/quickstartApi";
 import type { QuickstartOut } from "../types/quickstart.types";
-import { setQuickstart, useQuickstartStore } from "./useQuickstartStore";
 
 type Result = {
   quickstart: QuickstartOut | null;
@@ -15,61 +16,30 @@ type Result = {
 };
 
 export function useQuickstart(notebookId?: string): Result {
-  const cachedQuickstart = useQuickstartStore(notebookId);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isNotFound, setIsNotFound] = useState(false);
-  const hasFetchedRef = useRef<string | null>(null);
+  const { data, error, isLoading, mutate } = useSWR<QuickstartOut>(
+    notebookId ? swrKeys.quickstart(notebookId) : null,
+    () => quickstartApi.getQuickstart(notebookId as string),
+  );
+  const apiError = error as ApiError | undefined;
+  const isNotFound = apiError?.status === 404;
 
   const reload = useCallback(async () => {
     if (!notebookId) {
-      setIsNotFound(false);
-      setError(null);
       return null;
     }
-
-    setIsLoading(true);
-    setError(null);
-    setIsNotFound(false);
 
     try {
-      const data = await quickstartApi.getQuickstart(notebookId);
-      setQuickstart(notebookId, data);
-      return data;
-    } catch (e) {
-      const apiError = e as ApiError | undefined;
-      if (apiError?.status === 404) {
-        setIsNotFound(true);
-        return null;
-      }
-      setError(toNotebookErrorMessage(e));
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId]);
-
-  useEffect(() => {
-    if (!notebookId) return;
-
-    if (cachedQuickstart || hasFetchedRef.current === notebookId) {
-      return;
-    }
-
-    hasFetchedRef.current = notebookId;
-    void reload();
-  }, [notebookId, cachedQuickstart, reload]);
-
-  useEffect(() => {
-    if (notebookId && hasFetchedRef.current !== notebookId && !cachedQuickstart) {
-      hasFetchedRef.current = null;
-    }
-  }, [notebookId, cachedQuickstart]);
+  }, [mutate, notebookId]);
 
   return {
-    quickstart: cachedQuickstart,
-    isLoading: isLoading && !cachedQuickstart,
-    error,
+    quickstart: data ?? null,
+    isLoading: isLoading && !data,
+    error: error && !isNotFound ? toNotebookErrorMessage(error) : null,
     isNotFound,
     reload,
   };

@@ -44,7 +44,7 @@ Estas capacidades ya están implementadas y deben considerarse parte del comport
 ## Reglas globales
 
 - Respeta la estructura existente; evita mover archivos sin necesidad.
-- No agregues nuevas dependencias sin justificarlo en el PR/commit.
+- Si existe alguna dependencia que solucione algo, implementala, en lugar de tratar de hacerlo manual.
 - No inventes comandos: usa los scripts y herramientas ya presentes.
 - No existen reglas de Cursor/Copilot en este repo (no `.cursor/rules/`, `.cursorrules`, ni `.github/copilot-instructions.md`).
 - Hay reglas adicionales específicas de frontend en `frontend/AGENTS.md`.

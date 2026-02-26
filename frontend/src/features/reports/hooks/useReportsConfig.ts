@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { reportsApi } from "../api/reportsApi";
 import type { ReportConfigOut } from "../types/reports.types";
-
-const reportsConfigCache = new Map<string, ReportConfigOut>();
 
 type Result = {
   config: ReportConfigOut | null;
@@ -14,57 +14,28 @@ type Result = {
 };
 
 export function useReportsConfig(notebookId?: string): Result {
-  const [config, setConfig] = useState<ReportConfigOut | null>(() =>
-    notebookId ? reportsConfigCache.get(notebookId) ?? null : null,
+  const { data, error, isLoading, mutate } = useSWR<ReportConfigOut>(
+    notebookId ? swrKeys.reportsConfig(notebookId) : null,
+    () => reportsApi.getConfig(notebookId as string),
   );
-  const [isLoading, setIsLoading] = useState(() =>
-    notebookId ? !reportsConfigCache.has(notebookId) : false,
-  );
-  const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!notebookId) {
-      setConfig(null);
-      setError(null);
-      setIsLoading(false);
       return null;
     }
-
-    setIsLoading(true);
-    setError(null);
 
     try {
-      const data = await reportsApi.getConfig(notebookId);
-      reportsConfigCache.set(notebookId, data);
-      setConfig(data);
-      return data;
-    } catch (e) {
-      setError(toNotebookErrorMessage(e));
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId]);
+  }, [mutate, notebookId]);
 
-  useEffect(() => {
-    if (!notebookId) {
-      setConfig(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const cachedConfig = reportsConfigCache.get(notebookId);
-    if (cachedConfig) {
-      setConfig(cachedConfig);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    setConfig(null);
-    void reload();
-  }, [notebookId, reload]);
-
-  return { config, isLoading, error, reload };
+  return {
+    config: data ?? null,
+    isLoading: isLoading && !data,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

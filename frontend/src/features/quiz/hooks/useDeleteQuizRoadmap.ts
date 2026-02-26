@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
+import { useSWRConfig } from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quizApi } from "../api/quizApi";
 
@@ -11,6 +13,7 @@ type Result = {
 };
 
 export function useDeleteQuizRoadmap(notebookId?: string): Result {
+  const { mutate } = useSWRConfig();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +27,7 @@ export function useDeleteQuizRoadmap(notebookId?: string): Result {
 
     try {
       await quizApi.deleteRoadmap(notebookId);
+      await mutate(swrKeys.roadmap(notebookId), null, { revalidate: false });
       return true;
     } catch (e) {
       setError(toNotebookErrorMessage(e));
@@ -31,7 +35,7 @@ export function useDeleteQuizRoadmap(notebookId?: string): Result {
     } finally {
       setIsDeleting(false);
     }
-  }, [notebookId]);
+  }, [mutate, notebookId]);
 
   return { deleteRoadmap, isDeleting, error, clearError };
 }
