@@ -4,6 +4,8 @@ import { PresentationPreviewSkeletonCard } from "./PresentationPreviewSkeletonCa
 
 type Props = {
   presentations: PresentationOut[];
+  isLoading: boolean;
+  hasResolved: boolean;
   isGenerating: boolean;
   deletingPresentationId: string | null;
   onSelectPresentation: (presentationId: string) => void;
@@ -12,6 +14,8 @@ type Props = {
 
 export function PresentationsHistoryList({
   presentations,
+  isLoading,
+  hasResolved,
   isGenerating,
   deletingPresentationId,
   onSelectPresentation,
@@ -21,8 +25,8 @@ export function PresentationsHistoryList({
     <section className="space-y-4">
       <h3 className="text-lg font-bold text-foreground">
         Presentaciones generadas{" "}
-        <span className="font-normal text-muted-foreground">
-          ({presentations.length})
+        <span className="inline-block min-w-[2ch] text-right font-normal tabular-nums text-muted-foreground">
+          ({!hasResolved || isLoading ? " " : presentations.length})
         </span>
       </h3>
 

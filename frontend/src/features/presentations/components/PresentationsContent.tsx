@@ -20,6 +20,8 @@ type Props = {
   detailLevel: PresentationDetailLevel;
   canGeneratePresentations: boolean;
   isGenerating: boolean;
+  isPresentationsLoading: boolean;
+  hasResolvedPresentations: boolean;
   isConfigLoading: boolean;
   generationError: string | null;
   presentations: PresentationOut[];
@@ -49,6 +51,8 @@ export function PresentationsContent({
   detailLevel,
   canGeneratePresentations,
   isGenerating,
+  isPresentationsLoading,
+  hasResolvedPresentations,
   isConfigLoading,
   generationError,
   presentations,
@@ -95,6 +99,8 @@ export function PresentationsContent({
         {historyView === "cards" ? (
           <PresentationsHistoryList
             presentations={presentations}
+            isLoading={isPresentationsLoading}
+            hasResolved={hasResolvedPresentations}
             isGenerating={isGenerating}
             deletingPresentationId={deletingPresentationId}
             onSelectPresentation={onSelectPresentation}

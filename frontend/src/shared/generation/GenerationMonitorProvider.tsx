@@ -129,7 +129,7 @@ export function GenerationMonitorProvider({ children }: Props) {
       const label = generationKindLabels[kind];
       upsertToast(key, {
         variant: "loading",
-        title: `Generando ${label}...`,
+        title: `Generando ${label}`,
       });
 
       flushStorage();
@@ -184,7 +184,7 @@ export function GenerationMonitorProvider({ children }: Props) {
         const label = generationKindLabels[item.kind];
         upsertToast(item.key, {
           variant: "loading",
-          title: `Generando ${label}...`,
+          title: `Generando ${label}`,
         });
       }
       jobsRef.current = next;

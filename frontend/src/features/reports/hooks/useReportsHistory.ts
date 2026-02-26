@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import useSWR from "swr";
+import { useCallback, useMemo } from "react";
+import useSWR, { unstable_serialize, useSWRConfig } from "swr";
 
 import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
@@ -9,17 +9,34 @@ import type { ReportOut } from "../types/reports.types";
 type Result = {
   reports: ReportOut[];
   isLoading: boolean;
+  hasResolved: boolean;
   error: string | null;
   reload: () => Promise<ReportOut[]>;
   removeReport: (reportId: string) => void;
 };
 
 export function useReportsHistory(notebookId?: string): Result {
+  const { cache } = useSWRConfig();
+  const fallbackData = useMemo<ReportOut[] | undefined>(() => {
+    if (!notebookId) {
+      return undefined;
+    }
+
+    const cacheKey = unstable_serialize(swrKeys.reportsHistory(notebookId));
+    const cachedEntry = cache.get(cacheKey) as { data?: unknown } | undefined;
+    const cachedData = cachedEntry?.data;
+
+    return Array.isArray(cachedData) ? (cachedData as ReportOut[]) : undefined;
+  }, [cache, notebookId]);
+
   const { data, error, isLoading, mutate } = useSWR<ReportOut[]>(
     notebookId ? swrKeys.reportsHistory(notebookId) : null,
     async () => {
       const history = await reportsApi.listReports(notebookId as string);
       return history.items;
+    },
+    {
+      fallbackData,
     },
   );
 
@@ -54,6 +71,7 @@ export function useReportsHistory(notebookId?: string): Result {
   return {
     reports: data ?? [],
     isLoading: isLoading && !data,
+    hasResolved: data !== undefined || error !== undefined,
     error: error ? toNotebookErrorMessage(error) : null,
     reload,
     removeReport,

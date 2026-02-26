@@ -1,5 +1,5 @@
-import { useCallback } from "react";
-import useSWR from "swr";
+import { useCallback, useMemo } from "react";
+import useSWR, { unstable_serialize, useSWRConfig } from "swr";
 
 import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
@@ -9,17 +9,36 @@ import type { PresentationOut } from "../types/presentations.types";
 type Result = {
   presentations: PresentationOut[];
   isLoading: boolean;
+  hasResolved: boolean;
   error: string | null;
   reload: () => Promise<PresentationOut[]>;
   removePresentation: (presentationId: string) => void;
 };
 
 export function usePresentationsHistory(notebookId?: string): Result {
+  const { cache } = useSWRConfig();
+  const fallbackData = useMemo<PresentationOut[] | undefined>(() => {
+    if (!notebookId) {
+      return undefined;
+    }
+
+    const cacheKey = unstable_serialize(swrKeys.presentationsHistory(notebookId));
+    const cachedEntry = cache.get(cacheKey) as { data?: unknown } | undefined;
+    const cachedData = cachedEntry?.data;
+
+    return Array.isArray(cachedData)
+      ? (cachedData as PresentationOut[])
+      : undefined;
+  }, [cache, notebookId]);
+
   const { data, error, isLoading, mutate } = useSWR<PresentationOut[]>(
     notebookId ? swrKeys.presentationsHistory(notebookId) : null,
     async () => {
       const history = await presentationsApi.listPresentations(notebookId as string);
       return history.items;
+    },
+    {
+      fallbackData,
     },
   );
 
@@ -54,6 +73,7 @@ export function usePresentationsHistory(notebookId?: string): Result {
   return {
     presentations: data ?? [],
     isLoading: isLoading && !data,
+    hasResolved: data !== undefined || error !== undefined,
     error: error ? toNotebookErrorMessage(error) : null,
     reload,
     removePresentation,

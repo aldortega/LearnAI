@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
+import { Spinner } from "../Spinner";
 import { ToastContext, type ToastPayload } from "./toastContext";
 
 type Toast = ToastPayload & {
@@ -54,31 +55,38 @@ export function ToastProvider({ children }: Props) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-4 left-4 z-[100] flex w-[min(92vw,24rem)] flex-col gap-2"
+        className="pointer-events-none fixed bottom-4 left-4 z-[100] flex w-[min(92vw,24rem)] flex-col items-start gap-2"
       >
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto rounded-xl border px-3 py-2 shadow-lg ${
-              toast.variant === "success"
-                ? "border-emerald-500/40 bg-emerald-500/10"
-                : toast.variant === "error"
-                  ? "border-red-500/40 bg-red-500/10"
-                  : "border-sky-500/40 bg-sky-500/10"
-            }`}
-            role="status"
-          >
-            <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              {toast.variant === "loading" ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-              ) : null}
-              {toast.title}
-            </p>
-            {toast.description ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">{toast.description}</p>
-            ) : null}
-          </div>
-        ))}
+        {toasts.map((toast) => {
+          const baseClasses =
+            "pointer-events-auto inline-flex min-h-10 w-fit max-w-[18rem] items-start gap-2 rounded-lg border px-5 py-2.5 text-sm font-medium shadow-sm";
+
+          const toneClasses =
+            toast.variant === "success"
+              ? "border-success/35 bg-success/10 text-success"
+              : toast.variant === "error"
+                ? "border-error/35 bg-error/10 text-error"
+                : "border-primary/35 bg-primary/10 text-primary";
+
+          return (
+            <div key={toast.id} className={`${baseClasses} ${toneClasses}`} role="status">
+              <span className="mt-0.5 shrink-0" aria-hidden="true">
+                {toast.variant === "loading" ? (
+                  <Spinner />
+                ) : toast.variant === "success" ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertCircle className="h-4 w-4" />
+                )}
+              </span>
+              <span className="min-w-0">
+                <span className="block whitespace-normal break-words [overflow-wrap:anywhere] leading-5">
+                  {toast.title}
+                </span>
+              </span>
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );

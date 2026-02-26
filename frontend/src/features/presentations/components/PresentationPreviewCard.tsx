@@ -9,7 +9,6 @@ import {
 
 import { cn } from "../../../shared/lib/cn";
 import type { PresentationOut, PresentationStyle } from "../types/presentations.types";
-import { formatRelativeDate } from "../utils/formatRelativeDate";
 
 type Props = {
   presentation: PresentationOut;
@@ -94,6 +93,44 @@ export function PresentationPreviewCard({
         isDeleting && "opacity-60 pointer-events-none",
       )}
     >
+      {/* Context menu */}
+      <div className="absolute right-2 top-2 z-20" ref={menuRef}>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsMenuOpen((prev) => !prev);
+          }}
+          disabled={isAnyPresentationDeleting}
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-md bg-surface/85 text-muted-foreground backdrop-blur-sm transition",
+            "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+            "hover:bg-muted hover:text-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+            "disabled:cursor-not-allowed disabled:opacity-60",
+            isMenuOpen && "opacity-100",
+          )}
+          aria-label={`Opciones de ${presentation.title}`}
+          aria-expanded={isMenuOpen}
+        >
+          <MoreVertical className="h-3.5 w-3.5" />
+        </button>
+
+        {isMenuOpen ? (
+          <div className="absolute right-0 z-20 mt-1 w-36 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isAnyPresentationDeleting}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 className={cn("h-3.5 w-3.5", isDeleting && "animate-pulse")} />
+              Eliminar
+            </button>
+          </div>
+        ) : null}
+      </div>
+
       {/* ---- Cover slide preview (scaled thumbnail) ---- */}
       <div
         ref={previewRef}
@@ -133,57 +170,12 @@ export function PresentationPreviewCard({
 
       {/* ---- Card body ---- */}
       <div className="relative space-y-1.5 px-3 pb-2.5 pt-2">
-        {/* Title + menu */}
-        <div className="flex items-start gap-1.5">
-          <h4 className="min-w-0 flex-1 line-clamp-1 text-sm font-semibold leading-snug text-foreground">
-            {presentation.title}
-          </h4>
+        <h4 className="min-w-0 line-clamp-2 text-sm font-semibold leading-tight text-foreground">
+          {presentation.title}
+        </h4>
 
-          {/* Context menu */}
-          <div className="relative shrink-0" ref={menuRef}>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setIsMenuOpen((prev) => !prev);
-              }}
-              disabled={isAnyPresentationDeleting}
-              className={cn(
-                "flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition",
-                "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                "hover:bg-muted hover:text-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                "disabled:cursor-not-allowed disabled:opacity-60",
-                isMenuOpen && "opacity-100",
-              )}
-              aria-label={`Opciones de ${presentation.title}`}
-              aria-expanded={isMenuOpen}
-            >
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-
-            {isMenuOpen ? (
-              <div className="absolute right-0 z-20 mt-1 w-36 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isAnyPresentationDeleting}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Trash2 className={cn("h-3.5 w-3.5", isDeleting && "animate-pulse")} />
-                  Eliminar
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Footer: date + stale */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-muted-foreground">
-            {formatRelativeDate(presentation.created_at)}
-          </span>
-
+        {/* Footer: stale */}
+        <div className="flex items-center justify-end gap-2">
           {presentation.is_stale ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
               <AlertTriangle className="h-2.5 w-2.5" />

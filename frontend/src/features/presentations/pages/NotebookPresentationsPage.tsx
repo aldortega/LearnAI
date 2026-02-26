@@ -56,8 +56,14 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   } = usePresentationsNotebookSources(notebookId);
 
   const { config, isLoading: isConfigLoading, error: configError, reload: reloadConfig } = usePresentationsConfig(notebookId);
-  const { presentations, isLoading: isPresentationsLoading, error: presentationsError, reload: reloadPresentations, removePresentation } =
-    usePresentationsHistory(notebookId);
+  const {
+    presentations,
+    isLoading: isPresentationsLoading,
+    hasResolved: hasResolvedPresentations,
+    error: presentationsError,
+    reload: reloadPresentations,
+    removePresentation,
+  } = usePresentationsHistory(notebookId);
   const { generate, resumeLatest, isGenerating, error: generateError, clearError: clearGenerateError } = useGeneratePresentation(notebookId);
   const { deletePresentation, deletingPresentationId, error: deleteError, clearError: clearDeleteError } = useDeletePresentation(notebookId);
   const {
@@ -317,6 +323,8 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
           detailLevel={detailLevel}
           canGeneratePresentations={canGeneratePresentations}
           isGenerating={isGenerating}
+          isPresentationsLoading={isPresentationsLoading}
+          hasResolvedPresentations={hasResolvedPresentations}
           isConfigLoading={isConfigLoading}
           generationError={generationError}
           presentations={presentations}

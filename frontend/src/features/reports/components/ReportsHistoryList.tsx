@@ -7,6 +7,8 @@ import type { ReportOut } from "../types/reports.types";
 
 type Props = {
   reports: ReportOut[];
+  isLoading: boolean;
+  hasResolved: boolean;
   isGenerating: boolean;
   selectedReportId: string | null;
   deletingReportId: string | null;
@@ -112,6 +114,8 @@ function ReportPreviewCard({
 
 export function ReportsHistoryList({
   reports,
+  isLoading,
+  hasResolved,
   isGenerating,
   selectedReportId,
   deletingReportId,
@@ -122,7 +126,9 @@ export function ReportsHistoryList({
     <section className="space-y-3">
       <h3 className="text-lg font-bold text-foreground">
         Informes generados{" "}
-        <span className="font-normal text-muted-foreground">({reports.length})</span>
+        <span className="inline-block min-w-[2ch] text-right font-normal tabular-nums text-muted-foreground">
+          ({!hasResolved || isLoading ? " " : reports.length})
+        </span>
       </h3>
       {reports.length > 0 || isGenerating ? (
         <div className="rounded-xl border border-border bg-surface">

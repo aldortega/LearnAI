@@ -72,6 +72,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
   const {
     reports,
     isLoading: isReportsLoading,
+    hasResolved: hasResolvedReports,
     error: reportsError,
     reload: reloadReports,
     removeReport,
@@ -686,6 +687,8 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
                   <>
                     <ReportsHistoryList
                       reports={reports}
+                      isLoading={isReportsLoading}
+                      hasResolved={hasResolvedReports}
                       isGenerating={isGenerating}
                       selectedReportId={null}
                       deletingReportId={deletingReportId}
