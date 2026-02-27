@@ -42,7 +42,7 @@ export function QuickstartTopicsList({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {topics.map((topic) => (
-        <div key={topic.id} className="rounded-xl border border-border bg-surface">
+        <div key={topic.id} className="rounded-xl border border-border bg-muted/40 ">
           <QuickstartTopicCard
             topic={topic}
             notebookId={notebookId}

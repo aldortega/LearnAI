@@ -67,14 +67,14 @@ export function QuickstartTopicDetailView({
   return (
     <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
-        <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="space-y-4 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-foreground">{topic.title}</h2>
           <div className={markdownBlockClass}>
             <Streamdown>{topic.summary}</Streamdown>
           </div>
         </div>
 
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
             Puntos clave
           </p>
@@ -120,7 +120,7 @@ export function QuickstartTopicDetailView({
                     className="block h-3 w-10/12 rounded bg-muted animate-pulse [animation-duration:1.2s]"
                   />
                 </div>
-                <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
                   <span
                     aria-hidden
                     className="block h-3 w-40 rounded bg-muted animate-pulse [animation-duration:1.2s]"
@@ -143,7 +143,7 @@ export function QuickstartTopicDetailView({
             ) : null}
 
             {expansionError ? (
-              <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+              <div className="rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
                 <p className="text-sm text-error" role="alert">
                   {expansionError}
                 </p>
@@ -152,7 +152,7 @@ export function QuickstartTopicDetailView({
 
             {expansion ? (
               <>
-                <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
                     Informacion general
                   </p>
@@ -167,13 +167,13 @@ export function QuickstartTopicDetailView({
                   )}
                 </div>
 
-                <div className="space-y-6 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                <div className="space-y-6">
                   <div className="space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
                       Puntos adicionales
                     </p>
                     {additionalPoints.length > 0 ? (
-                      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                      <div className="overflow-hidden rounded-xl border border-border bg-muted/40">
                         {additionalPoints.map((point, index) => (
                           <div
                             key={`${topic.id}-additional-point-${index}`}
@@ -181,11 +181,10 @@ export function QuickstartTopicDetailView({
                           >
                             <button
                               type="button"
-                              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition ${
-                                isSelected("additional_key_point", point)
-                                  ? "bg-muted text-foreground"
-                                  : "text-foreground hover:bg-muted/60"
-                              }`}
+                              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition ${isSelected("additional_key_point", point)
+                                ? "bg-muted text-foreground"
+                                : "text-foreground hover:bg-muted/60"
+                                }`}
                               aria-expanded={shouldShowExpanded("additional_key_point", point)}
                               onClick={() => onSelectDetail("additional_key_point", point)}
                             >
@@ -245,7 +244,7 @@ export function QuickstartTopicDetailView({
                       Preguntas sugeridas
                     </p>
                     {suggestedQuestions.length > 0 ? (
-                      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                      <div className="overflow-hidden rounded-xl border border-border bg-muted/40">
                         {suggestedQuestions.map((question, index) => (
                           <div
                             key={`${topic.id}-suggested-question-${index}`}
@@ -253,11 +252,10 @@ export function QuickstartTopicDetailView({
                           >
                             <button
                               type="button"
-                              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition ${
-                                isSelected("question", question)
-                                  ? "bg-muted text-foreground"
-                                  : "text-foreground hover:bg-muted/60"
-                              }`}
+                              className={`group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3.5 text-left transition ${isSelected("question", question)
+                                ? "bg-muted text-foreground"
+                                : "text-foreground hover:bg-muted/60"
+                                }`}
                               aria-expanded={shouldShowExpanded("question", question)}
                               onClick={() => onSelectDetail("question", question)}
                             >

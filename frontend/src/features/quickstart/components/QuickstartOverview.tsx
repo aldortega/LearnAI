@@ -148,7 +148,7 @@ export function QuickstartOverview({
           Resumen de la notebook
         </h2>
 
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <div className="space-y-3 rounded-xl border border-border shadow-sm bg-muted/40 p-5 ">
           {isStale ? (
             <div
               className="rounded-xl border border-warning bg-warning/10 px-4 py-3 text-sm text-warning"
@@ -172,7 +172,7 @@ export function QuickstartOverview({
             {displaySummaryParagraphs.map((paragraph, index) => (
               <p
                 key={`summary-${index}`}
-                className="text-sm leading-6 text-foreground/80"
+                className="text-sm leading-6 text-foreground/90"
               >
                 {paragraph}
               </p>
