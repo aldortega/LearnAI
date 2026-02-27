@@ -3,9 +3,9 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Presentation,
   Layers,
   MessageSquare,
-  Monitor,
   Network,
   Sparkles,
 } from "lucide-react";
@@ -132,7 +132,7 @@ export function StudioSidebar({
     {
       key: "presentations" as const,
       label: "Presentaciones",
-      icon: Monitor,
+      icon: Presentation,
       onClick: onGoPresentations,
       disabled: isStudioLocked || !canStartPresentations,
       loading: isGeneratingPresentations,

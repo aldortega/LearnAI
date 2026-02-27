@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Download, FileText, LoaderCircle, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, LoaderCircle, Plus, Presentation } from "lucide-react";
 
 import type { PresentationOut } from "../types/presentations.types";
 
@@ -85,12 +85,12 @@ export function PresentationsHeaderActions({
       >
         {viewMode === "history" ? (
           historyView === "detail" ? (
-            <FileText className="h-4 w-4" />
+            <Presentation className="h-4 w-4" />
           ) : (
             <Plus className="h-4 w-4" />
           )
         ) : (
-          <FileText className="h-4 w-4" />
+          <Presentation className="h-4 w-4" />
         )}
       </button>
     </div>
