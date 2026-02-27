@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from ...db import db
 from ...rq_queue import quickstart_queue
@@ -79,7 +79,9 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
     response_model=QuickstartSuggestionsOut,
 )
 async def get_quickstart_suggestions(
-    notebook_id: str, request: Request
+    notebook_id: str,
+    request: Request,
+    force_refresh: bool = Query(default=False),
 ) -> QuickstartSuggestionsOut:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
@@ -118,9 +120,11 @@ async def get_quickstart_suggestions(
     ]
     existing_title_keys = {title.lower() for title in existing_titles}
 
-    cached_suggestions = await db.quickstart_suggestions.find_one(
-        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
-    )
+    cached_suggestions = None
+    if not force_refresh:
+        cached_suggestions = await db.quickstart_suggestions.find_one(
+            {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+        )
 
     if cached_suggestions:
         raw_suggestions = cached_suggestions.get("suggestions", [])

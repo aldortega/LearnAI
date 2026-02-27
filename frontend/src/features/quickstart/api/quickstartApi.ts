@@ -79,9 +79,11 @@ export const quickstartApi = {
 
   getSuggestions: async (
     notebookId: string,
+    forceRefresh = false,
   ): Promise<QuickstartSuggestionsOut> => {
+    const suffix = forceRefresh ? "?force_refresh=true" : "";
     return apiRequest<QuickstartSuggestionsOut>(
-      `/notebooks/${notebookId}/quickstart/suggestions`,
+      `/notebooks/${notebookId}/quickstart/suggestions${suffix}`,
       {
         method: "GET",
       },

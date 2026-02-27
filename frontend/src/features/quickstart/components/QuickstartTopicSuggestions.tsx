@@ -9,6 +9,7 @@ type Props = {
   topicLimit: number;
   canAddTopics: boolean;
   isLoading: boolean;
+  isRefreshing: boolean;
   isAdding: boolean;
   error: string | null;
   isStale: boolean;
@@ -22,6 +23,7 @@ export function QuickstartTopicSuggestions({
   topicLimit,
   canAddTopics,
   isLoading,
+  isRefreshing,
   isAdding,
   error,
   isStale,
@@ -34,6 +36,7 @@ export function QuickstartTopicSuggestions({
     [topicLimit, topicCount],
   );
   const isDisabled = !canAddTopics || isStale || remaining <= 0 || isAdding;
+  const isRefreshDisabled = isDisabled || isLoading || isRefreshing;
 
   const handleConfirmCustomTopic = async (title: string) => {
     await onAddTopic(title, "custom");
@@ -54,10 +57,10 @@ export function QuickstartTopicSuggestions({
             onClick={() => {
               void onRefresh();
             }}
-            disabled={isDisabled || isLoading}
+            disabled={isRefreshDisabled}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full cursor-pointer bg-muted text-foreground/80 transition hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
           </button>
           <button
             type="button"

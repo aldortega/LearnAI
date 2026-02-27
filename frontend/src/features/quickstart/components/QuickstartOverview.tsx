@@ -28,6 +28,7 @@ export function QuickstartOverview({
   const {
     suggestions,
     isLoading,
+    isRefreshing,
     error: suggestionsError,
     loadIfMissing,
     reload,
@@ -200,6 +201,7 @@ export function QuickstartOverview({
           topicLimit={suggestions?.topic_limit ?? 12}
           canAddTopics={suggestions?.can_add_topics ?? false}
           isLoading={isLoading}
+          isRefreshing={isRefreshing}
           isAdding={isAdding || isReordering}
           error={addTopicError ?? deleteTopicError ?? reorderTopicError ?? suggestionsError}
           isStale={isStale}

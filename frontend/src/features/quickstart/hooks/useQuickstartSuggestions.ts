@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import useSWR from "swr";
 
 import { swrKeys } from "../../../shared/lib/swrKeys";
@@ -9,6 +9,7 @@ import type { QuickstartSuggestionsOut } from "../types/quickstart.types";
 type Result = {
   suggestions: QuickstartSuggestionsOut | null;
   isLoading: boolean;
+  isRefreshing: boolean;
   error: string | null;
   loadIfMissing: () => Promise<QuickstartSuggestionsOut | null>;
   reload: () => Promise<QuickstartSuggestionsOut | null>;
@@ -19,6 +20,7 @@ export function useQuickstartSuggestions(
   notebookId?: string,
   enabled = true,
 ): Result {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { data, error, isLoading, mutate } = useSWR<QuickstartSuggestionsOut>(
     notebookId && enabled ? swrKeys.quickstartSuggestions(notebookId) : null,
     () => quickstartApi.getSuggestions(notebookId as string),
@@ -51,11 +53,15 @@ export function useQuickstartSuggestions(
       return null;
     }
 
+    setIsRefreshing(true);
     try {
-      const next = await mutate();
+      const next = await quickstartApi.getSuggestions(notebookId, true);
+      await mutate(next, { revalidate: false });
       return next ?? null;
     } catch {
       return null;
+    } finally {
+      setIsRefreshing(false);
     }
   }, [enabled, mutate, notebookId]);
 
@@ -90,6 +96,7 @@ export function useQuickstartSuggestions(
   return {
     suggestions: data ?? null,
     isLoading,
+    isRefreshing,
     error: error ? toNotebookErrorMessage(error) : null,
     loadIfMissing,
     reload,
