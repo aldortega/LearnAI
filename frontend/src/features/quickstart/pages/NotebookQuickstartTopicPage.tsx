@@ -75,6 +75,7 @@ export function NotebookQuickstartTopicPage() {
     detail,
     selected,
     isLoading: isDetailLoading,
+    isDetailReady,
     error: detailError,
     loadDetail,
     clearDetail,
@@ -318,6 +319,7 @@ export function NotebookQuickstartTopicPage() {
             detail={detail}
             selectedDetail={selected}
             isDetailLoading={isDetailLoading}
+            isDetailReady={isDetailReady}
             detailError={detailError}
             onSelectDetail={handleSelectDetail}
           />

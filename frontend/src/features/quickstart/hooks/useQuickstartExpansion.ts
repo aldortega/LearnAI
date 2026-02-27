@@ -1,5 +1,7 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quickstartApi } from "../api/quickstartApi";
 import type { QuickstartExpansionOut } from "../types/quickstart.types";
@@ -16,31 +18,53 @@ export function useQuickstartExpansion(
   notebookId?: string,
   topicId?: string,
 ): Result {
-  const [expansion, setExpansion] = useState<QuickstartExpansionOut | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const requestKey = useMemo(
+    () =>
+      notebookId && topicId
+        ? swrKeys.quickstartExpansion(notebookId, topicId)
+        : null,
+    [notebookId, topicId],
+  );
+  const {
+    data: expansion,
+    error: swrError,
+    isLoading,
+    mutate,
+  } = useSWR<QuickstartExpansionOut>(
+    requestKey,
+    () => quickstartApi.expandTopic(notebookId as string, topicId as string),
+    {
+      revalidateOnMount: false,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+    },
+  );
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = useCallback(() => setManualError(null), []);
 
   const expand = useCallback(async () => {
     if (!notebookId || !topicId) return null;
     if (expansion) return expansion;
-    if (isLoading) return expansion;
+    if (isLoading) return expansion ?? null;
 
-    setIsLoading(true);
-    setError(null);
+    setManualError(null);
 
     try {
-      const result = await quickstartApi.expandTopic(notebookId, topicId);
-      setExpansion(result);
-      return result;
+      const next = await mutate();
+      return next ?? null;
     } catch (e) {
-      setError(toNotebookErrorMessage(e));
+      setManualError(toNotebookErrorMessage(e));
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId, topicId, expansion, isLoading]);
+  }, [notebookId, topicId, expansion, isLoading, mutate]);
 
-  return { expansion, isLoading, error, expand, clearError };
+  return {
+    expansion: expansion ?? null,
+    isLoading,
+    error: manualError ?? (swrError ? toNotebookErrorMessage(swrError) : null),
+    expand,
+    clearError,
+  };
 }

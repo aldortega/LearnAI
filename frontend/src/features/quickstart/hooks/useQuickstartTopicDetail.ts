@@ -18,6 +18,7 @@ type Result = {
   detail: QuickstartTopicDetailOut | null;
   selected: SelectedQuickstartDetail | null;
   isLoading: boolean;
+  isDetailReady: boolean;
   error: string | null;
   loadDetail: (
     itemType: QuickstartDetailItemType,
@@ -108,10 +109,17 @@ export function useQuickstartTopicDetail(
     [notebookId, topicId],
   );
 
+  const isDetailReady =
+    data !== undefined &&
+    selected !== null &&
+    data.item_type === selected.itemType &&
+    normalizeItemText(data.item_text) === normalizeItemText(selected.itemText);
+
   return {
     detail: data ?? null,
     selected,
     isLoading,
+    isDetailReady,
     error: error ? toNotebookErrorMessage(error) : null,
     loadDetail,
     clearDetail,

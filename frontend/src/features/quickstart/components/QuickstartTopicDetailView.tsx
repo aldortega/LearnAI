@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Streamdown } from "streamdown";
 import type {
   QuickstartDetailItemType,
@@ -21,6 +21,7 @@ type Props = {
   detail: QuickstartTopicDetailOut | null;
   selectedDetail: SelectedDetail;
   isDetailLoading: boolean;
+  isDetailReady: boolean;
   detailError: string | null;
   onSelectDetail: (itemType: QuickstartDetailItemType, itemText: string) => void;
 };
@@ -43,17 +44,20 @@ export function QuickstartTopicDetailView({
   detail,
   selectedDetail,
   isDetailLoading,
+  isDetailReady,
   detailError,
   onSelectDetail,
 }: Props) {
   const additionalPoints = expansion?.key_points ?? [];
   const suggestedQuestions = expansion?.example_questions ?? [];
+  const shouldShowExpansionSkeleton =
+    !isStale && !expansion && !expansionError;
   const isSelected = (itemType: QuickstartDetailItemType, itemText: string) => {
     if (!selectedDetail) return false;
     return (
       selectedDetail.itemType === itemType &&
       normalizeItemText(selectedDetail.itemText).toLowerCase() ===
-        normalizeItemText(itemText).toLowerCase()
+      normalizeItemText(itemText).toLowerCase()
     );
   };
 
@@ -96,9 +100,9 @@ export function QuickstartTopicDetailView({
 
         {!isStale ? (
           <>
-            {isExpansionLoading ? (
+            {isExpansionLoading || shouldShowExpansionSkeleton ? (
               <div className="space-y-4" aria-live="polite" aria-busy="true">
-                <div className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+                <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-5 shadow-sm">
                   <span
                     aria-hidden
                     className="block h-3 w-32 rounded bg-muted animate-pulse [animation-duration:1.2s]"
@@ -190,35 +194,42 @@ export function QuickstartTopicDetailView({
                                   <Streamdown>{point}</Streamdown>
                                 </span>
                               </span>
-                              {shouldShowExpanded("additional_key_point", point) ? (
-                                <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                              )}
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${shouldShowExpanded("additional_key_point", point) ? "rotate-180" : ""}`}
+                                aria-hidden
+                              />
                             </button>
 
-                            {shouldShowExpanded("additional_key_point", point) ? (
-                              <div className="border-t border-border bg-muted/30 px-4 py-3 text-sm">
-                                {isDetailLoading ? (
-                                  <div className="flex items-center gap-2 text-foreground/75">
-                                    <Spinner className="h-4 w-4 border-green-500/30 border-t-green-600" />
-                                    <span>Generando detalle...</span>
-                                  </div>
-                                ) : null}
+                            <div
+                              className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${shouldShowExpanded("additional_key_point", point) ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="border-t border-border bg-muted/30 px-4 py-3 text-sm">
+                                  {isSelected("additional_key_point", point) ? (
+                                    <>
+                                      {isDetailLoading || (!isDetailReady && !detailError) ? (
+                                        <div className="flex items-center gap-2 text-foreground/75">
+                                          <Spinner className="h-4 w-4 border-green-500/30 border-t-green-600" />
+                                          <span>Generando detalle...</span>
+                                        </div>
+                                      ) : null}
 
-                                {detailError ? (
-                                  <p className="text-error" role="alert">
-                                    {detailError}
-                                  </p>
-                                ) : null}
+                                      {detailError ? (
+                                        <p className="text-error" role="alert">
+                                          {detailError}
+                                        </p>
+                                      ) : null}
 
-                                {!isDetailLoading && !detailError && detail ? (
-                                  <div className={markdownBlockClass}>
-                                    <Streamdown>{detail.content}</Streamdown>
-                                  </div>
-                                ) : null}
+                                      {!isDetailLoading && !detailError && detail && isDetailReady ? (
+                                        <div className={markdownBlockClass}>
+                                          <Streamdown>{detail.content}</Streamdown>
+                                        </div>
+                                      ) : null}
+                                    </>
+                                  ) : null}
+                                </div>
                               </div>
-                            ) : null}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -255,35 +266,42 @@ export function QuickstartTopicDetailView({
                                   <Streamdown>{question}</Streamdown>
                                 </span>
                               </span>
-                              {shouldShowExpanded("question", question) ? (
-                                <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                              )}
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${shouldShowExpanded("question", question) ? "rotate-180" : ""}`}
+                                aria-hidden
+                              />
                             </button>
 
-                            {shouldShowExpanded("question", question) ? (
-                              <div className="border-t border-border bg-muted/30 px-4 py-3 text-sm">
-                                {isDetailLoading ? (
-                                  <div className="flex items-center gap-2 text-foreground/75">
-                                    <Spinner className="h-4 w-4 border-green-500/30 border-t-green-600" />
-                                    <span>Generando detalle...</span>
-                                  </div>
-                                ) : null}
+                            <div
+                              className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${shouldShowExpanded("question", question) ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                            >
+                              <div className="overflow-hidden">
+                                <div className="border-t border-border bg-muted/30 px-4 py-3 text-sm">
+                                  {isSelected("question", question) ? (
+                                    <>
+                                      {isDetailLoading || (!isDetailReady && !detailError) ? (
+                                        <div className="flex items-center gap-2 text-foreground/75">
+                                          <Spinner className="h-4 w-4 border-green-500/30 border-t-green-600" />
+                                          <span>Generando detalle...</span>
+                                        </div>
+                                      ) : null}
 
-                                {detailError ? (
-                                  <p className="text-error" role="alert">
-                                    {detailError}
-                                  </p>
-                                ) : null}
+                                      {detailError ? (
+                                        <p className="text-error" role="alert">
+                                          {detailError}
+                                        </p>
+                                      ) : null}
 
-                                {!isDetailLoading && !detailError && detail ? (
-                                  <div className={markdownBlockClass}>
-                                    <Streamdown>{detail.content}</Streamdown>
-                                  </div>
-                                ) : null}
+                                      {!isDetailLoading && !detailError && detail && isDetailReady ? (
+                                        <div className={markdownBlockClass}>
+                                          <Streamdown>{detail.content}</Streamdown>
+                                        </div>
+                                      ) : null}
+                                    </>
+                                  ) : null}
+                                </div>
                               </div>
-                            ) : null}
+                            </div>
                           </div>
                         ))}
                       </div>

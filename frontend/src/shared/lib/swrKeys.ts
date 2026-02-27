@@ -12,6 +12,8 @@ export const swrKeys = {
     itemText: string,
   ) =>
     ["quickstart-topic-detail", notebookId, topicId, itemType, itemText] as const,
+  quickstartExpansion: (notebookId: string, topicId: string) =>
+    ["quickstart-expansion", notebookId, topicId] as const,
   roadmap: (notebookId: string) => ["roadmap", notebookId] as const,
   chatConversation: (notebookId: string) =>
     ["chat-conversation", notebookId] as const,
