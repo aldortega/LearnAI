@@ -11,7 +11,9 @@ from ..rag import create_llm, retrieve_context
 from .constants import FlashcardsPayloadLLM
 from .normalization import (
     compact_context,
+    coerce_text,
     normalize_cards,
+    normalize_set_title,
     normalize_topic_prompt,
     resolve_difficulty_config,
     resolve_target_cards,
@@ -37,7 +39,7 @@ async def generate_flashcards_payload(
     topic_prompt: str,
     notebook_object_id: ObjectId,
     user: dict,
-) -> tuple[list[dict], list[FlashcardSourceRef], str]:
+) -> tuple[str, list[dict], list[FlashcardSourceRef], str]:
     normalized_topic_prompt = normalize_topic_prompt(topic_prompt)
     query_text = (
         f"Conceptos y definiciones sobre {normalized_topic_prompt}"
@@ -97,7 +99,14 @@ async def generate_flashcards_payload(
             detail="No se pudieron generar las flashcards",
         )
 
+    set_title = normalize_set_title(
+        coerce_text(payload_data.get("set_title")),
+        topic_prompt=normalized_topic_prompt,
+        notebook_title=notebook_title,
+    )
+
     return (
+        set_title,
         cards,
         [source_to_ref(source) for source in sources],
         normalized_topic_prompt,

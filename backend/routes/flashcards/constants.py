@@ -25,9 +25,11 @@ MAX_TERM_CHARS = 280
 MAX_DEFINITION_CHARS = 280
 MIN_DEFINITION_CHARS = 24
 MAX_EXPLANATION_MARKDOWN_CHARS = 2400
+MAX_SET_TITLE_CHARS = 90
 
 FLASHCARDS_SCHEMA = (
     "{\n"
+    '  "set_title": "string",\n'
     '  "cards": [\n'
     "    {\n"
     '      "term": "string",\n'
@@ -44,4 +46,5 @@ class FlashcardLLM(BaseModel):
 
 
 class FlashcardsPayloadLLM(BaseModel):
+    set_title: str
     cards: list[FlashcardLLM] = Field(min_length=1, max_length=20)

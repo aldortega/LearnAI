@@ -5,11 +5,12 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import db
-from ...schemas.flashcards import FlashcardOut, FlashcardsOut
+from ...schemas.flashcards import FlashcardOut, FlashcardSetOut, FlashcardsOut
 from ..notebook_access import resolve_notebook_access
 from .normalization import (
     coerce_text,
     normalize_definition,
+    normalize_set_title,
     normalize_term,
     normalize_topic_prompt,
 )
@@ -82,34 +83,65 @@ def map_cards_to_out(cards_data: object) -> list[FlashcardOut]:
     return cards_out
 
 
+def map_set_to_out(
+    flashcards_doc: dict,
+    *,
+    index: int,
+    current_fingerprint: str,
+    notebook_title: str,
+) -> FlashcardSetOut:
+    cards_out = map_cards_to_out(flashcards_doc.get("cards"))
+    generated_at = flashcards_doc.get("updated_at") or flashcards_doc.get("created_at")
+    raw_card_count = coerce_text(flashcards_doc.get("card_count"))
+    raw_difficulty = coerce_text(flashcards_doc.get("difficulty"))
+    card_count = (
+        raw_card_count if raw_card_count in {"less", "default", "more"} else "default"
+    )
+    difficulty = (
+        raw_difficulty if raw_difficulty in {"easy", "medium", "hard"} else "medium"
+    )
+    topic_prompt = normalize_topic_prompt(flashcards_doc.get("topic_prompt"))
+    set_id = coerce_text(flashcards_doc.get("set_id")) or f"legacy-{index}"
+    set_title = normalize_set_title(
+        flashcards_doc.get("set_title"),
+        topic_prompt=topic_prompt,
+        notebook_title=notebook_title,
+    )
+    status = (
+        "ready"
+        if coerce_text(flashcards_doc.get("sources_fingerprint")) == current_fingerprint
+        else "stale"
+    )
+
+    return FlashcardSetOut(
+        set_id=set_id,
+        set_title=set_title,
+        status=status,
+        generated_at=generated_at,
+        card_count=card_count,
+        difficulty=difficulty,
+        topic_prompt=topic_prompt,
+        cards=cards_out,
+    )
+
+
 def build_flashcards_out(
     notebook_id: str,
     has_ready_sources: bool,
     status_value: str,
-    flashcards_doc: dict | None,
+    flashcards_docs: list[dict],
+    current_fingerprint: str,
+    notebook_title: str,
 ) -> FlashcardsOut:
-    cards_out = map_cards_to_out(flashcards_doc.get("cards") if flashcards_doc else [])
-
-    generated_at = None
-    card_count = "default"
-    difficulty = "medium"
-    topic_prompt = ""
-
-    if flashcards_doc:
-        generated_at = flashcards_doc.get("updated_at") or flashcards_doc.get(
-            "created_at"
+    sets_out = [
+        map_set_to_out(
+            flashcards_doc,
+            index=index,
+            current_fingerprint=current_fingerprint,
+            notebook_title=notebook_title,
         )
-        raw_card_count = coerce_text(flashcards_doc.get("card_count"))
-        raw_difficulty = coerce_text(flashcards_doc.get("difficulty"))
-        card_count = (
-            raw_card_count
-            if raw_card_count in {"less", "default", "more"}
-            else "default"
-        )
-        difficulty = (
-            raw_difficulty if raw_difficulty in {"easy", "medium", "hard"} else "medium"
-        )
-        topic_prompt = normalize_topic_prompt(flashcards_doc.get("topic_prompt"))
+        for index, flashcards_doc in enumerate(flashcards_docs, start=1)
+    ]
 
     status_normalized = (
         status_value if status_value in ("missing", "ready", "stale") else "missing"
@@ -119,9 +151,5 @@ def build_flashcards_out(
         notebook_id=notebook_id,
         has_ready_sources=has_ready_sources,
         status=status_normalized,
-        generated_at=generated_at,
-        card_count=card_count,
-        difficulty=difficulty,
-        topic_prompt=topic_prompt,
-        cards=cards_out,
+        sets=sets_out,
     )

@@ -1,14 +1,13 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useNotebook } from "../../notebooks";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
+import { FlashcardSetsList } from "../components/FlashcardSetsList";
 import { GenerateFlashcardsCard } from "../components/GenerateFlashcardsCard";
 import { FlashcardsShell } from "../components/FlashcardsShell";
-import { RegenerateFlashcardsModal } from "../components/RegenerateFlashcardsModal";
 import { FlashcardsStudyView } from "../components/FlashcardsStudyView";
-import { useDeleteFlashcards } from "../hooks/useDeleteFlashcards";
 import { useFlashcardsNotebookSources } from "../hooks/useFlashcardsNotebookSources";
 import { useGenerateFlashcards } from "../hooks/useGenerateFlashcards";
 import { useFlashcards } from "../hooks/useFlashcards";
@@ -20,11 +19,10 @@ export function NotebookFlashcardsPage() {
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const hasCheckedLatestJobRef = useRef(false);
-  const [configViewNotebookId, setConfigViewNotebookId] = useState<string | null>(
-    null,
-  );
+  const [viewMode, setViewMode] = useState<"sets" | "study" | "generate">("sets");
+  const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
+  const [studyEntry, setStudyEntry] = useState<"first" | "last">("first");
   const [generateSessionToken, setGenerateSessionToken] = useState(0);
-  const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
 
   const {
     fileInputRef,
@@ -52,12 +50,6 @@ export function NotebookFlashcardsPage() {
     error: generateError,
     clearError: clearGenerateError,
   } = useGenerateFlashcards(notebookId);
-  const {
-    deleteFlashcards,
-    isDeleting: isDeletingFlashcards,
-    error: deleteFlashcardsError,
-    clearError: clearDeleteFlashcardsError,
-  } = useDeleteFlashcards(notebookId);
 
   useEffect(() => {
     hasCheckedLatestJobRef.current = false;
@@ -95,39 +87,31 @@ export function NotebookFlashcardsPage() {
     const result = await generate(options);
     if (result?.status === "done") {
       await reloadFlashcards();
-      setConfigViewNotebookId(null);
+      setViewMode("sets");
     }
   };
 
-  const isEmpty = !flashcards || flashcards.status === "missing";
-  const showGenerationConfig =
-    Boolean(notebookId) && configViewNotebookId === notebookId;
-  const showGenerationView = isEmpty || showGenerationConfig;
+  const sets = useMemo(() => flashcards?.sets ?? [], [flashcards]);
+  const isEmpty = sets.length === 0;
+  const effectiveViewMode = isEmpty ? "generate" : viewMode;
+  const latestSet = sets[sets.length - 1] ?? null;
+  const selectedSet = useMemo(
+    () => sets.find((setItem) => setItem.set_id === selectedSetId) ?? null,
+    [selectedSetId, sets],
+  );
+  const selectedSetIndex = selectedSet
+    ? sets.findIndex((setItem) => setItem.set_id === selectedSet.set_id)
+    : -1;
+  const nextSetId =
+    selectedSetIndex >= 0 && selectedSetIndex < sets.length - 1
+      ? sets[selectedSetIndex + 1].set_id
+      : null;
+  const previousSetId =
+    selectedSetIndex > 0
+      ? sets[selectedSetIndex - 1].set_id
+      : null;
+
   const combinedError = generateError ?? flashcardsError;
-  const canRegenerate = Boolean(flashcards) && !isEmpty;
-
-  const handleRegenerateRequest = () => {
-    if (isGenerating) return;
-    clearDeleteFlashcardsError();
-    setIsRegenerateModalOpen(true);
-  };
-
-  const handleRegenerateCancel = () => {
-    if (isDeletingFlashcards) return;
-    clearDeleteFlashcardsError();
-    setIsRegenerateModalOpen(false);
-  };
-
-  const handleRegenerateConfirm = async () => {
-    if (!notebookId || isGenerating) return;
-
-    const wasDeleted = await deleteFlashcards();
-    if (!wasDeleted) return;
-
-    setIsRegenerateModalOpen(false);
-    setConfigViewNotebookId(null);
-    await reloadFlashcards();
-  };
 
   return (
     <NotebookShell
@@ -186,33 +170,28 @@ export function NotebookFlashcardsPage() {
             onCancel={() => setDeleteTarget(null)}
             onConfirm={handleDeleteConfirm}
           />
-          <RegenerateFlashcardsModal
-            isOpen={isRegenerateModalOpen}
-            isDeleting={isDeletingFlashcards || isGenerating}
-            error={deleteFlashcardsError}
-            onCancel={handleRegenerateCancel}
-            onConfirm={() => void handleRegenerateConfirm()}
-          />
         </>
       }
     >
       <FlashcardsShell
-        showAction={hasReadySources || canRegenerate}
-        actionType={canRegenerate ? "regenerate" : "settings"}
-        canAction={hasReadySources || canRegenerate}
-        isActionLoading={isGenerating || isDeletingFlashcards}
+        showSetsAction={sets.length > 0 && effectiveViewMode !== "sets"}
+        canSetsAction={sets.length > 0}
+        onSetsAction={() => {
+          setViewMode("sets");
+          setSelectedSetId(null);
+        }}
+        showAction={hasReadySources}
+        actionType="settings"
+        canAction={hasReadySources}
+        isActionLoading={isGenerating}
         onAction={() => {
           if (!notebookId) return;
-          if (canRegenerate) {
-            handleRegenerateRequest();
-            return;
-          }
           clearGenerateError();
-          if (showGenerationConfig) {
-            setConfigViewNotebookId(null);
+          if (effectiveViewMode === "generate") {
+            setViewMode(isEmpty ? "generate" : "sets");
             return;
           }
-          setConfigViewNotebookId(notebookId);
+          setViewMode("generate");
           setGenerateSessionToken((previous) => previous + 1);
         }}
       >
@@ -220,16 +199,16 @@ export function NotebookFlashcardsPage() {
           <div className="flex h-full items-center justify-center px-6">
             <p className="text-sm text-muted-foreground">Cargando flashcards...</p>
           </div>
-        ) : showGenerationView ? (
+        ) : effectiveViewMode === "generate" ? (
           <GenerateFlashcardsCard
             key={`generate-${notebookId ?? "none"}-${generateSessionToken}`}
             isGenerating={isGenerating}
             canGenerate={hasReadySources}
             error={combinedError}
-            showConfiguration={showGenerationConfig}
-            initialCardCount={flashcards?.card_count ?? "default"}
-            initialDifficulty={flashcards?.difficulty ?? "medium"}
-            initialTopicPrompt={flashcards?.topic_prompt ?? ""}
+            showConfiguration
+            initialCardCount={latestSet?.card_count ?? "default"}
+            initialDifficulty={latestSet?.difficulty ?? "medium"}
+            initialTopicPrompt={latestSet?.topic_prompt ?? ""}
             onGenerateDefault={() => {
               void runGeneration();
             }}
@@ -237,11 +216,36 @@ export function NotebookFlashcardsPage() {
               void runGeneration(options);
             }}
           />
-        ) : flashcards ? (
+        ) : effectiveViewMode === "sets" || !selectedSet ? (
+          <FlashcardSetsList
+            sets={sets}
+            onSelectSet={(setId) => {
+              setStudyEntry("first");
+              setSelectedSetId(setId);
+              setViewMode("study");
+            }}
+          />
+        ) : selectedSet ? (
           <FlashcardsStudyView
-            key={`${flashcards.generated_at ?? "none"}-${flashcards.cards.length}`}
-            flashcards={flashcards}
+            key={`${selectedSet.set_id}-${selectedSet.cards.length}-${studyEntry}`}
+            notebookId={flashcards?.notebook_id ?? notebookId ?? ""}
+            flashcardSet={selectedSet}
+            initialCardIndex={
+              studyEntry === "last" ? Math.max(selectedSet.cards.length - 1, 0) : 0
+            }
             error={combinedError}
+            hasPreviousSet={Boolean(previousSetId)}
+            onGoToPreviousSet={() => {
+              if (!previousSetId) return;
+              setStudyEntry("last");
+              setSelectedSetId(previousSetId);
+            }}
+            hasNextSet={Boolean(nextSetId)}
+            onGoToNextSet={() => {
+              if (!nextSetId) return;
+              setStudyEntry("first");
+              setSelectedSetId(nextSetId);
+            }}
           />
         ) : null}
       </FlashcardsShell>

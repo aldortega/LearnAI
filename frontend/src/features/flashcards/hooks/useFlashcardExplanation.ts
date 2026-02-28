@@ -10,7 +10,7 @@ type Result = {
   error: string | null;
   activeTerm: string;
   explanationMarkdown: string;
-  openExplanation: (card: FlashcardOut) => Promise<void>;
+  openExplanation: (setId: string, card: FlashcardOut) => Promise<void>;
   closeExplanation: () => void;
 };
 
@@ -29,9 +29,9 @@ export function useFlashcardExplanation(notebookId?: string): Result {
   }, []);
 
   const openExplanation = useCallback(
-    async (card: FlashcardOut) => {
+    async (setId: string, card: FlashcardOut) => {
       if (!notebookId || isLoading) return;
-      const cacheKey = `${notebookId}:${card.id}`;
+      const cacheKey = `${notebookId}:${setId}:${card.id}`;
       const cachedExplanation = cacheRef.current.get(cacheKey);
 
       if (cachedExplanation) {
@@ -50,7 +50,7 @@ export function useFlashcardExplanation(notebookId?: string): Result {
       setIsOpen(true);
 
       try {
-        const result = await flashcardsApi.explain(notebookId, card.id);
+        const result = await flashcardsApi.explain(notebookId, setId, card.id);
         cacheRef.current.set(cacheKey, result.explanation_markdown);
         setExplanationMarkdown(result.explanation_markdown);
       } catch (err) {

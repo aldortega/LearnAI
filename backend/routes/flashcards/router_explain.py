@@ -35,6 +35,48 @@ def resolve_requested_card(cards_data: object, requested_card_id: str) -> tuple[
     )
 
 
+async def resolve_flashcards_set_doc(
+    notebook_id: object,
+    owner_id: object,
+    requested_set_id: str,
+) -> dict:
+    flashcards_doc = await db.flashcard_sets.find_one(
+        {
+            "owner_id": owner_id,
+            "notebook_id": notebook_id,
+            "set_id": requested_set_id,
+        }
+    )
+    if flashcards_doc:
+        return flashcards_doc
+
+    if requested_set_id.startswith("legacy-"):
+        legacy_docs = [
+            doc
+            async for doc in db.flashcard_sets.find(
+                {
+                    "owner_id": owner_id,
+                    "notebook_id": notebook_id,
+                    "set_id": {"$exists": False},
+                }
+            ).sort("created_at", 1)
+        ]
+        try:
+            legacy_index = int(requested_set_id.removeprefix("legacy-")) - 1
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Set de flashcards no encontrado",
+            ) from exc
+        if 0 <= legacy_index < len(legacy_docs):
+            return legacy_docs[legacy_index]
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Set de flashcards no encontrado",
+    )
+
+
 @router.post(
     "/{notebook_id}/flashcards/explain",
     response_model=FlashcardExplainOut,
@@ -47,14 +89,11 @@ async def explain_flashcard(
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
 
-    flashcards_doc = await db.flashcard_sets.find_one(
-        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+    flashcards_doc = await resolve_flashcards_set_doc(
+        notebook_id=notebook["_id"],
+        owner_id=user["_id"],
+        requested_set_id=payload.set_id.strip(),
     )
-    if not flashcards_doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Flashcards no encontradas",
-        )
 
     fingerprint, ready_count = await compute_sources_fingerprint(
         notebook["title"],
@@ -75,6 +114,7 @@ async def explain_flashcard(
     detail_filter = {
         "owner_id": user["_id"],
         "notebook_id": notebook["_id"],
+        "set_id": payload.set_id.strip(),
         "card_id": payload.card_id.strip(),
         "sources_fingerprint": fingerprint,
     }
@@ -110,6 +150,7 @@ async def explain_flashcard(
             "$set": {
                 "owner_id": user["_id"],
                 "notebook_id": notebook["_id"],
+                "set_id": payload.set_id.strip(),
                 "card_id": payload.card_id.strip(),
                 "term": term,
                 "definition": definition,

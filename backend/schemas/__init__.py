@@ -13,6 +13,7 @@ from .flashcards import (
     FlashcardExplainRequest,
     FlashcardDifficulty,
     FlashcardOut,
+    FlashcardSetOut,
     FlashcardSourceRef,
     FlashcardsGenerateRequest,
     FlashcardsGenerationJobOut,

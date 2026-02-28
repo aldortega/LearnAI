@@ -7,6 +7,7 @@ from .constants import (
     DIFFICULTY_GUIDANCE,
     DIFFICULTY_LABELS,
     MAX_EXPLANATION_MARKDOWN_CHARS,
+    MAX_SET_TITLE_CHARS,
     MAX_CONTEXT_CHARS,
     MAX_DEFINITION_CHARS,
     MAX_TERM_CHARS,
@@ -37,6 +38,27 @@ def compact_context(
 def normalize_topic_prompt(value: object | None) -> str:
     topic = " ".join(coerce_text(value).split()).strip()
     return topic[:MAX_TOPIC_PROMPT_CHARS]
+
+
+def normalize_set_title(
+    value: object | None,
+    *,
+    topic_prompt: str,
+    notebook_title: str,
+) -> str:
+    title = " ".join(coerce_text(value).split()).strip()
+    if title:
+        return title[:MAX_SET_TITLE_CHARS]
+
+    topic_base = normalize_topic_prompt(topic_prompt)
+    if topic_base:
+        return topic_base[:MAX_SET_TITLE_CHARS]
+
+    notebook_base = " ".join(coerce_text(notebook_title).split()).strip()
+    if notebook_base:
+        return f"Set de {notebook_base}"[:MAX_SET_TITLE_CHARS]
+
+    return "Set de estudio"
 
 
 def resolve_target_cards(card_count: str) -> int:

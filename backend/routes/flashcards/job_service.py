@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -136,7 +137,12 @@ async def _process_flashcards_generation(notebook_id: str, owner_id: str) -> Non
             return
 
         try:
-            cards, sources, normalized_topic_prompt = await generate_flashcards_payload(
+            (
+                set_title,
+                cards,
+                sources,
+                normalized_topic_prompt,
+            ) = await generate_flashcards_payload(
                 notebook_title=coerce_text(notebook.get("title")),
                 card_count=card_count,
                 difficulty=difficulty,
@@ -148,23 +154,21 @@ async def _process_flashcards_generation(notebook_id: str, owner_id: str) -> Non
                 },
             )
             now = datetime.now(timezone.utc)
-            await worker_db.flashcard_sets.update_one(
-                {"owner_id": owner_object_id, "notebook_id": notebook_object_id},
+            await worker_db.flashcard_sets.insert_one(
                 {
-                    "$set": {
-                        "owner_id": owner_object_id,
-                        "notebook_id": notebook_object_id,
-                        "sources_fingerprint": fingerprint,
-                        "card_count": card_count,
-                        "difficulty": difficulty,
-                        "topic_prompt": normalized_topic_prompt,
-                        "cards": cards,
-                        "sources": [source.model_dump() for source in sources],
-                        "updated_at": now,
-                    },
-                    "$setOnInsert": {"created_at": now},
-                },
-                upsert=True,
+                    "set_id": str(uuid4()),
+                    "owner_id": owner_object_id,
+                    "notebook_id": notebook_object_id,
+                    "set_title": set_title,
+                    "sources_fingerprint": fingerprint,
+                    "card_count": card_count,
+                    "difficulty": difficulty,
+                    "topic_prompt": normalized_topic_prompt,
+                    "cards": cards,
+                    "sources": [source.model_dump() for source in sources],
+                    "created_at": now,
+                    "updated_at": now,
+                }
             )
         except Exception as exc:
             error_message = resolve_flashcards_error_message(exc)

@@ -13,15 +13,22 @@ export type FlashcardOut = {
   definition: string;
 };
 
-export type FlashcardsOut = {
-  notebook_id: string;
-  has_ready_sources: boolean;
-  status: "missing" | "ready" | "stale";
+export type FlashcardSetOut = {
+  set_id: string;
+  set_title: string;
+  status: "ready" | "stale";
   generated_at?: string | null;
   card_count: FlashcardCountPreset;
   difficulty: FlashcardDifficulty;
   topic_prompt: string;
   cards: FlashcardOut[];
+};
+
+export type FlashcardsOut = {
+  notebook_id: string;
+  has_ready_sources: boolean;
+  status: "missing" | "ready" | "stale";
+  sets: FlashcardSetOut[];
 };
 
 export type FlashcardsGenerationJobOut = {

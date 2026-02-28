@@ -36,29 +36,35 @@ async def get_flashcards(notebook_id: str, request: Request) -> FlashcardsOut:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
 
-    flashcards_doc = await db.flashcard_sets.find_one(
-        {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
-    )
     fingerprint, ready_count = await compute_sources_fingerprint(
         notebook["title"],
         notebook["_id"],
         notebook["owner_id"],
     )
     has_ready_sources = ready_count > 0
+    flashcards_docs = [
+        flashcards_doc
+        async for flashcards_doc in db.flashcard_sets.find(
+            {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
+        ).sort("created_at", 1)
+    ]
 
     status_value = "missing"
-    if flashcards_doc:
-        status_value = (
-            "ready"
-            if flashcards_doc.get("sources_fingerprint") == fingerprint
-            else "stale"
-        )
+    if flashcards_docs:
+        has_stale = False
+        for flashcards_doc in flashcards_docs:
+            if flashcards_doc.get("sources_fingerprint") != fingerprint:
+                has_stale = True
+                break
+        status_value = "stale" if has_stale else "ready"
 
     return build_flashcards_out(
         notebook_id=str(notebook["_id"]),
         has_ready_sources=has_ready_sources,
         status_value=status_value,
-        flashcards_doc=flashcards_doc,
+        flashcards_docs=flashcards_docs,
+        current_fingerprint=fingerprint,
+        notebook_title=notebook.get("title", ""),
     )
 
 
@@ -67,10 +73,10 @@ async def delete_flashcards(notebook_id: str, request: Request) -> None:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
 
-    flashcards_doc = await db.flashcard_sets.find_one(
+    flashcards_count = await db.flashcard_sets.count_documents(
         {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
     )
-    if not flashcards_doc:
+    if flashcards_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Flashcards no encontradas",
@@ -89,7 +95,7 @@ async def delete_flashcards(notebook_id: str, request: Request) -> None:
             detail="No se pueden regenerar flashcards mientras se estan generando",
         )
 
-    await db.flashcard_sets.delete_one(
+    await db.flashcard_sets.delete_many(
         {"owner_id": user["_id"], "notebook_id": notebook["_id"]}
     )
     await db.flashcard_explanations.delete_many(

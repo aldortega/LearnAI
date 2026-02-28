@@ -137,8 +137,11 @@ async def ensure_indexes() -> None:
         unique=True,
     )
     await db.mindmap_node_details.create_index("updated_at")
+    flashcard_sets_indexes = await db.flashcard_sets.index_information()
+    if "owner_id_1_notebook_id_1" in flashcard_sets_indexes:
+        await db.flashcard_sets.drop_index("owner_id_1_notebook_id_1")
     await db.flashcard_sets.create_index(
-        [("owner_id", 1), ("notebook_id", 1)], unique=True
+        [("owner_id", 1), ("notebook_id", 1), ("set_id", 1)], unique=True
     )
     await db.flashcard_sets.create_index("owner_id")
     await db.flashcard_sets.create_index("notebook_id")
@@ -149,8 +152,19 @@ async def ensure_indexes() -> None:
     await db.flashcard_generation_jobs.create_index("notebook_id")
     await db.flashcard_generation_jobs.create_index("status")
     await db.flashcard_generation_jobs.create_index("created_at")
+    flashcard_explanations_indexes = await db.flashcard_explanations.index_information()
+    if "owner_id_1_notebook_id_1_card_id_1_sources_fingerprint_1" in flashcard_explanations_indexes:
+        await db.flashcard_explanations.drop_index(
+            "owner_id_1_notebook_id_1_card_id_1_sources_fingerprint_1"
+        )
     await db.flashcard_explanations.create_index(
-        [("owner_id", 1), ("notebook_id", 1), ("card_id", 1), ("sources_fingerprint", 1)],
+        [
+            ("owner_id", 1),
+            ("notebook_id", 1),
+            ("set_id", 1),
+            ("card_id", 1),
+            ("sources_fingerprint", 1),
+        ],
         unique=True,
     )
     await db.flashcard_explanations.create_index("updated_at")

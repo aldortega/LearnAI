@@ -7,6 +7,7 @@ export type {
   FlashcardCountPreset,
   FlashcardDifficulty,
   FlashcardOut,
+  FlashcardSetOut,
   FlashcardsGenerateRequest,
   FlashcardsGenerationJobOut,
   FlashcardsOut,

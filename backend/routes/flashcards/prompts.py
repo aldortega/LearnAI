@@ -29,6 +29,7 @@ def build_flashcards_prompt(
         f"Dificultad objetivo: {difficulty_label}. {difficulty_guidance}\n\n"
         f"Contexto:\n{context_text}\n\n"
         f"Genera exactamente {target_count} flashcards mixtas y balanceadas: "
+        "Incluye un titulo breve para el set en 'set_title' (3 a 7 palabras, claro y especifico). "
         "definicion, pregunta-respuesta y completar espacios en blanco. "
         "Usa siempre 'term' como frente de la tarjeta y 'definition' como reverso. "
         "Para preguntas, el frente debe ser una pregunta clara y el reverso solo la "

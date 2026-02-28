@@ -3,11 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 
 import { FlashcardExplainModal } from "./FlashcardExplainModal";
 import { useFlashcardExplanation } from "../hooks/useFlashcardExplanation";
-import type { FlashcardsOut } from "../types/flashcards.types";
+import type { FlashcardSetOut } from "../types/flashcards.types";
 
 type Props = {
-  flashcards: FlashcardsOut;
+  notebookId: string;
+  flashcardSet: FlashcardSetOut;
+  initialCardIndex?: number;
   error: string | null;
+  onGoToPreviousSet: () => void;
+  hasPreviousSet: boolean;
+  onGoToNextSet: () => void;
+  hasNextSet: boolean;
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -23,10 +29,16 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function FlashcardsStudyView({
-  flashcards,
+  notebookId,
+  flashcardSet,
+  initialCardIndex = 0,
   error,
+  onGoToPreviousSet,
+  hasPreviousSet,
+  onGoToNextSet,
+  hasNextSet,
 }: Props) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(initialCardIndex);
   const [isFlipped, setIsFlipped] = useState(false);
   const [navigationDirection, setNavigationDirection] = useState<"prev" | "next">(
     "next",
@@ -39,9 +51,9 @@ export function FlashcardsStudyView({
     explanationMarkdown,
     openExplanation,
     closeExplanation,
-  } = useFlashcardExplanation(flashcards.notebook_id);
+  } = useFlashcardExplanation(notebookId);
 
-  const cards = flashcards.cards;
+  const cards = flashcardSet.cards;
   const currentCard = cards[currentIndex] ?? null;
   const isFirstCard = currentIndex === 0;
   const isLastCard = currentIndex === cards.length - 1;
@@ -52,15 +64,31 @@ export function FlashcardsStudyView({
 
   const goToPreviousCard = useCallback(() => {
     setNavigationDirection("prev");
-    setCurrentIndex((previous) => Math.max(0, previous - 1));
+    setCurrentIndex((previous) => {
+      if (previous <= 0) {
+        if (hasPreviousSet) {
+          onGoToPreviousSet();
+        }
+        return previous;
+      }
+      return previous - 1;
+    });
     setIsFlipped(false);
-  }, []);
+  }, [hasPreviousSet, onGoToPreviousSet]);
 
   const goToNextCard = useCallback(() => {
     setNavigationDirection("next");
-    setCurrentIndex((previous) => Math.min(cards.length - 1, previous + 1));
+    setCurrentIndex((previous) => {
+      if (previous >= cards.length - 1) {
+        if (hasNextSet) {
+          onGoToNextSet();
+        }
+        return previous;
+      }
+      return previous + 1;
+    });
     setIsFlipped(false);
-  }, [cards.length]);
+  }, [cards.length, hasNextSet, onGoToNextSet]);
 
   const toggleCardFace = useCallback(() => {
     setIsFlipped((previous) => !previous);
@@ -82,17 +110,13 @@ export function FlashcardsStudyView({
 
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        if (!isFirstCard) {
-          goToPreviousCard();
-        }
+        goToPreviousCard();
         return;
       }
 
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        if (!isLastCard) {
-          goToNextCard();
-        }
+        goToNextCard();
         return;
       }
 
@@ -109,7 +133,7 @@ export function FlashcardsStudyView({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [goToNextCard, goToPreviousCard, isFirstCard, isLastCard, toggleCardFace]);
+  }, [goToNextCard, goToPreviousCard, toggleCardFace]);
 
   if (!currentCard) {
     return (
@@ -124,7 +148,11 @@ export function FlashcardsStudyView({
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="mx-auto w-full max-w-4xl space-y-4">
-        {flashcards.status === "stale" ? (
+        <p className="text-center text-sm font-semibold text-foreground">
+          {flashcardSet.set_title}
+        </p>
+
+        {flashcardSet.status === "stale" ? (
           <p className="rounded-xl border border-border bg-muted px-4 py-2 text-xs text-muted-foreground" role="alert">
             Tus flashcards estan desactualizadas porque cambiaron las fuentes. Regeneralas para actualizar su contenido.
           </p>
@@ -143,7 +171,7 @@ export function FlashcardsStudyView({
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground shadow-sm transition hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isFirstCard}
+            disabled={isFirstCard && !hasPreviousSet}
             aria-label="Tarjeta anterior"
             title="Tarjeta anterior"
             onClick={goToPreviousCard}
@@ -182,7 +210,7 @@ export function FlashcardsStudyView({
                         onClick={(event) => {
                           event.stopPropagation();
                           if (!currentCard) return;
-                          void openExplanation(currentCard);
+                          void openExplanation(flashcardSet.set_id, currentCard);
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface/95 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition hover:border-border-strong hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                         disabled={isExplainLoading}
@@ -201,7 +229,7 @@ export function FlashcardsStudyView({
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground shadow-sm transition hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isLastCard}
+            disabled={isLastCard && !hasNextSet}
             aria-label="Tarjeta siguiente"
             title="Tarjeta siguiente"
             onClick={goToNextCard}

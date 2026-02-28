@@ -28,15 +28,22 @@ class FlashcardOut(BaseModel):
     definition: str
 
 
-class FlashcardsOut(BaseModel):
-    notebook_id: str
-    has_ready_sources: bool
-    status: Literal["missing", "ready", "stale"]
+class FlashcardSetOut(BaseModel):
+    set_id: str
+    set_title: str
+    status: Literal["ready", "stale"]
     generated_at: Optional[datetime] = None
     card_count: FlashcardCountPreset = "default"
     difficulty: FlashcardDifficulty = "medium"
     topic_prompt: str = ""
     cards: list[FlashcardOut] = Field(default_factory=list)
+
+
+class FlashcardsOut(BaseModel):
+    notebook_id: str
+    has_ready_sources: bool
+    status: Literal["missing", "ready", "stale"]
+    sets: list[FlashcardSetOut] = Field(default_factory=list)
 
 
 class FlashcardsGenerationJobOut(BaseModel):
@@ -48,6 +55,7 @@ class FlashcardsGenerationJobOut(BaseModel):
 
 
 class FlashcardExplainRequest(BaseModel):
+    set_id: str = Field(min_length=1, max_length=120)
     card_id: str = Field(min_length=1, max_length=120)
 
 

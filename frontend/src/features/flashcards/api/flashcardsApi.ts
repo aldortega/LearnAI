@@ -57,13 +57,14 @@ export const flashcardsApi = {
 
   explain: async (
     notebookId: string,
+    setId: string,
     cardId: string,
   ): Promise<FlashcardExplainOut> => {
     return apiRequest<FlashcardExplainOut>(
       `/notebooks/${notebookId}/flashcards/explain`,
       {
         method: "POST",
-        body: { card_id: cardId },
+        body: { set_id: setId, card_id: cardId },
       },
     );
   },
