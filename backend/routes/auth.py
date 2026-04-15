@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import inspect
 
 import httpx
 from bson import ObjectId
@@ -255,6 +256,8 @@ async def google_login(
                         detail="Token de Google invalido",
                     )
                 token_info = token_info_res.json()
+                if inspect.isawaitable(token_info):
+                    token_info = await token_info
 
                 if token_info.get("aud") != settings.google_client_id:
                     raise HTTPException(
@@ -272,6 +275,8 @@ async def google_login(
                         detail="Token de Google invalido",
                     )
                 user_info = user_info_res.json()
+                if inspect.isawaitable(user_info):
+                    user_info = await user_info
         except httpx.HTTPError:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

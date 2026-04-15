@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+import inspect
 import logging
 import re
 import time
@@ -333,6 +334,8 @@ async def retrieve_context(
                 detail="No se pudo consultar Qdrant",
             )
         result = response.json()
+        if inspect.isawaitable(result):
+            result = await result
 
     hits = result.get("result", []) or []
     ranked_candidates = rank_candidates(question, hits)
