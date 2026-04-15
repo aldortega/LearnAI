@@ -39,7 +39,9 @@ async def list_presentations(notebook_id: str, request: Request) -> Presentation
     return PresentationListOut(items=items)
 
 
-@router.get("/{notebook_id}/presentations/{presentation_id}", response_model=PresentationOut)
+@router.get(
+    "/{notebook_id}/presentations/{presentation_id}", response_model=PresentationOut
+)
 async def get_presentation(
     notebook_id: str,
     presentation_id: str,
@@ -85,7 +87,6 @@ async def download_presentation_pdf(
             title=title,
             summary=presentation.summary,
             slides=presentation.slides,
-            style=presentation.style,
         )
     except PdfExportError as exc:
         raise HTTPException(

@@ -1,26 +1,11 @@
-export type PresentationStyle =
-  | "clean"
-  | "corporate"
-  | "creative"
-  | "academic"
-  | "minimal";
-
 export type PresentationDetailLevel = "concise" | "detailed";
-
-export type PresentationStyleTemplate = {
-  style: PresentationStyle;
-  label: string;
-  description: string;
-};
 
 export type PresentationConfigOut = {
   has_ready_sources: boolean;
-  styles: PresentationStyleTemplate[];
 };
 
 export type PresentationGenerateRequest = {
   topic: string;
-  style: PresentationStyle;
   detail_level: PresentationDetailLevel;
 };
 
@@ -53,7 +38,6 @@ export type PresentationOut = {
   notebook_id: string;
   owner_id: string;
   topic: string;
-  style: PresentationStyle;
   detail_level: PresentationDetailLevel;
   title: string;
   summary: string;

@@ -99,6 +99,4 @@ from .presentations import (
     PresentationOut,
     PresentationSlideOut,
     PresentationSourceRef,
-    PresentationStyle,
-    PresentationStyleTemplateOut,
 )

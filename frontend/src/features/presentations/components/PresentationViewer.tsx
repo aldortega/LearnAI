@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Streamdown } from "streamdown";
 
-import { cn } from "../../../shared/lib/cn";
 import type { PresentationOut } from "../types/presentations.types";
 
 type Props = {
@@ -14,14 +13,6 @@ type Props = {
   isLoading: boolean;
   error: string | null;
   downloadPdfError: string | null;
-};
-
-const styleCardClasses: Record<PresentationOut["style"], string> = {
-  clean: "bg-slate-50 text-slate-900",
-  corporate: "bg-slate-900 text-slate-100",
-  creative: "bg-indigo-950 text-indigo-50",
-  academic: "bg-stone-50 text-stone-900",
-  minimal: "bg-white text-slate-900",
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -126,10 +117,7 @@ export function PresentationViewer({
 
         <div className="mx-auto w-full max-w-4xl space-y-3">
           <article
-            className={cn(
-              "aspect-video w-full rounded-2xl border border-border p-5 shadow-sm [container-type:inline-size]",
-              styleCardClasses[presentation.style],
-            )}
+            className="aspect-video w-full rounded-2xl border border-border bg-slate-50 p-5 text-slate-900 shadow-sm [container-type:inline-size]"
           >
             {isCoverSlide ? (
               <div className="flex h-full flex-col justify-center">

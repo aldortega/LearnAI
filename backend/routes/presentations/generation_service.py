@@ -8,7 +8,6 @@ from ...schemas.presentations import (
     PresentationDetailLevel,
     PresentationSlideOut,
     PresentationSourceRef,
-    PresentationStyle,
 )
 from ..rag import create_llm, retrieve_context
 from .constants import (
@@ -33,7 +32,6 @@ from .prompts import build_presentation_prompt
 async def generate_presentation_payload(
     notebook_title: str,
     topic: str,
-    style: PresentationStyle,
     detail_level: PresentationDetailLevel,
     notebook_object_id: ObjectId,
     user: dict,
@@ -47,7 +45,6 @@ async def generate_presentation_payload(
     system_message, user_message = build_presentation_prompt(
         notebook_title=notebook_title,
         topic=topic,
-        style=style,
         detail_level=detail_level,
         context_text=context_text,
     )
@@ -57,7 +54,9 @@ async def generate_presentation_payload(
         schema=PresentationGenerationPayloadLLM.model_json_schema(),
         method="json_schema",
     )
-    payload = await asyncio.to_thread(structured_llm.invoke, [system_message, user_message])
+    payload = await asyncio.to_thread(
+        structured_llm.invoke, [system_message, user_message]
+    )
     payload_data = (
         payload.model_dump()
         if isinstance(payload, BaseModel)
@@ -66,8 +65,12 @@ async def generate_presentation_payload(
         else PresentationGenerationPayloadLLM.model_validate(payload).model_dump()
     )
 
-    title = normalize_text(coerce_text(payload_data.get("title")))[:MAX_PRESENTATION_TITLE_CHARS]
-    summary = normalize_text(coerce_text(payload_data.get("summary")))[:MAX_PRESENTATION_SUMMARY_CHARS]
+    title = normalize_text(coerce_text(payload_data.get("title")))[
+        :MAX_PRESENTATION_TITLE_CHARS
+    ]
+    summary = normalize_text(coerce_text(payload_data.get("summary")))[
+        :MAX_PRESENTATION_SUMMARY_CHARS
+    ]
     raw_slides = payload_data.get("slides")
 
     slides: list[PresentationSlideOut] = []

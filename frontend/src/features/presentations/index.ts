@@ -15,6 +15,4 @@ export type {
   PresentationOut,
   PresentationSlide,
   PresentationSourceRef,
-  PresentationStyle,
-  PresentationStyleTemplate,
 } from "./types/presentations.types";

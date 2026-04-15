@@ -4,8 +4,6 @@ import { useId } from "react";
 import { Button } from "../../../shared/ui/Button";
 import type {
   PresentationDetailLevel,
-  PresentationStyle,
-  PresentationStyleTemplate,
 } from "../types/presentations.types";
 
 const DETAIL_LEVEL_OPTIONS: { value: PresentationDetailLevel; label: string; hint: string }[] = [
@@ -13,47 +11,32 @@ const DETAIL_LEVEL_OPTIONS: { value: PresentationDetailLevel; label: string; hin
   { value: "detailed", label: "Detallada", hint: "Mas contexto y explicaciones para lectura guiada." },
 ];
 
-const STYLE_SHORT_LABELS: Record<PresentationStyle, string> = {
-  clean: "Limpio",
-  corporate: "Corp.",
-  creative: "Creativo",
-  academic: "Acad.",
-  minimal: "Minimal",
-};
-
 type Props = {
   topic: string;
-  styles: PresentationStyleTemplate[];
-  selectedStyle: PresentationStyle;
   detailLevel: PresentationDetailLevel;
   disabled: boolean;
   isGenerating: boolean;
   canGenerate: boolean;
   error: string | null;
   onTopicChange: (value: string) => void;
-  onSelectStyle: (style: PresentationStyle) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
   onGenerate: () => void;
 };
 
 export function GeneratePresentationPanel({
   topic,
-  styles,
-  selectedStyle,
   detailLevel,
   disabled,
   isGenerating,
   canGenerate,
   error,
   onTopicChange,
-  onSelectStyle,
   onDetailLevelChange,
   onGenerate,
 }: Props) {
   const inputId = useId();
 
   const activeDetailHint = DETAIL_LEVEL_OPTIONS.find((o) => o.value === detailLevel)?.hint ?? "";
-  const activeStyleDescription = styles.find((s) => s.style === selectedStyle)?.description ?? "";
 
   return (
     <div className="flex h-full overflow-y-auto">
@@ -66,7 +49,7 @@ export function GeneratePresentationPanel({
           {isGenerating ? "Generando presentacion…" : "Todavia no hay presentacion"}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Define el tema, nivel de detalle y estilo visual para generar slides con tus fuentes.
+          Define el tema y nivel de detalle para generar slides con tus fuentes.
         </p>
 
         <div className="mt-6 space-y-4 text-left">
@@ -91,66 +74,34 @@ export function GeneratePresentationPanel({
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Nivel de detalle</p>
-              <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-                {DETAIL_LEVEL_OPTIONS.map((option) => {
-                  const isActive = option.value === detailLevel;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => onDetailLevelChange(option.value)}
-                      disabled={disabled}
-                      className={
-                        "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
-                        (isActive
-                          ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
-                          : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
-                        (disabled ? " cursor-not-allowed opacity-60" : "")
-                      }
-                      aria-pressed={isActive}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {activeDetailHint ? (
-                <p className="mt-2 text-xs text-muted-foreground">{activeDetailHint}</p>
-              ) : null}
+          <div>
+            <p className="text-sm font-semibold text-foreground">Nivel de detalle</p>
+            <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+              {DETAIL_LEVEL_OPTIONS.map((option) => {
+                const isActive = option.value === detailLevel;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onDetailLevelChange(option.value)}
+                    disabled={disabled}
+                    className={
+                      "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                      (isActive
+                        ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                        : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
+                      (disabled ? " cursor-not-allowed opacity-60" : "")
+                    }
+                    aria-pressed={isActive}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
-
-            <div>
-              <p className="text-sm font-semibold text-foreground">Estilo visual</p>
-              <div className="mt-2 grid grid-cols-5 gap-1 rounded-xl bg-muted p-1">
-                {styles.map((style) => {
-                  const isActive = style.style === selectedStyle;
-                  return (
-                    <button
-                      key={style.style}
-                      type="button"
-                      onClick={() => onSelectStyle(style.style)}
-                      disabled={disabled}
-                      className={
-                        "rounded-lg px-2 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
-                        (isActive
-                          ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
-                          : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
-                        (disabled ? " cursor-not-allowed opacity-60" : "")
-                      }
-                      aria-pressed={isActive}
-                    >
-                      {STYLE_SHORT_LABELS[style.style] ?? style.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {activeStyleDescription ? (
-                <p className="mt-2 text-xs text-muted-foreground">{activeStyleDescription}</p>
-              ) : null}
-            </div>
+            {activeDetailHint ? (
+              <p className="mt-2 text-xs text-muted-foreground">{activeDetailHint}</p>
+            ) : null}
           </div>
         </div>
 

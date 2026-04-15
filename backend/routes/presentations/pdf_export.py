@@ -2,17 +2,16 @@ import re
 import unicodedata
 from html import escape
 
-from ...schemas.presentations import PresentationSlideOut, PresentationStyle
+from ...schemas.presentations import PresentationSlideOut
 from .normalization import coerce_text
 
 PDF_DEFAULT_FILENAME = "presentacion.pdf"
 
-STYLE_PALETTES: dict[PresentationStyle, dict[str, str]] = {
-    "clean": {"bg": "#f8fafc", "surface": "#ffffff", "text": "#0f172a", "accent": "#2563eb"},
-    "corporate": {"bg": "#0b1220", "surface": "#111827", "text": "#f8fafc", "accent": "#38bdf8"},
-    "creative": {"bg": "#1f1147", "surface": "#2b1f66", "text": "#fdf4ff", "accent": "#f97316"},
-    "academic": {"bg": "#fdfcf8", "surface": "#ffffff", "text": "#1f2937", "accent": "#0f766e"},
-    "minimal": {"bg": "#ffffff", "surface": "#ffffff", "text": "#111827", "accent": "#111827"},
+PDF_PALETTE: dict[str, str] = {
+    "bg": "#f8fafc",
+    "surface": "#ffffff",
+    "text": "#0f172a",
+    "accent": "#2563eb",
 }
 
 
@@ -31,11 +30,10 @@ async def build_presentation_pdf_bytes(
     title: str,
     summary: str,
     slides: list[PresentationSlideOut],
-    style: PresentationStyle,
 ) -> bytes:
     safe_title = coerce_text(title).strip() or "Presentacion"
     safe_summary = coerce_text(summary).strip() or "Resumen no disponible."
-    html = _build_presentation_html(safe_title, safe_summary, slides, style)
+    html = _build_presentation_html(safe_title, safe_summary, slides)
 
     try:
         from playwright.async_api import Error as PlaywrightError
@@ -73,9 +71,8 @@ def _build_presentation_html(
     title: str,
     summary: str,
     slides: list[PresentationSlideOut],
-    style: PresentationStyle,
 ) -> str:
-    palette = STYLE_PALETTES.get(style, STYLE_PALETTES["clean"])
+    palette = PDF_PALETTE
     safe_deck_title = escape(title)
     safe_deck_summary = escape(summary)
 

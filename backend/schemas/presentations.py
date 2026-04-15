@@ -4,25 +4,11 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
-PresentationStyle = Literal[
-    "clean",
-    "corporate",
-    "creative",
-    "academic",
-    "minimal",
-]
 PresentationDetailLevel = Literal["concise", "detailed"]
-
-
-class PresentationStyleTemplateOut(BaseModel):
-    style: PresentationStyle
-    label: str
-    description: str
 
 
 class PresentationGenerateRequest(BaseModel):
     topic: str = Field(min_length=1, max_length=300)
-    style: PresentationStyle
     detail_level: PresentationDetailLevel
 
 
@@ -46,7 +32,6 @@ class PresentationOut(BaseModel):
     notebook_id: str
     owner_id: str
     topic: str
-    style: PresentationStyle
     detail_level: PresentationDetailLevel
     title: str
     summary: str
@@ -63,7 +48,6 @@ class PresentationListOut(BaseModel):
 
 class PresentationConfigOut(BaseModel):
     has_ready_sources: bool
-    styles: list[PresentationStyleTemplateOut] = Field(default_factory=list)
 
 
 class PresentationGenerationJobOut(BaseModel):

@@ -8,7 +8,6 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from ...config import settings
 from ...db import db
-from .constants import PRESENTATION_STYLE_CONFIGS
 from .generation_service import generate_presentation_payload
 from .normalization import coerce_text
 from .repository import compute_sources_fingerprint
@@ -118,18 +117,11 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
             return
 
         topic = coerce_text(job_doc.get("topic")).strip()
-        style = coerce_text(job_doc.get("style"))
         detail_level = coerce_text(job_doc.get("detail_level"))
 
         if not topic:
             await mark_presentation_job_failed(
                 job_id, "El tema es obligatorio", db_client=worker_db
-            )
-            return
-
-        if style not in PRESENTATION_STYLE_CONFIGS:
-            await mark_presentation_job_failed(
-                job_id, "Estilo de presentacion invalido", db_client=worker_db
             )
             return
 
@@ -157,7 +149,6 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
             title, summary, slides, sources = await generate_presentation_payload(
                 notebook_title=coerce_text(notebook.get("title")),
                 topic=topic,
-                style=style,
                 detail_level=detail_level,
                 notebook_object_id=notebook_object_id,
                 user={
@@ -170,7 +161,6 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                 "owner_id": owner_object_id,
                 "notebook_id": notebook_object_id,
                 "topic": topic,
-                "style": style,
                 "detail_level": detail_level,
                 "title": title,
                 "summary": summary,

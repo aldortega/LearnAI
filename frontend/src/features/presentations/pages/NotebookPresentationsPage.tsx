@@ -12,7 +12,7 @@ import { useGeneratePresentation } from "../hooks/useGeneratePresentation";
 import { usePresentationsHistory } from "../hooks/usePresentationsHistory";
 import { usePresentationsConfig } from "../hooks/usePresentationsConfig";
 import { usePresentationsNotebookSources } from "../hooks/usePresentationsNotebookSources";
-import type { PresentationDetailLevel, PresentationOut, PresentationStyle } from "../types/presentations.types";
+import type { PresentationDetailLevel, PresentationOut } from "../types/presentations.types";
 
 type PresentationViewMode = "generate" | "history";
 type HistoryViewMode = "cards" | "detail";
@@ -39,7 +39,6 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<PresentationOut | null>(null);
   const [topic, setTopic] = useState("");
   const [detailLevel, setDetailLevel] = useState<PresentationDetailLevel>("concise");
-  const [selectedStyle, setSelectedStyle] = useState<PresentationStyle>("clean");
 
   const {
     fileInputRef,
@@ -74,7 +73,6 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   } = useDownloadPresentationPdf(notebookId);
 
   const canGeneratePresentations = config?.has_ready_sources ?? hasReadySources;
-  const styleOptions = useMemo(() => config?.styles ?? [], [config]);
   const generationError = generateError ?? configError;
 
   useEffect(() => {
@@ -92,13 +90,6 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       clearGenerateError();
     });
   }, [notebookId, clearGenerateError, routeMode]);
-
-  useEffect(() => {
-    if (!styleOptions.length || styleOptions.some((item) => item.style === selectedStyle)) return;
-    queueMicrotask(() => {
-      setSelectedStyle(styleOptions[0].style);
-    });
-  }, [selectedStyle, styleOptions]);
 
   useEffect(() => {
     if (!notebookId) return;
@@ -160,7 +151,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     setHistoryView("cards");
     setSelectedPresentationId(null);
     setSelectedSlideIndex(0);
-    const result = await generate({ topic: topic.trim(), style: selectedStyle, detail_level: detailLevel });
+    const result = await generate({ topic: topic.trim(), detail_level: detailLevel });
     if (!result) return;
     const updated = await reloadPresentations();
     if (!updated.length) return;
@@ -173,7 +164,6 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     notebookId,
     canGeneratePresentations,
     topic,
-    selectedStyle,
     detailLevel,
     clearGenerateError,
     generate,
@@ -318,8 +308,6 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
           viewMode={viewMode}
           historyView={historyView}
           topic={topic}
-          styles={styleOptions}
-          selectedStyle={selectedStyle}
           detailLevel={detailLevel}
           canGeneratePresentations={canGeneratePresentations}
           isGenerating={isGenerating}
@@ -336,7 +324,6 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
           isLastSlide={isLastSlide}
           downloadPdfError={downloadPdfError}
           onTopicChange={setTopic}
-          onSelectStyle={setSelectedStyle}
           onDetailLevelChange={setDetailLevel}
           onGenerate={() => void runGeneration()}
           onPreviousSlide={handlePreviousSlide}

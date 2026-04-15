@@ -66,7 +66,9 @@ async def compute_sources_fingerprint(
     return build_sources_fingerprint(title, documents), len(documents)
 
 
-def presentation_doc_to_out(presentation_doc: dict, current_fingerprint: str) -> PresentationOut:
+def presentation_doc_to_out(
+    presentation_doc: dict, current_fingerprint: str
+) -> PresentationOut:
     raw_sources = presentation_doc.get("sources", [])
     sources = [
         PresentationSourceRef(**source_doc)
@@ -108,7 +110,6 @@ def presentation_doc_to_out(presentation_doc: dict, current_fingerprint: str) ->
         notebook_id=str(presentation_doc["notebook_id"]),
         owner_id=str(presentation_doc["owner_id"]),
         topic=normalize_text(coerce_text(presentation_doc.get("topic"))),
-        style=presentation_doc["style"],
         detail_level=presentation_doc["detail_level"],
         title=title[:MAX_PRESENTATION_TITLE_CHARS],
         summary=summary[:MAX_PRESENTATION_SUMMARY_CHARS],

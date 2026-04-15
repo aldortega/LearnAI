@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { cn } from "../../../shared/lib/cn";
-import type { PresentationOut, PresentationStyle } from "../types/presentations.types";
+import type { PresentationOut } from "../types/presentations.types";
 
 type Props = {
   presentation: PresentationOut;
@@ -19,14 +19,6 @@ type Props = {
 };
 
 const VIRTUAL_WIDTH = 960;
-
-const stylePreviewClasses: Record<PresentationStyle, string> = {
-  clean: "bg-slate-100 text-slate-800",
-  corporate: "bg-slate-900 text-slate-100",
-  creative: "bg-indigo-950 text-indigo-100",
-  academic: "bg-stone-100 text-stone-800",
-  minimal: "bg-white text-slate-800",
-};
 
 export function PresentationPreviewCard({
   presentation,
@@ -134,10 +126,7 @@ export function PresentationPreviewCard({
       {/* ---- Cover slide preview (scaled thumbnail) ---- */}
       <div
         ref={previewRef}
-        className={cn(
-          "relative aspect-video w-full overflow-hidden rounded-t-xl",
-          stylePreviewClasses[presentation.style],
-        )}
+        className="relative aspect-video w-full overflow-hidden rounded-t-xl bg-slate-100 text-slate-800"
       >
         {scale > 0 ? (
           <div

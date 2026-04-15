@@ -8,26 +8,13 @@ from ...schemas.presentations import (
     PresentationConfigOut,
     PresentationGenerateRequest,
     PresentationGenerationJobOut,
-    PresentationStyleTemplateOut,
 )
 from ..auth import get_current_user
-from .constants import PRESENTATION_STYLE_CONFIGS
 from .jobs import process_presentation_generation
 from .normalization import coerce_text
 from .repository import compute_sources_fingerprint, get_notebook_or_404
 
 router = APIRouter(tags=["presentations"])
-
-
-def build_style_templates() -> list[PresentationStyleTemplateOut]:
-    return [
-        PresentationStyleTemplateOut(
-            style=style,
-            label=config["label"],
-            description=config["description"],
-        )
-        for style, config in PRESENTATION_STYLE_CONFIGS.items()
-    ]
 
 
 def map_presentation_generation_job(job_doc: dict) -> PresentationGenerationJobOut:
@@ -59,7 +46,6 @@ async def get_presentations_config(
 
     return PresentationConfigOut(
         has_ready_sources=ready_count > 0,
-        styles=build_style_templates(),
     )
 
 
@@ -120,7 +106,6 @@ async def generate_presentation(
             "error": None,
             "presentation_id": None,
             "topic": topic,
-            "style": payload.style,
             "detail_level": payload.detail_level,
             "created_at": now,
             "started_at": None,

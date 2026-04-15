@@ -4,8 +4,6 @@ import { PresentationViewer } from "./PresentationViewer";
 import type {
   PresentationDetailLevel,
   PresentationOut,
-  PresentationStyle,
-  PresentationStyleTemplate,
 } from "../types/presentations.types";
 
 type PresentationViewMode = "generate" | "history";
@@ -15,8 +13,6 @@ type Props = {
   viewMode: PresentationViewMode;
   historyView: HistoryViewMode;
   topic: string;
-  styles: PresentationStyleTemplate[];
-  selectedStyle: PresentationStyle;
   detailLevel: PresentationDetailLevel;
   canGeneratePresentations: boolean;
   isGenerating: boolean;
@@ -33,7 +29,6 @@ type Props = {
   isLastSlide: boolean;
   downloadPdfError: string | null;
   onTopicChange: (value: string) => void;
-  onSelectStyle: (style: PresentationStyle) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
   onGenerate: () => void;
   onPreviousSlide: () => void;
@@ -46,8 +41,6 @@ export function PresentationsContent({
   viewMode,
   historyView,
   topic,
-  styles,
-  selectedStyle,
   detailLevel,
   canGeneratePresentations,
   isGenerating,
@@ -64,7 +57,6 @@ export function PresentationsContent({
   isLastSlide,
   downloadPdfError,
   onTopicChange,
-  onSelectStyle,
   onDetailLevelChange,
   onGenerate,
   onPreviousSlide,
@@ -77,15 +69,12 @@ export function PresentationsContent({
       <div className="relative h-full">
         <GeneratePresentationPanel
           topic={topic}
-          styles={styles}
-          selectedStyle={selectedStyle}
           detailLevel={detailLevel}
           disabled={!canGeneratePresentations || isGenerating || isConfigLoading}
           isGenerating={isGenerating}
           canGenerate={canGeneratePresentations}
           error={generationError}
           onTopicChange={onTopicChange}
-          onSelectStyle={onSelectStyle}
           onDetailLevelChange={onDetailLevelChange}
           onGenerate={onGenerate}
         />
