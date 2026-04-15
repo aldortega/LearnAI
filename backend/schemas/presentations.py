@@ -12,6 +12,16 @@ class PresentationGenerateRequest(BaseModel):
     detail_level: PresentationDetailLevel
 
 
+class PresentationRegenerateSlideRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=12000)
+
+
+class PresentationApplySlideRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=90)
+    subtitle: Optional[str] = Field(default=None, max_length=140)
+    content_markdown: str = Field(min_length=1, max_length=2600)
+
+
 class PresentationSourceRef(BaseModel):
     document_id: str
     chunk_id: int
@@ -57,3 +67,7 @@ class PresentationGenerationJobOut(BaseModel):
     presentation_id: Optional[str] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+
+
+class PresentationRegenerateSlideOut(BaseModel):
+    slide: PresentationSlideOut

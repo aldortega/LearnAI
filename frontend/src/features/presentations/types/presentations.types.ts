@@ -9,6 +9,20 @@ export type PresentationGenerateRequest = {
   detail_level: PresentationDetailLevel;
 };
 
+export type PresentationRegenerateSlideRequest = {
+  prompt: string;
+};
+
+export type PresentationApplySlideRequest = {
+  title: string;
+  subtitle?: string | null;
+  content_markdown: string;
+};
+
+export type PresentationRegenerateSlideOut = {
+  slide: PresentationSlide;
+};
+
 export type PresentationGenerationJobOut = {
   job_id: string;
   status: "queued" | "processing" | "done" | "failed";

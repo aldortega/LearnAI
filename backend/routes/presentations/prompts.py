@@ -38,6 +38,55 @@ def build_presentation_prompt(
         "titulo general, resumen breve y slides en orden logico. "
         "Cada slide debe incluir titulo, subtitulo opcional y `content_markdown` "
         "con mezcla de parrafos, listas y negritas cuando aporte claridad. "
+        "Si usas listas markdown, cada item debe ir en su propia linea, "
+        "nunca varios items en una sola linea. "
+        "No incluyas notas del presentador."
+    )
+
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def build_regenerate_slide_prompt(
+    notebook_title: str,
+    topic: str,
+    detail_level: PresentationDetailLevel,
+    slide_index: int,
+    slide_title: str,
+    slide_subtitle: str | None,
+    slide_content_markdown: str,
+    edit_prompt: str,
+    context_text: str,
+) -> tuple[SystemMessage, HumanMessage]:
+    detail_guidance = (
+        "Mantener contenido sintetico, priorizar ideas clave y facilitar exposicion oral."
+        if detail_level == "concise"
+        else "Incluir mayor profundidad conceptual y explicaciones mas completas."
+    )
+    subtitle_text = slide_subtitle or "(sin subtitulo)"
+
+    system_prompt = (
+        "Eres un asistente experto en editar slides de estudio. "
+        "Debes proponer una unica slide mejorada basada en el pedido del usuario. "
+        "Prioriza el contexto recuperado y conserva coherencia con la presentacion. "
+        "Responde solo con JSON valido en espanol, sin markdown ni texto adicional. "
+        "Usa exactamente este esquema:\n"
+        '{\n  "title": "string",\n  "subtitle": "string | null",\n  "content_markdown": "string"\n}\n'
+    )
+    user_prompt = (
+        f"Notebook: {notebook_title}\n"
+        f"Tema general: {topic}\n"
+        f"Nivel de detalle: {detail_level}. {detail_guidance}\n"
+        f"Slide a editar: #{slide_index}\n\n"
+        "Slide actual:\n"
+        f"- Titulo: {slide_title}\n"
+        f"- Subtitulo: {subtitle_text}\n"
+        f"- Contenido markdown:\n{slide_content_markdown}\n\n"
+        "Instrucciones del usuario para editar/regenerar la slide:\n"
+        f"{edit_prompt}\n\n"
+        f"Contexto disponible:\n{context_text}\n\n"
+        "Devuelve una sola slide completa (titulo, subtitulo opcional y content_markdown). "
+        "Si usas listas markdown, cada item debe ir en su propia linea, "
+        "nunca varios items en una sola linea. "
         "No incluyas notas del presentador."
     )
 

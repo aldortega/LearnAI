@@ -5,10 +5,13 @@ import {
   getApiErrorMessage,
 } from "../../../shared/lib/apiClient";
 import type {
+  PresentationApplySlideRequest,
   PresentationConfigOut,
   PresentationGenerateRequest,
   PresentationGenerationJobOut,
   PresentationListOut,
+  PresentationRegenerateSlideOut,
+  PresentationRegenerateSlideRequest,
   PresentationOut,
 } from "../types/presentations.types";
 
@@ -117,6 +120,36 @@ export const presentationsApi = {
     await apiRequest<void>(`/notebooks/${notebookId}/presentations/${presentationId}`, {
       method: "DELETE",
     });
+  },
+
+  regenerateSlide: async (
+    notebookId: string,
+    presentationId: string,
+    slideIndex: number,
+    payload: PresentationRegenerateSlideRequest,
+  ): Promise<PresentationRegenerateSlideOut> => {
+    return apiRequest<PresentationRegenerateSlideOut>(
+      `/notebooks/${notebookId}/presentations/${presentationId}/slides/${slideIndex}/regenerate`,
+      {
+        method: "POST",
+        body: payload,
+      },
+    );
+  },
+
+  applySlide: async (
+    notebookId: string,
+    presentationId: string,
+    slideIndex: number,
+    payload: PresentationApplySlideRequest,
+  ): Promise<void> => {
+    await apiRequest<void>(
+      `/notebooks/${notebookId}/presentations/${presentationId}/slides/${slideIndex}/apply`,
+      {
+        method: "POST",
+        body: payload,
+      },
+    );
   },
 };
 

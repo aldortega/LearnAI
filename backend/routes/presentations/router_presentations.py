@@ -2,8 +2,20 @@ from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from ...db import db
-from ...schemas.presentations import PresentationListOut, PresentationOut
+from ...schemas.presentations import (
+    PresentationApplySlideRequest,
+    PresentationListOut,
+    PresentationOut,
+    PresentationRegenerateSlideOut,
+    PresentationRegenerateSlideRequest,
+)
 from ..auth import get_current_user
+from .generation_service import regenerate_presentation_slide_payload
+from .normalization import (
+    normalize_markdown_content,
+    normalize_slide_subtitle,
+    normalize_slide_title,
+)
 from .pdf_export import (
     PdfExportError,
     build_presentation_pdf_bytes,
@@ -138,6 +150,132 @@ async def delete_presentation(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.post(
+    "/{notebook_id}/presentations/{presentation_id}/slides/{slide_index}/regenerate",
+    response_model=PresentationRegenerateSlideOut,
+)
+async def regenerate_presentation_slide(
+    notebook_id: str,
+    presentation_id: str,
+    slide_index: int,
+    payload: PresentationRegenerateSlideRequest,
+    request: Request,
+) -> PresentationRegenerateSlideOut:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+    presentation_doc = await _get_presentation_doc_or_404(
+        presentation_id,
+        user["_id"],
+        notebook["_id"],
+    )
+
+    slides = _extract_slides_from_doc(presentation_doc)
+    if slide_index < 1 or slide_index > len(slides):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Indice de diapositiva invalido",
+        )
+
+    prompt = coerce_text(payload.prompt).strip()
+    if not prompt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El prompt es obligatorio",
+        )
+
+    regenerated_slide = await regenerate_presentation_slide_payload(
+        notebook_title=coerce_text(notebook.get("title")),
+        topic=coerce_text(presentation_doc.get("topic")),
+        detail_level=coerce_text(presentation_doc.get("detail_level")),
+        notebook_object_id=notebook["_id"],
+        user={
+            "_id": user["_id"],
+            "_source_owner_id": notebook["owner_id"],
+        },
+        slide_index=slide_index,
+        current_slide=slides[slide_index - 1],
+        edit_prompt=prompt,
+    )
+
+    return PresentationRegenerateSlideOut(slide=regenerated_slide)
+
+
+@router.post(
+    "/{notebook_id}/presentations/{presentation_id}/slides/{slide_index}/apply"
+)
+async def apply_presentation_slide_changes(
+    notebook_id: str,
+    presentation_id: str,
+    slide_index: int,
+    payload: PresentationApplySlideRequest,
+    request: Request,
+) -> Response:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+    presentation_doc = await _get_presentation_doc_or_404(
+        presentation_id,
+        user["_id"],
+        notebook["_id"],
+    )
+
+    slides = _extract_slides_from_doc(presentation_doc)
+    if slide_index < 1 or slide_index > len(slides):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Indice de diapositiva invalido",
+        )
+
+    next_title = normalize_slide_title(coerce_text(payload.title))
+    next_subtitle = normalize_slide_subtitle(coerce_text(payload.subtitle)) or None
+    next_content_markdown = normalize_markdown_content(
+        coerce_text(payload.content_markdown)
+    )
+    if not next_title or not next_content_markdown:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La diapositiva editada es invalida",
+        )
+
+    slide_doc = {
+        "index": slide_index,
+        "title": next_title,
+        "subtitle": next_subtitle,
+        "content_markdown": next_content_markdown,
+    }
+    raw_slides = presentation_doc.get("slides", [])
+    if not isinstance(raw_slides, list):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Presentacion invalida",
+        )
+    target_position = slide_index - 1
+    if target_position >= len(raw_slides) or not isinstance(
+        raw_slides[target_position], dict
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se pudo actualizar la diapositiva",
+        )
+
+    updated_slides = list(raw_slides)
+    updated_slides[target_position] = slide_doc
+
+    await db.presentations.update_one(
+        {
+            "_id": presentation_doc["_id"],
+            "owner_id": user["_id"],
+            "notebook_id": notebook["_id"],
+        },
+        {
+            "$set": {
+                "slides": updated_slides,
+            }
+        },
+    )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 async def _get_presentation_doc_or_404(
     presentation_id: str,
     owner_id: ObjectId,
@@ -164,3 +302,11 @@ async def _get_presentation_doc_or_404(
             detail="Presentacion no encontrada",
         )
     return presentation_doc
+
+
+def _extract_slides_from_doc(presentation_doc: dict):
+    presentation_out = presentation_doc_to_out(
+        presentation_doc,
+        current_fingerprint=coerce_text(presentation_doc.get("sources_fingerprint")),
+    )
+    return presentation_out.slides

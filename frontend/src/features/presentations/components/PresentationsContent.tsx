@@ -4,6 +4,7 @@ import { PresentationViewer } from "./PresentationViewer";
 import type {
   PresentationDetailLevel,
   PresentationOut,
+  PresentationSlide,
 } from "../types/presentations.types";
 
 type PresentationViewMode = "generate" | "history";
@@ -28,6 +29,13 @@ type Props = {
   isFirstSlide: boolean;
   isLastSlide: boolean;
   downloadPdfError: string | null;
+  candidateSlide: PresentationSlide | null;
+  candidateSlideError: string | null;
+  isApplyingSlide: boolean;
+  isEditPanelOpen: boolean;
+  canEditCurrentSlide: boolean;
+  editPrompt: string;
+  isRegeneratingSlide: boolean;
   onTopicChange: (value: string) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
   onGenerate: () => void;
@@ -35,6 +43,10 @@ type Props = {
   onNextSlide: () => void;
   onSelectPresentation: (presentationId: string) => void;
   onDeletePresentation: (presentation: PresentationOut) => void;
+  onApplyCandidateSlide: () => void;
+  onDiscardCandidateSlide: () => void;
+  onEditPromptChange: (value: string) => void;
+  onRegenerateSlide: () => void;
 };
 
 export function PresentationsContent({
@@ -56,6 +68,13 @@ export function PresentationsContent({
   isFirstSlide,
   isLastSlide,
   downloadPdfError,
+  candidateSlide,
+  candidateSlideError,
+  isApplyingSlide,
+  isEditPanelOpen,
+  canEditCurrentSlide,
+  editPrompt,
+  isRegeneratingSlide,
   onTopicChange,
   onDetailLevelChange,
   onGenerate,
@@ -63,7 +82,20 @@ export function PresentationsContent({
   onNextSlide,
   onSelectPresentation,
   onDeletePresentation,
+  onApplyCandidateSlide,
+  onDiscardCandidateSlide,
+  onEditPromptChange,
+  onRegenerateSlide,
 }: Props) {
+  const containerClassName =
+    historyView === "detail"
+      ? "relative h-full overflow-hidden p-6"
+      : "relative h-full overflow-y-auto p-6";
+  const contentClassName =
+    historyView === "detail"
+      ? "mx-auto flex h-full w-full max-w-5xl min-h-0 flex-col gap-3"
+      : "mx-auto w-full max-w-5xl space-y-4";
+
   if (viewMode === "generate") {
     return (
       <div className="relative h-full">
@@ -83,8 +115,8 @@ export function PresentationsContent({
   }
 
   return (
-    <div className="relative h-full overflow-y-auto p-6">
-      <div className="mx-auto w-full max-w-5xl space-y-4">
+    <div className={containerClassName}>
+      <div className={contentClassName}>
         {historyView === "cards" ? (
           <PresentationsHistoryList
             presentations={presentations}
@@ -96,18 +128,33 @@ export function PresentationsContent({
             onDeletePresentation={onDeletePresentation}
           />
         ) : (
-          <PresentationViewer
-            key={activePresentation?.id ?? "none"}
-            presentation={activePresentation}
-            selectedSlideIndex={selectedSlideIndex}
-            isFirstSlide={isFirstSlide}
-            isLastSlide={isLastSlide}
-            onPreviousSlide={onPreviousSlide}
-            onNextSlide={onNextSlide}
-            isLoading={false}
-            error={presentationsError}
-            downloadPdfError={downloadPdfError}
-          />
+          <div className="min-h-0 flex-1">
+            <div className="min-w-0 flex-1">
+              <PresentationViewer
+                key={activePresentation?.id ?? "none"}
+                presentation={activePresentation}
+                selectedSlideIndex={selectedSlideIndex}
+                isFirstSlide={isFirstSlide}
+                isLastSlide={isLastSlide}
+                onPreviousSlide={onPreviousSlide}
+                onNextSlide={onNextSlide}
+                isLoading={false}
+                error={presentationsError}
+                downloadPdfError={downloadPdfError}
+                candidateSlide={candidateSlide}
+                candidateSlideError={candidateSlideError}
+                isRegeneratingSlide={isRegeneratingSlide}
+                isApplyingSlide={isApplyingSlide}
+                isEditPanelOpen={isEditPanelOpen}
+                canEditCurrentSlide={canEditCurrentSlide}
+                editPrompt={editPrompt}
+                onApplyCandidateSlide={onApplyCandidateSlide}
+                onDiscardCandidateSlide={onDiscardCandidateSlide}
+                onEditPromptChange={onEditPromptChange}
+                onRegenerateSlide={onRegenerateSlide}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>

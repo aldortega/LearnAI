@@ -1,4 +1,12 @@
-import { ChevronLeft, ChevronRight, Download, LoaderCircle, Plus, Presentation } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Presentation,
+} from "lucide-react";
 
 import type { PresentationOut } from "../types/presentations.types";
 
@@ -16,6 +24,9 @@ type Props = {
   onPreviousSlide: () => void;
   onNextSlide: () => void;
   onDownloadPdf: () => void;
+  onEditSlide: () => void;
+  canEditSlide: boolean;
+  isEditingSlide: boolean;
   onToggleView: () => void;
 };
 
@@ -30,6 +41,9 @@ export function PresentationsHeaderActions({
   onPreviousSlide,
   onNextSlide,
   onDownloadPdf,
+  onEditSlide,
+  canEditSlide,
+  isEditingSlide,
   onToggleView,
 }: Props) {
   const isDownloading = downloadingPresentationId === activePresentation?.id;
@@ -73,6 +87,22 @@ export function PresentationsHeaderActions({
             <LoaderCircle className="h-4 w-4 animate-spin" />
           ) : (
             <Download className="h-4 w-4" />
+          )}
+        </button>
+      ) : null}
+      {viewMode === "history" && historyView === "detail" ? (
+        <button
+          type="button"
+          onClick={onEditSlide}
+          disabled={!canEditSlide || isEditingSlide}
+          className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+          title="Editar/regenerar slide"
+          aria-label="Editar/regenerar slide"
+        >
+          {isEditingSlide ? (
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+          ) : (
+            <Pencil className="h-4 w-4" />
           )}
         </button>
       ) : null}

@@ -6,13 +6,19 @@ import { PresentationsContent } from "../components/PresentationsContent";
 import { PresentationsFooterModals } from "../components/PresentationsFooterModals";
 import { PresentationsHeaderActions } from "../components/PresentationsHeaderActions";
 import { PresentationsShell } from "../components/PresentationsShell";
+import { useApplyPresentationSlide } from "../hooks/useApplyPresentationSlide";
 import { useDeletePresentation } from "../hooks/useDeletePresentation";
 import { useDownloadPresentationPdf } from "../hooks/useDownloadPresentationPdf";
 import { useGeneratePresentation } from "../hooks/useGeneratePresentation";
+import { useRegeneratePresentationSlide } from "../hooks/useRegeneratePresentationSlide";
 import { usePresentationsHistory } from "../hooks/usePresentationsHistory";
 import { usePresentationsConfig } from "../hooks/usePresentationsConfig";
 import { usePresentationsNotebookSources } from "../hooks/usePresentationsNotebookSources";
-import type { PresentationDetailLevel, PresentationOut } from "../types/presentations.types";
+import type {
+  PresentationDetailLevel,
+  PresentationOut,
+  PresentationSlide,
+} from "../types/presentations.types";
 
 type PresentationViewMode = "generate" | "history";
 type HistoryViewMode = "cards" | "detail";
@@ -37,6 +43,10 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<PresentationOut | null>(null);
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [editSlidePrompt, setEditSlidePrompt] = useState("");
+  const [candidateSlide, setCandidateSlide] = useState<PresentationSlide | null>(null);
+  const [candidatePresentationId, setCandidatePresentationId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
   const [detailLevel, setDetailLevel] = useState<PresentationDetailLevel>("concise");
 
@@ -71,6 +81,18 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     error: downloadPdfError,
     clearError: clearDownloadPdfError,
   } = useDownloadPresentationPdf(notebookId);
+  const {
+    regenerateSlide,
+    isRegenerating: isRegeneratingSlide,
+    error: regenerateSlideError,
+    clearError: clearRegenerateSlideError,
+  } = useRegeneratePresentationSlide(notebookId);
+  const {
+    applySlide,
+    isApplying: isApplyingSlide,
+    error: applySlideError,
+    clearError: clearApplySlideError,
+  } = useApplyPresentationSlide(notebookId);
 
   const canGeneratePresentations = config?.has_ready_sources ?? hasReadySources;
   const generationError = generateError ?? configError;
@@ -85,11 +107,23 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       setSelectedPresentationId(null);
       setSelectedSlideIndex(0);
       setDeleteTarget(null);
+      setIsEditPanelOpen(false);
+      setEditSlidePrompt("");
+      setCandidateSlide(null);
+      setCandidatePresentationId(null);
       setTopic("");
       setDetailLevel("concise");
       clearGenerateError();
+      clearRegenerateSlideError();
+      clearApplySlideError();
     });
-  }, [notebookId, clearGenerateError, routeMode]);
+  }, [
+    notebookId,
+    clearApplySlideError,
+    clearGenerateError,
+    clearRegenerateSlideError,
+    routeMode,
+  ]);
 
   useEffect(() => {
     if (!notebookId) return;
@@ -181,6 +215,13 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   const safeSlideIndex = Math.min(selectedSlideIndex, maxSlideIndex);
   const isFirstSlide = safeSlideIndex === 0;
   const isLastSlide = safeSlideIndex >= maxSlideIndex;
+  const canEditCurrentSlide = Boolean(activePresentation && safeSlideIndex > 0);
+  const candidateSlideForViewer = useMemo(() => {
+    if (!candidateSlide || !candidatePresentationId || !activePresentation) return null;
+    if (candidatePresentationId !== activePresentation.id) return null;
+    return candidateSlide;
+  }, [candidatePresentationId, candidateSlide, activePresentation]);
+  const slideEditError = applySlideError ?? regenerateSlideError;
 
   const handlePreviousSlide = useCallback(() => {
     setSelectedSlideIndex(Math.max(0, safeSlideIndex - 1));
@@ -233,6 +274,86 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     if (!notebookId) return;
     navigate(`/notebook/${notebookId}/presentations`);
   }, [viewMode, historyView, presentations.length, notebookId, navigate]);
+
+  const handleOpenEditSlide = useCallback(() => {
+    if (!activePresentation || safeSlideIndex <= 0) return;
+    clearApplySlideError();
+    clearRegenerateSlideError();
+    setIsEditPanelOpen((current) => {
+      const next = !current;
+      if (!next) {
+        setEditSlidePrompt("");
+      }
+      return next;
+    });
+  }, [
+    activePresentation,
+    clearApplySlideError,
+    clearRegenerateSlideError,
+    safeSlideIndex,
+  ]);
+
+  const handleRegenerateSlide = useCallback(async () => {
+    if (!activePresentation || safeSlideIndex <= 0) return;
+
+    const regenerated = await regenerateSlide(
+      activePresentation.id,
+      safeSlideIndex,
+      editSlidePrompt,
+    );
+    if (!regenerated) return;
+    setCandidateSlide(regenerated);
+    setCandidatePresentationId(activePresentation.id);
+    setIsEditPanelOpen(false);
+    setEditSlidePrompt("");
+  }, [
+    activePresentation,
+    editSlidePrompt,
+    regenerateSlide,
+    safeSlideIndex,
+  ]);
+
+  const handleDiscardCandidateSlide = useCallback(() => {
+    setCandidateSlide(null);
+    setCandidatePresentationId(null);
+    clearApplySlideError();
+  }, [clearApplySlideError]);
+
+  const handleApplyCandidateSlide = useCallback(async () => {
+    if (!activePresentation || !candidateSlide || !candidatePresentationId) return;
+    if (candidatePresentationId !== activePresentation.id) return;
+    const appliedSlideIndex = candidateSlide.index;
+
+    setCandidateSlide(null);
+    setCandidatePresentationId(null);
+    clearApplySlideError();
+
+    const applied = await applySlide(
+      activePresentation.id,
+      appliedSlideIndex,
+      candidateSlide,
+    );
+    if (!applied) {
+      setCandidateSlide(candidateSlide);
+      setCandidatePresentationId(activePresentation.id);
+      return;
+    }
+
+    const updated = await reloadPresentations();
+    if (!updated.length) return;
+    setSelectedPresentationId((current) =>
+      current && updated.some((item) => item.id === current) ? current : updated[0].id,
+    );
+    setSelectedSlideIndex(appliedSlideIndex);
+    clearApplySlideError();
+  }, [
+    activePresentation,
+    applySlide,
+    candidatePresentationId,
+    candidateSlide,
+    reloadPresentations,
+    clearApplySlideError,
+  ]);
 
   return (
     <NotebookShell
@@ -300,6 +421,9 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
               clearDownloadPdfError();
               void downloadPresentationPdf(activePresentation.id);
             }}
+            onEditSlide={handleOpenEditSlide}
+            canEditSlide={Boolean(activePresentation && safeSlideIndex > 0)}
+            isEditingSlide={isRegeneratingSlide}
             onToggleView={handleToggleView}
           />
         }
@@ -323,6 +447,13 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
           isFirstSlide={isFirstSlide}
           isLastSlide={isLastSlide}
           downloadPdfError={downloadPdfError}
+          candidateSlide={candidateSlideForViewer}
+          candidateSlideError={slideEditError}
+          isApplyingSlide={isApplyingSlide}
+          isEditPanelOpen={isEditPanelOpen}
+          canEditCurrentSlide={canEditCurrentSlide}
+          editPrompt={editSlidePrompt}
+          isRegeneratingSlide={isRegeneratingSlide}
           onTopicChange={setTopic}
           onDetailLevelChange={setDetailLevel}
           onGenerate={() => void runGeneration()}
@@ -337,6 +468,10 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
             clearDeleteError();
             setDeleteTarget(presentation);
           }}
+          onApplyCandidateSlide={() => void handleApplyCandidateSlide()}
+          onDiscardCandidateSlide={handleDiscardCandidateSlide}
+          onEditPromptChange={setEditSlidePrompt}
+          onRegenerateSlide={() => void handleRegenerateSlide()}
         />
       </PresentationsShell>
     </NotebookShell>

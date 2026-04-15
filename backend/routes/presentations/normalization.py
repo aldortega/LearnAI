@@ -1,3 +1,5 @@
+import re
+
 from ...schemas.presentations import PresentationSourceRef
 from ...schemas.rag import RagSource
 from .constants import (
@@ -20,7 +22,9 @@ def normalize_text(value: str) -> str:
     return " ".join(value.split()).strip()
 
 
-def compact_context(context_lines: list[str], max_chars: int = MAX_CONTEXT_CHARS) -> str:
+def compact_context(
+    context_lines: list[str], max_chars: int = MAX_CONTEXT_CHARS
+) -> str:
     context_text = "\n\n".join(context_lines).strip()
     if not context_text:
         return "(sin informacion relevante)"
@@ -38,8 +42,14 @@ def normalize_slide_subtitle(value: str) -> str:
 
 
 def normalize_markdown_content(value: str) -> str:
-    normalized_lines = [line.rstrip() for line in coerce_text(value).splitlines()]
+    normalized_value = _ensure_multiline_bullets(coerce_text(value))
+    normalized_lines = [line.rstrip() for line in normalized_value.splitlines()]
     return "\n".join(normalized_lines).strip()[:MAX_SLIDE_CONTENT_MARKDOWN_CHARS]
+
+
+def _ensure_multiline_bullets(value: str) -> str:
+    collapsed = value.replace("\r\n", "\n").replace("\r", "\n")
+    return re.sub(r"(?<!\n)([:.;])\s+([*-])\s+", r"\1\n\n\2 ", collapsed)
 
 
 def bullets_to_markdown(values: list[object]) -> str:
