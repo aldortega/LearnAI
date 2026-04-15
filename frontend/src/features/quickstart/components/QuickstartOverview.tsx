@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
+import { Streamdown } from "streamdown";
 
 import { swrKeys } from "../../../shared/lib/swrKeys";
 import type { QuickstartOut, QuickstartTopic } from "../types/quickstart.types";
@@ -58,13 +59,14 @@ export function QuickstartOverview({
     .split(/\n\s*\n+/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
-  const displaySummaryParagraphs =
+  const displaySummary =
     summaryParagraphs.length > 0
-      ? summaryParagraphs
+      ? quickstart.notebook_summary.trim()
       : quickstart.topics
         .map((topic) => topic.summary.trim())
         .filter(Boolean)
-        .slice(0, 2);
+        .slice(0, 2)
+        .join("\n\n");
 
   useEffect(() => {
     void loadIfMissing();
@@ -168,15 +170,8 @@ export function QuickstartOverview({
             </div>
           ) : null}
 
-          <div className="space-y-3">
-            {displaySummaryParagraphs.map((paragraph, index) => (
-              <p
-                key={`summary-${index}`}
-                className="text-sm leading-6 text-foreground/90"
-              >
-                {paragraph}
-              </p>
-            ))}
+          <div className="text-sm leading-6 text-foreground/90 [&_p]:my-2 [&_strong]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1">
+            <Streamdown>{displaySummary}</Streamdown>
           </div>
         </div>
 

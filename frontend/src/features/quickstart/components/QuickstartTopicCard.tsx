@@ -84,6 +84,8 @@ export function QuickstartTopicCard({
           ref={cardRef}
           type="button"
           onClick={handleOpenTopic}
+          title={topic.title}
+          aria-label={topic.title}
           className={cn(
             "flex w-full items-center gap-4 rounded-lg px-4 py-3.5 text-left transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
             canDelete ? "pr-14" : "",
@@ -95,6 +97,7 @@ export function QuickstartTopicCard({
       ) : (
         <div
           ref={cardRef}
+          title={topic.title}
           className={cn(
             "flex items-center gap-4 rounded-lg px-4 py-3.5 transition",
             canDelete ? "pr-14" : "",
