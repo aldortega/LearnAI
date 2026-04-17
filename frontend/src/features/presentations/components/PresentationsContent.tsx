@@ -3,6 +3,7 @@ import { PresentationsHistoryList } from "./PresentationsHistoryList";
 import { PresentationViewer } from "./PresentationViewer";
 import type {
   PresentationDetailLevel,
+  PresentationGenerationMode,
   PresentationOut,
   PresentationSlide,
 } from "../types/presentations.types";
@@ -15,6 +16,7 @@ type Props = {
   historyView: HistoryViewMode;
   topic: string;
   detailLevel: PresentationDetailLevel;
+  generationMode: PresentationGenerationMode;
   canGeneratePresentations: boolean;
   isGenerating: boolean;
   isPresentationsLoading: boolean;
@@ -38,6 +40,7 @@ type Props = {
   isRegeneratingSlide: boolean;
   onTopicChange: (value: string) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
+  onGenerationModeChange: (value: PresentationGenerationMode) => void;
   onGenerate: () => void;
   onPreviousSlide: () => void;
   onNextSlide: () => void;
@@ -54,6 +57,7 @@ export function PresentationsContent({
   historyView,
   topic,
   detailLevel,
+  generationMode,
   canGeneratePresentations,
   isGenerating,
   isPresentationsLoading,
@@ -77,6 +81,7 @@ export function PresentationsContent({
   isRegeneratingSlide,
   onTopicChange,
   onDetailLevelChange,
+  onGenerationModeChange,
   onGenerate,
   onPreviousSlide,
   onNextSlide,
@@ -102,12 +107,14 @@ export function PresentationsContent({
         <GeneratePresentationPanel
           topic={topic}
           detailLevel={detailLevel}
+          generationMode={generationMode}
           disabled={!canGeneratePresentations || isGenerating || isConfigLoading}
           isGenerating={isGenerating}
           canGenerate={canGeneratePresentations}
           error={generationError}
           onTopicChange={onTopicChange}
           onDetailLevelChange={onDetailLevelChange}
+          onGenerationModeChange={onGenerationModeChange}
           onGenerate={onGenerate}
         />
       </div>

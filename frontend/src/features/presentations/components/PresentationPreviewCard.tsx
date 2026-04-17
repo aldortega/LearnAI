@@ -137,16 +137,25 @@ export function PresentationPreviewCard({
               transform: `scale(${scale})`,
             }}
           >
-            <div className="flex h-full flex-col justify-center px-14 py-10">
-              <h3 className="text-[2rem] font-semibold leading-tight">
-                {presentation.title}
-              </h3>
-              {presentation.summary ? (
-                <p className="mt-3 text-base leading-snug opacity-75">
-                  {presentation.summary}
-                </p>
-              ) : null}
-            </div>
+            {presentation.generation_mode === "image" && presentation.slides[0]?.image_url ? (
+              <img
+                src={presentation.slides[0].image_url ?? ""}
+                alt={presentation.title}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-full flex-col justify-center px-14 py-10">
+                <h3 className="text-[2rem] font-semibold leading-tight">
+                  {presentation.title}
+                </h3>
+                {presentation.summary ? (
+                  <p className="mt-3 text-base leading-snug opacity-75">
+                    {presentation.summary}
+                  </p>
+                ) : null}
+              </div>
+            )}
           </div>
         ) : null}
 

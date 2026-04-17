@@ -16,6 +16,7 @@ import { usePresentationsConfig } from "../hooks/usePresentationsConfig";
 import { usePresentationsNotebookSources } from "../hooks/usePresentationsNotebookSources";
 import type {
   PresentationDetailLevel,
+  PresentationGenerationMode,
   PresentationOut,
   PresentationSlide,
 } from "../types/presentations.types";
@@ -49,6 +50,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
   const [candidatePresentationId, setCandidatePresentationId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
   const [detailLevel, setDetailLevel] = useState<PresentationDetailLevel>("concise");
+  const [generationMode, setGenerationMode] = useState<PresentationGenerationMode>("text");
 
   const {
     fileInputRef,
@@ -113,6 +115,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       setCandidatePresentationId(null);
       setTopic("");
       setDetailLevel("concise");
+      setGenerationMode("text");
       clearGenerateError();
       clearRegenerateSlideError();
       clearApplySlideError();
@@ -185,7 +188,11 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     setHistoryView("cards");
     setSelectedPresentationId(null);
     setSelectedSlideIndex(0);
-    const result = await generate({ topic: topic.trim(), detail_level: detailLevel });
+    const result = await generate({
+      topic: topic.trim(),
+      detail_level: detailLevel,
+      generation_mode: generationMode,
+    });
     if (!result) return;
     const updated = await reloadPresentations();
     if (!updated.length) return;
@@ -199,6 +206,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     canGeneratePresentations,
     topic,
     detailLevel,
+    generationMode,
     clearGenerateError,
     generate,
     reloadPresentations,
@@ -210,12 +218,20 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     if (!selectedPresentationId) return null;
     return presentations.find((item) => item.id === selectedPresentationId) ?? null;
   }, [presentations, selectedPresentationId]);
-  const slideCount = activePresentation ? activePresentation.slides.length + 1 : 0;
+  const hasCoverSlide = activePresentation?.generation_mode !== "image";
+  const slideCount = activePresentation
+    ? activePresentation.slides.length + (hasCoverSlide ? 1 : 0)
+    : 0;
   const maxSlideIndex = Math.max(0, slideCount - 1);
   const safeSlideIndex = Math.min(selectedSlideIndex, maxSlideIndex);
   const isFirstSlide = safeSlideIndex === 0;
   const isLastSlide = safeSlideIndex >= maxSlideIndex;
-  const canEditCurrentSlide = Boolean(activePresentation && safeSlideIndex > 0);
+  const currentSlideContentIndex = hasCoverSlide ? safeSlideIndex - 1 : safeSlideIndex;
+  const canEditCurrentSlide = Boolean(
+    activePresentation &&
+      currentSlideContentIndex >= 0 &&
+      activePresentation.slides[currentSlideContentIndex]?.format === "markdown",
+  );
   const candidateSlideForViewer = useMemo(() => {
     if (!candidateSlide || !candidatePresentationId || !activePresentation) return null;
     if (candidatePresentationId !== activePresentation.id) return null;
@@ -422,7 +438,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
               void downloadPresentationPdf(activePresentation.id);
             }}
             onEditSlide={handleOpenEditSlide}
-            canEditSlide={Boolean(activePresentation && safeSlideIndex > 0)}
+            canEditSlide={canEditCurrentSlide}
             isEditingSlide={isRegeneratingSlide}
             onToggleView={handleToggleView}
           />
@@ -433,6 +449,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
           historyView={historyView}
           topic={topic}
           detailLevel={detailLevel}
+          generationMode={generationMode}
           canGeneratePresentations={canGeneratePresentations}
           isGenerating={isGenerating}
           isPresentationsLoading={isPresentationsLoading}
@@ -456,6 +473,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
           isRegeneratingSlide={isRegeneratingSlide}
           onTopicChange={setTopic}
           onDetailLevelChange={setDetailLevel}
+          onGenerationModeChange={setGenerationMode}
           onGenerate={() => void runGeneration()}
           onPreviousSlide={handlePreviousSlide}
           onNextSlide={handleNextSlide}

@@ -12,7 +12,7 @@ import {
 
 const STORAGE_KEY = "generation-monitor-active-jobs";
 const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 180000;
+const POLL_TIMEOUT_MS = 900000;
 
 type Waiter = (job: GenerationJobBase | null) => void;
 

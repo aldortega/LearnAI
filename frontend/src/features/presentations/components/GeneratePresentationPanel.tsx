@@ -4,6 +4,7 @@ import { useId } from "react";
 import { Button } from "../../../shared/ui/Button";
 import type {
   PresentationDetailLevel,
+  PresentationGenerationMode,
 } from "../types/presentations.types";
 
 const DETAIL_LEVEL_OPTIONS: { value: PresentationDetailLevel; label: string; hint: string }[] = [
@@ -14,24 +15,28 @@ const DETAIL_LEVEL_OPTIONS: { value: PresentationDetailLevel; label: string; hin
 type Props = {
   topic: string;
   detailLevel: PresentationDetailLevel;
+  generationMode: PresentationGenerationMode;
   disabled: boolean;
   isGenerating: boolean;
   canGenerate: boolean;
   error: string | null;
   onTopicChange: (value: string) => void;
   onDetailLevelChange: (value: PresentationDetailLevel) => void;
+  onGenerationModeChange: (value: PresentationGenerationMode) => void;
   onGenerate: () => void;
 };
 
 export function GeneratePresentationPanel({
   topic,
   detailLevel,
+  generationMode,
   disabled,
   isGenerating,
   canGenerate,
   error,
   onTopicChange,
   onDetailLevelChange,
+  onGenerationModeChange,
   onGenerate,
 }: Props) {
   const inputId = useId();
@@ -102,6 +107,42 @@ export function GeneratePresentationPanel({
             {activeDetailHint ? (
               <p className="mt-2 text-xs text-muted-foreground">{activeDetailHint}</p>
             ) : null}
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-foreground">Formato de slides</p>
+            <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => onGenerationModeChange("text")}
+                disabled={disabled}
+                className={
+                  "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                  (generationMode === "text"
+                    ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                    : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
+                  (disabled ? " cursor-not-allowed opacity-60" : "")
+                }
+                aria-pressed={generationMode === "text"}
+              >
+                Texto
+              </button>
+              <button
+                type="button"
+                onClick={() => onGenerationModeChange("image")}
+                disabled={disabled}
+                className={
+                  "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                  (generationMode === "image"
+                    ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                    : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
+                  (disabled ? " cursor-not-allowed opacity-60" : "")
+                }
+                aria-pressed={generationMode === "image"}
+              >
+                Imagen 🍌
+              </button>
+            </div>
           </div>
         </div>
 

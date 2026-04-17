@@ -22,6 +22,7 @@ export function useApplyPresentationSlide(notebookId?: string): Result {
   const applySlide = useCallback(
     async (presentationId: string, slideIndex: number, slide: PresentationSlide) => {
       if (!notebookId || !presentationId || slideIndex < 1) return false;
+      if (slide.format !== "markdown" || !slide.content_markdown) return false;
 
       setIsApplying(true);
       setError(null);

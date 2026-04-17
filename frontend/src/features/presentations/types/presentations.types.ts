@@ -1,4 +1,6 @@
 export type PresentationDetailLevel = "concise" | "detailed";
+export type PresentationGenerationMode = "text" | "image";
+export type PresentationSlideFormat = "markdown" | "image";
 
 export type PresentationConfigOut = {
   has_ready_sources: boolean;
@@ -7,6 +9,7 @@ export type PresentationConfigOut = {
 export type PresentationGenerateRequest = {
   topic: string;
   detail_level: PresentationDetailLevel;
+  generation_mode: PresentationGenerationMode;
 };
 
 export type PresentationRegenerateSlideRequest = {
@@ -42,9 +45,13 @@ export type PresentationSourceRef = {
 
 export type PresentationSlide = {
   index: number;
+  format: PresentationSlideFormat;
   title: string;
   subtitle?: string | null;
-  content_markdown: string;
+  content_markdown?: string | null;
+  image_path?: string | null;
+  image_url?: string | null;
+  image_prompt?: string | null;
 };
 
 export type PresentationOut = {
@@ -53,6 +60,7 @@ export type PresentationOut = {
   owner_id: string;
   topic: string;
   detail_level: PresentationDetailLevel;
+  generation_mode: PresentationGenerationMode;
   title: string;
   summary: string;
   slides: PresentationSlide[];
