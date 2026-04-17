@@ -30,10 +30,16 @@ async def build_presentation_pdf_bytes(
     title: str,
     summary: str,
     slides: list[PresentationSlideOut],
+    generation_mode: str = "text",
 ) -> bytes:
     safe_title = coerce_text(title).strip() or "Presentacion"
     safe_summary = coerce_text(summary).strip() or "Resumen no disponible."
-    html = _build_presentation_html(safe_title, safe_summary, slides)
+    html = _build_presentation_html(
+        safe_title,
+        safe_summary,
+        slides,
+        generation_mode=generation_mode,
+    )
 
     try:
         from playwright.async_api import Error as PlaywrightError
@@ -71,31 +77,62 @@ def _build_presentation_html(
     title: str,
     summary: str,
     slides: list[PresentationSlideOut],
+    generation_mode: str,
 ) -> str:
     palette = PDF_PALETTE
     safe_deck_title = escape(title)
     safe_deck_summary = escape(summary)
 
+    is_image_deck = coerce_text(generation_mode).strip() == "image"
     slide_sections: list[str] = []
     md = _build_markdown_renderer()
     for slide in slides:
-        subtitle_html = (
-            f'<p class="slide-subtitle">{escape(coerce_text(slide.subtitle))}</p>'
-            if slide.subtitle
+        show_text_header = not is_image_deck
+        slide_main_class = (
+            "slide-main slide-main--image"
+            if slide.format == "image" and slide.image_url
+            else "slide-main"
+        )
+        title_html = (
+            f'<h1 class="slide-title">{escape(coerce_text(slide.title))}</h1>'
+            if show_text_header
             else ""
         )
-        content_html = md.render(coerce_text(slide.content_markdown).strip())
+        subtitle_html = (
+            f'<p class="slide-subtitle">{escape(coerce_text(slide.subtitle))}</p>'
+            if slide.subtitle and show_text_header
+            else ""
+        )
+        if slide.format == "image" and slide.image_url:
+            content_html = (
+                '<div class="slide-image-wrap">'
+                f'<img class="slide-image" src="{escape(coerce_text(slide.image_url))}" alt="{escape(coerce_text(slide.title))}" />'
+                "</div>"
+            )
+        else:
+            content_html = md.render(coerce_text(slide.content_markdown).strip())
         slide_sections.append(
             f"""
             <section class="slide">
-              <main class="slide-main">
-                <h1 class="slide-title">{escape(coerce_text(slide.title))}</h1>
+              <main class="{slide_main_class}">
+                {title_html}
                 {subtitle_html}
                 <article class="slide-content">{content_html}</article>
               </main>
             </section>
             """
         )
+
+    cover_section = (
+        ""
+        if is_image_deck
+        else (
+            '<section class="cover">'
+            f'<h1 class="cover-title">{safe_deck_title}</h1>'
+            f'<p class="cover-summary">{safe_deck_summary}</p>'
+            "</section>"
+        )
+    )
 
     return f"""
 <!doctype html>
@@ -142,6 +179,7 @@ def _build_presentation_html(
 
       .slide-main {{
         min-height: 0;
+        height: 100%;
       }}
 
       .slide-title {{
@@ -161,6 +199,10 @@ def _build_presentation_html(
         margin-top: 6mm;
         font-size: 19px;
         line-height: 1.4;
+      }}
+
+      .slide-main--image .slide-content {{
+        margin-top: 0;
       }}
 
       .slide-content p {{
@@ -208,6 +250,23 @@ def _build_presentation_html(
         line-height: 1.2;
       }}
 
+      .slide-image-wrap {{
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: color-mix(in srgb, {palette["bg"]} 60%, {palette["surface"]});
+        border-radius: 3mm;
+        overflow: hidden;
+      }}
+
+      .slide-image {{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }}
+
       .cover {{
         width: 297mm;
         height: 167mm;
@@ -235,10 +294,7 @@ def _build_presentation_html(
     </style>
   </head>
   <body>
-    <section class="cover">
-      <h1 class="cover-title">{safe_deck_title}</h1>
-      <p class="cover-summary">{safe_deck_summary}</p>
-    </section>
+    {cover_section}
     {"".join(slide_sections)}
   </body>
 </html>

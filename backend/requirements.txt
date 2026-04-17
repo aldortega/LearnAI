@@ -21,4 +21,6 @@ google-auth
 resend
 markdown-it-py
 playwright
+google-genai
+pillow
 

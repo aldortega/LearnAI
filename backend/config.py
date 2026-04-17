@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     gemini_api_keys: Optional[str] = None
     gemini_rotation_mode: Literal["failover", "per_call"] = "failover"
-    gemini_chat_model: str = "gemini-2.5-flash"
+    gemini_chat_model: str = "gemini-3.1-flash-lite-preview"
+    gemini_image_model: str = "gemini-3.1-flash-image-preview"
     gemini_failover_redis_prefix: str = "learnai:gemini:failover"
     gemini_failover_lock_seconds: int = 3
     rag_top_k: int = 8
@@ -46,6 +47,7 @@ class Settings(BaseSettings):
     from_email: str = "onboarding@resend.dev"
     frontend_url: str = "http://localhost:5173"
     password_reset_token_hours: int = 1
+    presentation_job_timeout_seconds: int = 900
 
     @field_validator("session_secret")
     @classmethod

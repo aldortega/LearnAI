@@ -42,3 +42,15 @@ class PresentationGenerationPayloadLLM(BaseModel):
     title: str = Field(min_length=1, max_length=MAX_PRESENTATION_TITLE_CHARS)
     summary: str = Field(min_length=1, max_length=MAX_PRESENTATION_SUMMARY_CHARS)
     slides: list[PresentationSlideLLM] = Field(min_length=1, max_length=MAX_SLIDES)
+
+
+class PresentationImageSlideLLM(BaseModel):
+    title: str = Field(min_length=1, max_length=MAX_SLIDE_TITLE_CHARS)
+    subtitle: str | None = Field(default=None, max_length=MAX_SLIDE_SUBTITLE_CHARS)
+    image_prompt: str = Field(min_length=1, max_length=500)
+
+
+class PresentationImagePayloadLLM(BaseModel):
+    title: str = Field(min_length=1, max_length=MAX_PRESENTATION_TITLE_CHARS)
+    summary: str = Field(min_length=1, max_length=MAX_PRESENTATION_SUMMARY_CHARS)
+    slides: list[PresentationImageSlideLLM] = Field(min_length=1, max_length=MAX_SLIDES)

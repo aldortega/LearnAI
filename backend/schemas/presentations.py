@@ -5,11 +5,14 @@ from pydantic import BaseModel, Field
 
 
 PresentationDetailLevel = Literal["concise", "detailed"]
+PresentationGenerationMode = Literal["text", "image"]
+PresentationSlideFormat = Literal["markdown", "image"]
 
 
 class PresentationGenerateRequest(BaseModel):
     topic: str = Field(min_length=1, max_length=300)
     detail_level: PresentationDetailLevel
+    generation_mode: PresentationGenerationMode = "text"
 
 
 class PresentationRegenerateSlideRequest(BaseModel):
@@ -32,9 +35,13 @@ class PresentationSourceRef(BaseModel):
 
 class PresentationSlideOut(BaseModel):
     index: int = Field(ge=1)
+    format: PresentationSlideFormat = "markdown"
     title: str
     subtitle: Optional[str] = None
-    content_markdown: str
+    content_markdown: Optional[str] = None
+    image_path: Optional[str] = None
+    image_url: Optional[str] = None
+    image_prompt: Optional[str] = None
 
 
 class PresentationOut(BaseModel):
@@ -43,6 +50,7 @@ class PresentationOut(BaseModel):
     owner_id: str
     topic: str
     detail_level: PresentationDetailLevel
+    generation_mode: PresentationGenerationMode = "text"
     title: str
     summary: str
     slides: list[PresentationSlideOut] = Field(default_factory=list)

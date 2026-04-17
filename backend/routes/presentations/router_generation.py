@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
 from ...rq_queue import presentations_queue
 from ...schemas.presentations import (
@@ -95,6 +96,7 @@ async def generate_presentation(
         process_presentation_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        job_timeout=settings.presentation_job_timeout_seconds,
     )
     now = datetime.now(timezone.utc)
     await db.presentation_generation_jobs.insert_one(
@@ -107,6 +109,7 @@ async def generate_presentation(
             "presentation_id": None,
             "topic": topic,
             "detail_level": payload.detail_level,
+            "generation_mode": payload.generation_mode,
             "created_at": now,
             "started_at": None,
             "finished_at": None,

@@ -93,6 +93,7 @@ async def generate_presentation_payload(
             slides.append(
                 PresentationSlideOut(
                     index=index,
+                    format="markdown",
                     title=slide_title,
                     subtitle=subtitle or None,
                     content_markdown=content_markdown,
@@ -186,6 +187,7 @@ async def regenerate_presentation_slide_payload(
 
     return PresentationSlideOut(
         index=slide_index,
+        format="markdown",
         title=slide_title,
         subtitle=subtitle or None,
         content_markdown=content_markdown,

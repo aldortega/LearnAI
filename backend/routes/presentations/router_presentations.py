@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from ...db import db
 from ...schemas.presentations import (
     PresentationApplySlideRequest,
+    PresentationDetailLevel,
     PresentationListOut,
     PresentationOut,
     PresentationRegenerateSlideOut,
@@ -99,6 +100,7 @@ async def download_presentation_pdf(
             title=title,
             summary=presentation.summary,
             slides=presentation.slides,
+            generation_mode=coerce_text(presentation.generation_mode),
         )
     except PdfExportError as exc:
         raise HTTPException(
@@ -183,17 +185,30 @@ async def regenerate_presentation_slide(
             detail="El prompt es obligatorio",
         )
 
+    current_slide = slides[slide_index - 1]
+    if current_slide.format == "image":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Las diapositivas visuales no admiten regeneracion de markdown",
+        )
+
+    detail_level_value: PresentationDetailLevel = (
+        "concise"
+        if coerce_text(presentation_doc.get("detail_level")) == "concise"
+        else "detailed"
+    )
+
     regenerated_slide = await regenerate_presentation_slide_payload(
         notebook_title=coerce_text(notebook.get("title")),
         topic=coerce_text(presentation_doc.get("topic")),
-        detail_level=coerce_text(presentation_doc.get("detail_level")),
+        detail_level=detail_level_value,
         notebook_object_id=notebook["_id"],
         user={
             "_id": user["_id"],
             "_source_owner_id": notebook["owner_id"],
         },
         slide_index=slide_index,
-        current_slide=slides[slide_index - 1],
+        current_slide=current_slide,
         edit_prompt=prompt,
     )
 
@@ -225,6 +240,13 @@ async def apply_presentation_slide_changes(
             detail="Indice de diapositiva invalido",
         )
 
+    current_slide = slides[slide_index - 1]
+    if current_slide.format == "image":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Las diapositivas visuales no admiten edicion de markdown",
+        )
+
     next_title = normalize_slide_title(coerce_text(payload.title))
     next_subtitle = normalize_slide_subtitle(coerce_text(payload.subtitle)) or None
     next_content_markdown = normalize_markdown_content(
@@ -238,6 +260,7 @@ async def apply_presentation_slide_changes(
 
     slide_doc = {
         "index": slide_index,
+        "format": "markdown",
         "title": next_title,
         "subtitle": next_subtitle,
         "content_markdown": next_content_markdown,

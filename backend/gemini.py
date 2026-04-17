@@ -37,17 +37,20 @@ def _parse_gemini_api_keys(raw_value: str | None) -> list[str]:
     return [item.strip() for item in normalized_raw.split(",") if item.strip()]
 
 
+def get_gemini_primary_api_key() -> str:
+    return (settings.gemini_api_key or "").strip()
+
+
 def get_gemini_api_keys() -> list[str]:
     ordered_keys: list[str] = []
     seen: set[str] = set()
 
-    primary_key = (settings.gemini_api_key or "").strip()
-    if primary_key and primary_key not in seen:
-        ordered_keys.append(primary_key)
-        seen.add(primary_key)
+    primary_key = get_gemini_primary_api_key()
 
     for key in _parse_gemini_api_keys(settings.gemini_api_keys):
         normalized_key = key.strip()
+        if normalized_key == primary_key:
+            continue
         if normalized_key and normalized_key not in seen:
             ordered_keys.append(normalized_key)
             seen.add(normalized_key)
@@ -85,7 +88,10 @@ def _get_redis_client() -> Redis | None:
     try:
         return _build_redis_client()
     except Exception as exc:
-        logger.warning("No se pudo inicializar Redis para failover de Gemini", extra={"error": str(exc)})
+        logger.warning(
+            "No se pudo inicializar Redis para failover de Gemini",
+            extra={"error": str(exc)},
+        )
         return None
 
 
@@ -98,7 +104,9 @@ def _safe_read_active_index(total: int) -> int | None:
     try:
         raw_value = client.get(_active_index_key())
     except Exception as exc:
-        logger.warning("No se pudo leer active_index de Gemini en Redis", extra={"error": str(exc)})
+        logger.warning(
+            "No se pudo leer active_index de Gemini en Redis", extra={"error": str(exc)}
+        )
         return None
     if raw_value is None:
         return None
@@ -118,7 +126,10 @@ def _safe_set_active_index(index: int) -> None:
     try:
         client.set(_active_index_key(), str(index))
     except Exception as exc:
-        logger.warning("No se pudo guardar active_index de Gemini en Redis", extra={"error": str(exc)})
+        logger.warning(
+            "No se pudo guardar active_index de Gemini en Redis",
+            extra={"error": str(exc)},
+        )
 
 
 def _safe_read_disabled_indices(total: int) -> set[int]:
@@ -128,7 +139,10 @@ def _safe_read_disabled_indices(total: int) -> set[int]:
     try:
         disabled_fields = client.hkeys(_disabled_key())
     except Exception as exc:
-        logger.warning("No se pudo leer keys deshabilitadas de Gemini en Redis", extra={"error": str(exc)})
+        logger.warning(
+            "No se pudo leer keys deshabilitadas de Gemini en Redis",
+            extra={"error": str(exc)},
+        )
         return set()
 
     disabled_indices: set[int] = set()
@@ -168,11 +182,17 @@ def _safe_mutate_failover_state(mutator: Callable[[Redis], None]) -> None:
         time.sleep(0.05)
 
     if last_lock_error is not None:
-        logger.warning("No se pudo adquirir lock de failover Gemini en Redis", extra={"error": str(last_lock_error)})
+        logger.warning(
+            "No se pudo adquirir lock de failover Gemini en Redis",
+            extra={"error": str(last_lock_error)},
+        )
     try:
         mutator(client)
     except Exception as exc:
-        logger.warning("No se pudo mutar estado de failover Gemini en Redis", extra={"error": str(exc)})
+        logger.warning(
+            "No se pudo mutar estado de failover Gemini en Redis",
+            extra={"error": str(exc)},
+        )
 
 
 def _get_available_indices(total: int, excluded: set[int] | None = None) -> list[int]:
@@ -247,11 +267,15 @@ def _ordered_candidate_indices(total: int, tried: set[int]) -> list[int]:
 
     if _rotation_mode() == "per_call" and not tried:
         selected_index = _select_per_call_index(total, available_indices)
-        return [selected_index] + [index for index in available_indices if index != selected_index]
+        return [selected_index] + [
+            index for index in available_indices if index != selected_index
+        ]
 
     active_index = _safe_read_active_index(total)
     if active_index in available_indices:
-        return [active_index] + [index for index in available_indices if index != active_index]
+        return [active_index] + [
+            index for index in available_indices if index != active_index
+        ]
 
     selected_index = available_indices[0]
     _safe_set_active_index(selected_index)
@@ -354,7 +378,9 @@ def _disable_index_and_rotate(
             if 0 <= parsed_index < total:
                 disabled_indices.add(parsed_index)
 
-        available_indices = [index for index in range(total) if index not in disabled_indices]
+        available_indices = [
+            index for index in range(total) if index not in disabled_indices
+        ]
         if available_indices:
             next_active_index = available_indices[0]
             client.set(_active_index_key(), str(next_active_index))
@@ -401,7 +427,9 @@ def _run_sync_with_failover(
             reason = _classify_failover_reason(exc)
             if reason is None:
                 raise
-            _disable_index_and_rotate(total, key_index, reason, _extract_error_code(exc))
+            _disable_index_and_rotate(
+                total, key_index, reason, _extract_error_code(exc)
+            )
             logger.warning(
                 "Gemini failover rotate",
                 extra={
@@ -449,7 +477,9 @@ class GeminiStructuredOutputWithFallback:
         return _run_sync_with_failover(
             self._api_keys,
             operation="structured_invoke",
-            call_for_key=lambda api_key: self._build_structured(api_key).invoke(*args, **kwargs),
+            call_for_key=lambda api_key: self._build_structured(api_key).invoke(
+                *args, **kwargs
+            ),
         )
 
 
@@ -475,7 +505,9 @@ class GeminiChatWithFallback:
         return _run_sync_with_failover(
             self._api_keys,
             operation="invoke",
-            call_for_key=lambda api_key: self._build_model(api_key).invoke(*args, **kwargs),
+            call_for_key=lambda api_key: self._build_model(api_key).invoke(
+                *args, **kwargs
+            ),
         )
 
     def stream(self, *args: Any, **kwargs: Any):
@@ -505,7 +537,9 @@ class GeminiChatWithFallback:
                 reason = _classify_failover_reason(exc)
                 if reason is None:
                     raise
-                _disable_index_and_rotate(total, key_index, reason, _extract_error_code(exc))
+                _disable_index_and_rotate(
+                    total, key_index, reason, _extract_error_code(exc)
+                )
                 logger.warning(
                     "Gemini failover rotate",
                     extra={
@@ -553,7 +587,9 @@ class GeminiChatWithFallback:
                 reason = _classify_failover_reason(exc)
                 if reason is None:
                     raise
-                _disable_index_and_rotate(total, key_index, reason, _extract_error_code(exc))
+                _disable_index_and_rotate(
+                    total, key_index, reason, _extract_error_code(exc)
+                )
                 logger.warning(
                     "Gemini failover rotate",
                     extra={

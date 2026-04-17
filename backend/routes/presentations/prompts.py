@@ -58,9 +58,9 @@ def build_regenerate_slide_prompt(
     context_text: str,
 ) -> tuple[SystemMessage, HumanMessage]:
     detail_guidance = (
-        "Mantener contenido sintetico, priorizar ideas clave y facilitar exposicion oral."
+        "Mantener contenido sintetico, priorizar ideas clave, sin extendense con mucho texto explicativo."
         if detail_level == "concise"
-        else "Incluir mayor profundidad conceptual y explicaciones mas completas."
+        else "Incluir mayor profundidad conceptual y explicaciones mas completas, con mas texto."
     )
     subtitle_text = slide_subtitle or "(sin subtitulo)"
 
@@ -88,6 +88,47 @@ def build_regenerate_slide_prompt(
         "Si usas listas markdown, cada item debe ir en su propia linea, "
         "nunca varios items en una sola linea. "
         "No incluyas notas del presentador."
+    )
+
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
+def build_presentation_image_outline_prompt(
+    notebook_title: str,
+    topic: str,
+    detail_level: PresentationDetailLevel,
+    context_text: str,
+) -> tuple[SystemMessage, HumanMessage]:
+    slide_range = DETAIL_SLIDE_COUNT_TARGETS.get(detail_level, (6, 8))
+    detail_guidance = (
+        "Mantener contenido sintetico, priorizar ideas clave, sin extendense con mucho texto explicativo."
+        if detail_level == "concise"
+        else "Incluir mayor profundidad conceptual y explicaciones mas completas, con mas texto."
+    )
+
+    system_prompt = (
+        "Eres un asistente experto en crear guiones visuales de presentaciones de estudio. "
+        "Debes responder solo con JSON valido en espanol, sin markdown ni texto adicional. "
+        "Genera title, summary y slides; cada slide debe incluir title, subtitle opcional e image_prompt. "
+        "El image_prompt debe describir una imagen tipo diapositiva 16:9 horizontal, "
+         "Todas las diapositivas deben seguir un MISMO estilo visual global y consistente: "
+         "El estilo global no cambia entre slides; solo cambia el contenido visual de cada escena. "
+        "con jerarquia visual clara, fondo limpio y elementos relevantes al tema. "
+    )
+    user_prompt = (
+        f"Notebook: {notebook_title}\n"
+        f"Tema solicitado: {topic}\n"
+        f"Nivel de detalle: {detail_level}. {detail_guidance}\n"
+        f"Cantidad objetivo de slides: entre {slide_range[0]} y {slide_range[1]}.\n\n"
+        f"Contexto disponible:\n{context_text}\n\n"
+        "Devuelve un JSON con esta forma exacta: "
+        '{"title":"string","summary":"string","slides":[{"title":"string","subtitle":"string|null","image_prompt":"string"}]}'
+        "\nEn cada image_prompt, enfatiza que la salida debe ser visual y referida al tema."
+         "\nReglas obligatorias:"
+    "\n1) Mantener estilo visual unico y consistente en TODAS las slides."
+    "\n2) Cada slide debe representar una escena distinta (sin repetir encuadre/idea)."
+    "\n3) Los titulos de slides no deben repetirse entre si."
+    "\n4) No repetir el titulo general dentro de cada imagen."
     )
 
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)

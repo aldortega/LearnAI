@@ -23,6 +23,25 @@ from .normalization import (
 )
 
 
+def build_public_image_url(image_path: str) -> str | None:
+    from ...config import settings
+
+    image_path_value = coerce_text(image_path).strip()
+    if not image_path_value:
+        return None
+    if image_path_value.startswith("http://") or image_path_value.startswith(
+        "https://"
+    ):
+        return image_path_value
+    bucket = coerce_text(settings.supabase_storage_bucket).strip()
+    base_url = coerce_text(settings.supabase_url).strip()
+    if not bucket or not base_url:
+        return None
+    return (
+        f"{base_url.rstrip('/')}/storage/v1/object/public/{bucket}/{image_path_value}"
+    )
+
+
 async def get_notebook_or_404(notebook_id: str, user: dict) -> dict:
     access = await resolve_notebook_access(notebook_id, user)
     return access.notebook
@@ -81,23 +100,43 @@ def presentation_doc_to_out(
     for index, slide_doc in enumerate(raw_slides, start=1):
         if not isinstance(slide_doc, dict):
             continue
+        slide_format = coerce_text(slide_doc.get("format")).strip() or "markdown"
         slide_index_raw = slide_doc.get("index")
         slide_index = slide_index_raw if isinstance(slide_index_raw, int) else index
-        content_markdown = normalize_markdown_content(
-            coerce_text(slide_doc.get("content_markdown"))
-        )
-        if not content_markdown:
-            legacy_bullets = slide_doc.get("bullets")
-            if isinstance(legacy_bullets, list):
-                content_markdown = bullets_to_markdown(legacy_bullets)
-        if not content_markdown:
-            continue
+        content_markdown = None
+        image_path = None
+        image_url = None
+        image_prompt = None
+
+        if slide_format == "image":
+            image_path = coerce_text(slide_doc.get("image_path")).strip() or None
+            image_url = build_public_image_url(
+                coerce_text(slide_doc.get("image_url")).strip()
+                or coerce_text(image_path)
+            )
+            image_prompt = coerce_text(slide_doc.get("image_prompt")).strip() or None
+            if not image_url:
+                continue
+        else:
+            content_markdown = normalize_markdown_content(
+                coerce_text(slide_doc.get("content_markdown"))
+            )
+            if not content_markdown:
+                legacy_bullets = slide_doc.get("bullets")
+                if isinstance(legacy_bullets, list):
+                    content_markdown = bullets_to_markdown(legacy_bullets)
+            if not content_markdown:
+                continue
         slides.append(
             PresentationSlideOut(
                 index=max(1, slide_index),
+                format="image" if slide_format == "image" else "markdown",
                 title=normalize_text(coerce_text(slide_doc.get("title"))),
                 subtitle=normalize_text(coerce_text(slide_doc.get("subtitle"))) or None,
                 content_markdown=content_markdown,
+                image_path=image_path,
+                image_url=image_url,
+                image_prompt=image_prompt,
             )
         )
 
@@ -111,6 +150,7 @@ def presentation_doc_to_out(
         owner_id=str(presentation_doc["owner_id"]),
         topic=normalize_text(coerce_text(presentation_doc.get("topic"))),
         detail_level=presentation_doc["detail_level"],
+        generation_mode=coerce_text(presentation_doc.get("generation_mode")) or "text",
         title=title[:MAX_PRESENTATION_TITLE_CHARS],
         summary=summary[:MAX_PRESENTATION_SUMMARY_CHARS],
         slides=slides,

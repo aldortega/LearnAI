@@ -8,7 +8,9 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from ...config import settings
 from ...db import db
+from ...schemas.presentations import PresentationDetailLevel
 from .generation_service import generate_presentation_payload
+from .image_generation_service import generate_image_presentation_payload
 from .normalization import coerce_text
 from .repository import compute_sources_fingerprint
 
@@ -63,7 +65,7 @@ def resolve_presentation_error_message(exc: Exception) -> str:
         return exc.detail
     if isinstance(exc, ValueError):
         return str(exc)
-    return "No se pudo generar la presentacion"
+    return f"No se pudo generar la presentacion: {exc}"
 
 
 def process_presentation_generation(notebook_id: str, owner_id: str) -> None:
@@ -130,6 +132,16 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                 job_id, "Nivel de detalle invalido", db_client=worker_db
             )
             return
+        detail_level_value: PresentationDetailLevel = (
+            "concise" if detail_level == "concise" else "detailed"
+        )
+
+        generation_mode = coerce_text(job_doc.get("generation_mode")).strip() or "text"
+        if generation_mode not in {"text", "image"}:
+            await mark_presentation_job_failed(
+                job_id, "Modo de generacion invalido", db_client=worker_db
+            )
+            return
 
         sources_fingerprint, ready_count = await compute_sources_fingerprint(
             notebook["title"],
@@ -146,22 +158,40 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
             return
 
         try:
-            title, summary, slides, sources = await generate_presentation_payload(
-                notebook_title=coerce_text(notebook.get("title")),
-                topic=topic,
-                detail_level=detail_level,
-                notebook_object_id=notebook_object_id,
-                user={
-                    "_id": owner_object_id,
-                    "_source_owner_id": notebook["owner_id"],
-                },
-            )
+            if generation_mode == "image":
+                image_result = await generate_image_presentation_payload(
+                    notebook_title=coerce_text(notebook.get("title")),
+                    topic=topic,
+                    detail_level=detail_level_value,
+                    notebook_object_id=notebook_object_id,
+                    owner_id=owner_object_id,
+                    user={
+                        "_id": owner_object_id,
+                        "_source_owner_id": notebook["owner_id"],
+                    },
+                )
+                title = image_result.title
+                summary = image_result.summary
+                slides = image_result.slides
+                sources = image_result.sources
+            else:
+                title, summary, slides, sources = await generate_presentation_payload(
+                    notebook_title=coerce_text(notebook.get("title")),
+                    topic=topic,
+                    detail_level=detail_level_value,
+                    notebook_object_id=notebook_object_id,
+                    user={
+                        "_id": owner_object_id,
+                        "_source_owner_id": notebook["owner_id"],
+                    },
+                )
             now = datetime.now(timezone.utc)
             presentation_doc = {
                 "owner_id": owner_object_id,
                 "notebook_id": notebook_object_id,
                 "topic": topic,
                 "detail_level": detail_level,
+                "generation_mode": generation_mode,
                 "title": title,
                 "summary": summary,
                 "slides": [slide.model_dump() for slide in slides],
@@ -173,6 +203,14 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                 presentation_doc
             )
         except Exception as exc:
+            logger.exception(
+                "Error en generacion de presentacion",
+                extra={
+                    "job_id": job_id,
+                    "generation_mode": generation_mode,
+                    "notebook_id": notebook_id,
+                },
+            )
             await mark_presentation_job_failed(
                 job_id,
                 resolve_presentation_error_message(exc),
