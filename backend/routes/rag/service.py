@@ -94,6 +94,14 @@ def coerce_text(value: object | None) -> str:
         return ""
     if isinstance(value, str):
         return value
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            if isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text", "")))
+            elif isinstance(item, str):
+                parts.append(item)
+        return "".join(parts)
     return str(value)
 
 
@@ -307,6 +315,7 @@ async def retrieve_context(
         question,
         "models/gemini-embedding-001",
         settings.qdrant_vector_size,
+        "RETRIEVAL_QUERY",
     )
 
     async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
