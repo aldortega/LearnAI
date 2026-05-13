@@ -5,3 +5,6 @@ redis_data/
 # Python cache
 **/__pycache__/
 *.pyc
+.claude
+.codex
+.opencode
