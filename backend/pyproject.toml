@@ -1,0 +1,31 @@
+[project]
+name = "learnai-backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "motor",
+    "pydantic",
+    "pydantic-settings",
+    "passlib[argon2]",
+    "email-validator",
+    "httpx",
+    "redis",
+    "rq",
+    "langchain-core",
+    "langchain-text-splitters",
+    "langchain-google-genai",
+    "llama-cloud-services",
+    "pypdf",
+    "docx2txt",
+    "python-pptx",
+    "supabase",
+    "python-multipart",
+    "google-auth",
+    "resend",
+    "markdown-it-py",
+    "playwright",
+    "google-genai",
+    "pillow",
+]
