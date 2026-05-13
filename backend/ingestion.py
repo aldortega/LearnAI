@@ -369,6 +369,8 @@ async def _process_document(document_id: str) -> None:
                 texts,
                 "models/gemini-embedding-001",
                 settings.qdrant_vector_size,
+                "RETRIEVAL_DOCUMENT",
+                [document["file_name"]] * len(texts),
             )
             await upsert_chunks(document, filtered_chunks, vectors)
         except Exception as exc:

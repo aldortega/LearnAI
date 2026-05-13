@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import time
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -634,19 +635,41 @@ def create_chat_model_with_fallback(
     )
 
 
+def normalize_embedding(vector: list[float]) -> list[float]:
+    if not vector:
+        return vector
+    magnitude = math.sqrt(sum(value * value for value in vector))
+    if magnitude <= 0.0:
+        return vector
+    return [value / magnitude for value in vector]
+
+
+def normalize_embeddings(vectors: list[list[float]]) -> list[list[float]]:
+    return [normalize_embedding(vector) for vector in vectors]
+
+
 def embed_query_with_fallback(
     text: str,
     model_name: str,
     output_dimensionality: int,
+    task_type: str | None = None,
+    title: str | None = None,
 ) -> list[float]:
-    return _run_sync_with_failover(
-        get_gemini_api_keys(),
-        operation="embed_query",
-        call_for_key=lambda api_key: GoogleGenerativeAIEmbeddings(
-            model=model_name,
-            api_key=SecretStr(api_key),
-            output_dimensionality=output_dimensionality,
-        ).embed_query(text),
+    return normalize_embedding(
+        _run_sync_with_failover(
+            get_gemini_api_keys(),
+            operation="embed_query",
+            call_for_key=lambda api_key: GoogleGenerativeAIEmbeddings(
+                model=model_name,
+                api_key=SecretStr(api_key),
+                output_dimensionality=output_dimensionality,
+            ).embed_query(
+                text,
+                task_type=task_type,
+                title=title,
+                output_dimensionality=output_dimensionality,
+            ),
+        )
     )
 
 
@@ -654,13 +677,22 @@ def embed_documents_with_fallback(
     texts: list[str],
     model_name: str,
     output_dimensionality: int,
+    task_type: str | None = None,
+    titles: list[str] | None = None,
 ) -> list[list[float]]:
-    return _run_sync_with_failover(
-        get_gemini_api_keys(),
-        operation="embed_documents",
-        call_for_key=lambda api_key: GoogleGenerativeAIEmbeddings(
-            model=model_name,
-            api_key=SecretStr(api_key),
-            output_dimensionality=output_dimensionality,
-        ).embed_documents(texts),
+    return normalize_embeddings(
+        _run_sync_with_failover(
+            get_gemini_api_keys(),
+            operation="embed_documents",
+            call_for_key=lambda api_key: GoogleGenerativeAIEmbeddings(
+                model=model_name,
+                api_key=SecretStr(api_key),
+                output_dimensionality=output_dimensionality,
+            ).embed_documents(
+                texts,
+                task_type=task_type,
+                titles=titles,
+                output_dimensionality=output_dimensionality,
+            ),
+        )
     )

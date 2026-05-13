@@ -15,7 +15,10 @@ from ..config import settings
 from ..db import db
 from ..ingestion import process_document
 from ..rq_queue import queue
-from ..schemas.documents import DocumentCreateResponse, DocumentOut
+from ..schemas.documents import (
+    DocumentCreateResponse,
+    DocumentOut,
+)
 from .auth import get_current_user
 from .notebook_access import (
     require_document_manage_permission,
@@ -79,6 +82,29 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="file_path debe incluir bucket/path o configurar supabase_storage_bucket",
     )
+
+
+async def delete_document_points(document_id: ObjectId) -> None:
+    async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
+        response = await client.post(
+            f"/collections/{settings.qdrant_collection_name}/points/delete",
+            json={
+                "filter": {
+                    "must": [
+                        {
+                            "key": "document_id",
+                            "match": {"value": str(document_id)},
+                        }
+                    ]
+                }
+            },
+            params={"wait": "true"},
+        )
+        if response.status_code not in (200, 202):
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="No se pudo eliminar embeddings en Qdrant",
+            )
 
 
 @router.post(
@@ -170,7 +196,6 @@ async def create_document(
 
     return DocumentCreateResponse(document=document_to_out(document_doc), job_id=job.id)
 
-
 @router.get("/{notebook_id}/documents", response_model=list[DocumentOut])
 async def list_documents(notebook_id: str, request: Request) -> list[DocumentOut]:
     user = await get_current_user(request)
@@ -254,26 +279,7 @@ async def delete_document(notebook_id: str, document_id: str, request: Request) 
             detail="Documento no encontrado",
         )
 
-    async with httpx.AsyncClient(base_url=settings.qdrant_url, timeout=20) as client:
-        response = await client.post(
-            f"/collections/{settings.qdrant_collection_name}/points/delete",
-            json={
-                "filter": {
-                    "must": [
-                        {
-                            "key": "document_id",
-                            "match": {"value": str(document_object_id)},
-                        }
-                    ]
-                }
-            },
-            params={"wait": "true"},
-        )
-        if response.status_code not in (200, 202):
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="No se pudo eliminar embeddings en Qdrant",
-            )
+    await delete_document_points(document_object_id)
 
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise HTTPException(

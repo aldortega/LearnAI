@@ -6,7 +6,11 @@ from .auth import (
     RegisterRequest,
     UserOut,
 )
-from .documents import DocumentCreate, DocumentCreateResponse, DocumentOut
+from .documents import (
+    DocumentCreate,
+    DocumentCreateResponse,
+    DocumentOut,
+)
 from .flashcards import (
     FlashcardCountPreset,
     FlashcardExplainOut,
