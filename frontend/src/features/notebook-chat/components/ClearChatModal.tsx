@@ -18,7 +18,7 @@ export function ClearChatModal({
     <Modal isOpen={isOpen} onClose={onCancel} title="Limpiar chat">
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Esto eliminará todo el historial de conversación de este notebook.
+          Esto eliminará todo el historial de conversación de este cuaderno.
         </p>
         <p className="text-sm text-muted-foreground">
           Esta acción no se puede deshacer.

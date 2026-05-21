@@ -159,7 +159,7 @@ export function HomePage() {
                 Hola, {firstName}
               </h1>
               <p className="mt-2 text-muted-foreground">
-                Continuá con tus estudios o creá una nueva notebook.
+                Continuá con tus estudios o creá un nuevo cuaderno.
               </p>
             </div>
 
@@ -169,7 +169,7 @@ export function HomePage() {
               className="flex shrink-0 items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              Crear Notebook
+              Crear Cuaderno
             </button>
           </div>
 
@@ -177,7 +177,7 @@ export function HomePage() {
           <section className="mb-6">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold text-foreground">
-                Mis notebooks{" "}
+                Mis cuadernos{" "}
                 <span className="font-normal text-muted-foreground">
                   ({ownedNotebooks.length})
                 </span>
@@ -219,7 +219,7 @@ export function HomePage() {
                 ))
               ) : isNotebooksLoading ? (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  Cargando notebooks...
+                  Cargando cuadernos...
                 </div>
               ) : notebooksError ? (
                 <div className="px-4 py-8 text-center text-sm text-error" role="alert">
@@ -227,7 +227,7 @@ export function HomePage() {
                 </div>
               ) : (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No tenés notebooks aún. ¡Creá tu primera!
+                  No tenés cuadernos aún. ¡Creá tu primero!
                 </div>
               )}
             </div>

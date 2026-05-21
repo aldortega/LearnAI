@@ -65,7 +65,7 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Crear nuevo notebook"
+      title="Crear nuevo cuaderno"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {error ? (
@@ -102,7 +102,7 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
           onChange={(value) => {
             setValue("emoji", value, { shouldDirty: true, shouldValidate: true });
           }}
-          helperText="Podés elegir un emoji para identificar tu notebook."
+          helperText="Podés elegir un emoji para identificar tu cuaderno."
         />
 
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -115,7 +115,7 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
             Cancelar
           </Button>
           <Button type="submit" variant="primary" loading={isLoading}>
-            Crear notebook
+            Crear cuaderno
           </Button>
         </div>
       </form>

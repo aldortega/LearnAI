@@ -19,7 +19,7 @@ export function LeaveNotebookModal({
   onConfirm,
 }: Props) {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title="Salir de la notebook">
+    <Modal isOpen={isOpen} onClose={onCancel} title="Salir del cuaderno">
       <div className="space-y-4">
         {error ? (
           <div
@@ -30,7 +30,7 @@ export function LeaveNotebookModal({
           </div>
         ) : null}
         <p className="text-sm text-muted-foreground">
-          ¿Seguro que quieres salir de esta notebook? Dejarás de tener acceso a
+          ¿Seguro que quieres salir de este cuaderno? Dejarás de tener acceso a
           ella.
         </p>
         {notebookName ? (

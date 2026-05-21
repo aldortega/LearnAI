@@ -147,7 +147,7 @@ export function QuickstartOverview({
     <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pt-8">
         <h2 className="text-lg font-bold text-foreground">
-          Resumen de la notebook
+          Resumen del cuaderno
         </h2>
 
         <div className="space-y-3 rounded-xl border border-border shadow-sm bg-muted/40 p-5 ">

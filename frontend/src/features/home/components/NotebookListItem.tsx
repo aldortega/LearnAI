@@ -92,7 +92,7 @@ export function NotebookListItem({
             setIsMenuOpen((prev) => !prev);
           }}
           className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Opciones del notebook"
+          aria-label="Opciones del cuaderno"
           aria-expanded={isMenuOpen}
         >
           <MoreVertical className="h-4 w-4" />

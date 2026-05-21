@@ -19,7 +19,7 @@ export function DeleteNotebookModal({
   onConfirm,
 }: Props) {
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title="Eliminar notebook">
+    <Modal isOpen={isOpen} onClose={onCancel} title="Eliminar cuaderno">
       <div className="space-y-4">
         {error ? (
           <div
@@ -30,7 +30,7 @@ export function DeleteNotebookModal({
           </div>
         ) : null}
         <p className="text-sm text-muted-foreground">
-          ¿Seguro que quieres eliminar este notebook? También se eliminarán sus
+          ¿Seguro que quieres eliminar este cuaderno? También se eliminarán sus
           fuentes.
         </p>
         {notebookName ? (

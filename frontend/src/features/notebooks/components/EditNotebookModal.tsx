@@ -77,7 +77,7 @@ export function EditNotebookModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Editar notebook"
+      title="Editar cuaderno"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {error ? (
@@ -114,7 +114,7 @@ export function EditNotebookModal({
           onChange={(value) => {
             setValue("emoji", value, { shouldDirty: true, shouldValidate: true });
           }}
-          helperText="Actualizá el emoji de tu notebook."
+          helperText="Actualizá el emoji de tu cuaderno."
         />
 
         <div className="flex items-center justify-end gap-3 pt-2">

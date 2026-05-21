@@ -64,7 +64,7 @@ export function NotebookSourcesEmptyState({
         >
           {canManageDocuments
             ? "Arrastra y suelta un archivo aquí"
-            : "No tienes permisos para subir fuentes en esta notebook"}
+            : "No tienes permisos para subir fuentes en este cuaderno"}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           Formatos permitidos: PDF, DOCX, TXT o PPTX.

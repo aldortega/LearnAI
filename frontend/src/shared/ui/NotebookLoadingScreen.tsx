@@ -3,7 +3,7 @@ type Props = {
 };
 
 export function NotebookLoadingScreen({
-  message = "Cargando notebook...",
+  message = "Cargando cuaderno...",
 }: Props) {
   return (
     <div className="min-h-screen bg-primary/10">
