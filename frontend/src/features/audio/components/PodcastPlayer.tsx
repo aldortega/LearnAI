@@ -14,12 +14,13 @@ import { formatTime } from "../utils/formatTime";
 type Props = {
   audioUrl: string;
   title: string;
+  description?: string;
   initialDuration?: number;
 };
 
 const PLAYBACK_RATES = [1, 1.25, 1.5, 2] as const;
 
-export function PodcastPlayer({ audioUrl, title, initialDuration }: Props) {
+export function PodcastPlayer({ audioUrl, title, description, initialDuration }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,6 +151,9 @@ export function PodcastPlayer({ audioUrl, title, initialDuration }: Props) {
           <p className="truncate text-sm font-semibold text-foreground" title={title}>
             {title}
           </p>
+          {description ? (
+            <p className="line-clamp-2 text-xs text-muted-foreground">{description}</p>
+          ) : null}
           <div className="flex items-center gap-3">
             <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
               {formatTime(currentTime)}

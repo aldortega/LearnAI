@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Headphones, Plus } from "lucide-react";
 
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
@@ -28,7 +28,6 @@ type ViewMode = "create" | "history";
 
 export function NotebookAudioPage() {
   const { notebookId } = useParams();
-  const navigate = useNavigate();
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
 
@@ -182,9 +181,6 @@ export function NotebookAudioPage() {
     });
     if (!result) return;
     await reloadHistory();
-    if (result.podcast_id) {
-      navigate(`/notebook/${notebookId}/audio/${result.podcast_id}`);
-    }
   }, [
     notebookId,
     selectedFormat,
@@ -195,16 +191,7 @@ export function NotebookAudioPage() {
     clearGenerateError,
     generate,
     reloadHistory,
-    navigate,
   ]);
-
-  const handleSelectPodcast = useCallback(
-    (podcastId: string) => {
-      if (!notebookId) return;
-      navigate(`/notebook/${notebookId}/audio/${podcastId}`);
-    },
-    [notebookId, navigate],
-  );
 
   const handleDeletePodcastConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -363,9 +350,7 @@ export function NotebookAudioPage() {
                   isLoading={isHistoryLoading}
                   hasResolved={hasHistoryResolved}
                   isGenerating={isGenerating}
-                  selectedPodcastId={null}
                   deletingPodcastId={deletingPodcastId}
-                  onSelectPodcast={handleSelectPodcast}
                   onDeletePodcast={(podcast) => {
                     clearDeleteError();
                     setDeleteTarget(podcast);
