@@ -20,6 +20,7 @@ from .routes.rag import router as rag_router
 from .routes.presentations import router as presentations_router
 from .routes.reports import router as reports_router
 from .routes.quiz import router as quiz_router
+from .routes.audio import router as audio_router
 
 
 @asynccontextmanager
@@ -54,6 +55,7 @@ app.include_router(reports_router)
 app.include_router(presentations_router)
 app.include_router(mindmap_router)
 app.include_router(flashcards_router)
+app.include_router(audio_router)
 
 
 @app.get("/health")

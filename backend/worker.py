@@ -13,6 +13,7 @@ if __name__ == "__main__":
             "presentations",
             "mindmap",
             "flashcards",
+            "audio",
         ],
         connection=redis_client,
     )

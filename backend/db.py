@@ -207,3 +207,25 @@ async def ensure_indexes() -> None:
     await db.presentation_generation_jobs.create_index("notebook_id")
     await db.presentation_generation_jobs.create_index("status")
     await db.presentation_generation_jobs.create_index("created_at")
+    await db.podcasts.create_index(
+        [("owner_id", 1), ("notebook_id", 1), ("created_at", -1)]
+    )
+    await db.podcasts.create_index("owner_id")
+    await db.podcasts.create_index("notebook_id")
+    await db.podcasts.create_index("created_at")
+    await db.podcasts.create_index("sources_fingerprint")
+    await db.audio_generation_jobs.create_index("job_id", unique=True)
+    await db.audio_generation_jobs.create_index("owner_id")
+    await db.audio_generation_jobs.create_index("notebook_id")
+    await db.audio_generation_jobs.create_index("status")
+    await db.audio_generation_jobs.create_index("created_at")
+    await db.audio_suggestion_generation_jobs.create_index("job_id", unique=True)
+    await db.audio_suggestion_generation_jobs.create_index("owner_id")
+    await db.audio_suggestion_generation_jobs.create_index("notebook_id")
+    await db.audio_suggestion_generation_jobs.create_index("status")
+    await db.audio_suggestion_generation_jobs.create_index("created_at")
+    await db.audio_suggestions.create_index(
+        [("owner_id", 1), ("notebook_id", 1)], unique=True
+    )
+    await db.audio_suggestions.create_index("sources_fingerprint")
+    await db.audio_suggestions.create_index("updated_at")
