@@ -395,6 +395,8 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
       isGeneratingFlashcards={false}
+      canStartAudio={hasReadySources}
+      isGeneratingAudio={false}
       onGoChat={() => notebookId && navigate(`/notebook/${notebookId}/chat`)}
       onGoQuiz={() => notebookId && navigate(`/notebook/${notebookId}/quiz`)}
       onGoQuickstart={() => notebookId && navigate(`/notebook/${notebookId}/quickstart`)}
@@ -402,6 +404,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       onGoPresentations={() => notebookId && navigate(`/notebook/${notebookId}/presentations`)}
       onGoMindmap={() => notebookId && navigate(`/notebook/${notebookId}/mindmap`)}
       onGoFlashcards={() => notebookId && navigate(`/notebook/${notebookId}/flashcards`)}
+      onGoAudio={() => notebookId && navigate(`/notebook/${notebookId}/audio`)}
       beforeMain={<input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.docx,.txt,.pptx" onChange={handleFileChange} />}
       footer={
         <PresentationsFooterModals

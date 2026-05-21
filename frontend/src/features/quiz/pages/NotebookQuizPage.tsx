@@ -324,6 +324,8 @@ export function NotebookQuizPage() {
       isGeneratingMindmap={false}
       canStartFlashcards={hasReadySources}
       isGeneratingFlashcards={false}
+      canStartAudio={hasReadySources}
+      isGeneratingAudio={false}
       onGoChat={handleGoChat}
       onGoQuiz={() => void handleGoQuiz()}
       onGoQuickstart={handleGoQuickstart}
@@ -331,6 +333,7 @@ export function NotebookQuizPage() {
       onGoPresentations={handleGoPresentations}
       onGoMindmap={handleGoMindmap}
       onGoFlashcards={handleGoFlashcards}
+      onGoAudio={() => notebookId && navigate(`/notebook/${notebookId}/audio`)}
       beforeMain={
         <input
           ref={fileInputRef}

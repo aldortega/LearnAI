@@ -1,3 +1,4 @@
+import { audioApi } from "../../features/audio/api/audioApi";
 import { flashcardsApi } from "../../features/flashcards/api/flashcardsApi";
 import { mindmapApi } from "../../features/mindmap/api/mindmapApi";
 import { presentationsApi } from "../../features/presentations/api/presentationsApi";
@@ -18,6 +19,7 @@ const registry: Record<GenerationKind, StatusFetcher> = {
   flashcards: flashcardsApi.getGenerationStatus,
   presentations: presentationsApi.getGenerationStatus,
   reports: reportsApi.getGenerationStatus,
+  audio: audioApi.getGenerationStatus,
 };
 
 export function getGenerationStatusFetcher(kind: GenerationKind): StatusFetcher {
@@ -31,4 +33,5 @@ export const generationKindLabels: Record<GenerationKind, string> = {
   flashcards: "flashcards",
   presentations: "presentacion",
   reports: "informe",
+  audio: "podcast",
 };

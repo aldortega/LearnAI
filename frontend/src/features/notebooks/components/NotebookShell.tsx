@@ -12,7 +12,8 @@ export type NotebookShellMode =
   | "reports"
   | "presentations"
   | "mindmap"
-  | "flashcards";
+  | "flashcards"
+  | "audio";
 
 type Props = {
   title?: string;
@@ -37,6 +38,8 @@ type Props = {
   isGeneratingMindmap: boolean;
   canStartFlashcards: boolean;
   isGeneratingFlashcards: boolean;
+  canStartAudio?: boolean;
+  isGeneratingAudio?: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
@@ -44,6 +47,7 @@ type Props = {
   onGoPresentations: () => void;
   onGoMindmap: () => void;
   onGoFlashcards: () => void;
+  onGoAudio?: () => void;
   beforeMain?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
@@ -72,6 +76,8 @@ export function NotebookShell({
   isGeneratingMindmap,
   canStartFlashcards,
   isGeneratingFlashcards,
+  canStartAudio = false,
+  isGeneratingAudio = false,
   onGoChat,
   onGoQuiz,
   onGoQuickstart,
@@ -79,6 +85,7 @@ export function NotebookShell({
   onGoPresentations,
   onGoMindmap,
   onGoFlashcards,
+  onGoAudio,
   beforeMain,
   children,
   footer,
@@ -114,6 +121,8 @@ export function NotebookShell({
           isGeneratingMindmap={isGeneratingMindmap}
           canStartFlashcards={canStartFlashcards}
           isGeneratingFlashcards={isGeneratingFlashcards}
+          canStartAudio={canStartAudio}
+          isGeneratingAudio={isGeneratingAudio}
           onGoChat={onGoChat}
           onGoQuiz={onGoQuiz}
           onGoQuickstart={onGoQuickstart}
@@ -121,6 +130,7 @@ export function NotebookShell({
           onGoPresentations={onGoPresentations}
           onGoMindmap={onGoMindmap}
           onGoFlashcards={onGoFlashcards}
+          onGoAudio={onGoAudio}
         />
       </main>
       {footer}

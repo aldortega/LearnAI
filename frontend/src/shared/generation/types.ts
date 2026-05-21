@@ -4,7 +4,8 @@ export type GenerationKind =
   | "mindmap"
   | "flashcards"
   | "presentations"
-  | "reports";
+  | "reports"
+  | "audio";
 
 export type GenerationStatus = "queued" | "processing" | "done" | "failed";
 

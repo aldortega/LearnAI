@@ -14,6 +14,8 @@ import { AuthPage } from "./features/auth/pages/AuthPage";
 import { CompleteProfilePage } from "./features/auth/pages/CompleteProfilePage";
 import { ForgotPasswordPage } from "./features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./features/auth/pages/ResetPasswordPage";
+import { NotebookAudioPage } from "./features/audio/pages/NotebookAudioPage";
+import { NotebookPodcastDetailPage } from "./features/audio/pages/NotebookPodcastDetailPage";
 import { NotebookFlashcardsPage } from "./features/flashcards/pages/NotebookFlashcardsPage";
 import { HomePage } from "./features/home/pages/HomePage";
 import { useNotebookPrefetch, useNotebookReadySources } from "./features/notebooks";
@@ -201,6 +203,26 @@ function App() {
                     <ProtectedRoute>
                       <RequireReadySources>
                         <NotebookFlashcardsPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/audio"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookAudioPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/audio/:podcastId"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookPodcastDetailPage />
                       </RequireReadySources>
                     </ProtectedRoute>
                   }

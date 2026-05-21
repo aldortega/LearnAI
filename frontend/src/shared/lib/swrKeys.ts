@@ -26,4 +26,8 @@ export const swrKeys = {
     ["presentations-config", notebookId] as const,
   presentationsHistory: (notebookId: string) =>
     ["presentations-history", notebookId] as const,
+  audioConfig: (notebookId: string) => ["audio-config", notebookId] as const,
+  audioHistory: (notebookId: string) => ["audio-history", notebookId] as const,
+  podcastDetail: (notebookId: string, podcastId: string) =>
+    ["podcast-detail", notebookId, podcastId] as const,
 };

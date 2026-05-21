@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Headphones,
   Presentation,
   Layers,
   MessageSquare,
@@ -21,7 +22,8 @@ type Mode =
   | "reports"
   | "presentations"
   | "mindmap"
-  | "flashcards";
+  | "flashcards"
+  | "audio";
 
 type Props = {
   mode: Mode;
@@ -38,6 +40,8 @@ type Props = {
   isGeneratingMindmap: boolean;
   canStartFlashcards: boolean;
   isGeneratingFlashcards: boolean;
+  canStartAudio?: boolean;
+  isGeneratingAudio?: boolean;
   onGoChat: () => void;
   onGoQuiz: () => void;
   onGoQuickstart: () => void;
@@ -45,6 +49,7 @@ type Props = {
   onGoPresentations: () => void;
   onGoMindmap: () => void;
   onGoFlashcards: () => void;
+  onGoAudio?: () => void;
 };
 
 export function StudioSidebar({
@@ -62,6 +67,8 @@ export function StudioSidebar({
   isGeneratingMindmap,
   canStartFlashcards,
   isGeneratingFlashcards,
+  canStartAudio = false,
+  isGeneratingAudio = false,
   onGoChat,
   onGoQuiz,
   onGoQuickstart,
@@ -69,6 +76,7 @@ export function StudioSidebar({
   onGoPresentations,
   onGoMindmap,
   onGoFlashcards,
+  onGoAudio,
 }: Props) {
   const [isOpen, setIsOpen] = useState(() => {
     const saved = localStorage.getItem("studioSidebarOpen");
@@ -136,6 +144,14 @@ export function StudioSidebar({
       onClick: onGoPresentations,
       disabled: isStudioLocked || !canStartPresentations,
       loading: isGeneratingPresentations,
+    },
+    {
+      key: "audio" as const,
+      label: "Audios",
+      icon: Headphones,
+      onClick: onGoAudio ?? (() => undefined),
+      disabled: isStudioLocked || !canStartAudio || !onGoAudio,
+      loading: isGeneratingAudio,
     },
   ];
 
