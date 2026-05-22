@@ -16,11 +16,12 @@ type Props = {
   title: string;
   description?: string;
   initialDuration?: number;
+  menuSlot?: React.ReactNode;
 };
 
 const PLAYBACK_RATES = [1, 1.25, 1.5, 2] as const;
 
-export function PodcastPlayer({ audioUrl, title, description, initialDuration }: Props) {
+export function PodcastPlayer({ audioUrl, title, description, initialDuration, menuSlot }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -148,14 +149,17 @@ export function PodcastPlayer({ audioUrl, title, description, initialDuration }:
           )}
         </button>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <p className="truncate text-sm font-semibold text-foreground" title={title}>
-            {title}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="truncate text-sm font-semibold text-foreground" title={title}>
+              {title}
+            </p>
+            {menuSlot}
+          </div>
           {description ? (
             <p className="line-clamp-2 text-xs text-muted-foreground">{description}</p>
           ) : null}
-          <div className="flex items-center gap-3">
-            <span className="w-10 text-right text-xs tabular-nums text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-xs leading-none tabular-nums text-muted-foreground">
               {formatTime(currentTime)}
             </span>
             <div className="relative flex-1">
@@ -177,42 +181,42 @@ export function PodcastPlayer({ audioUrl, title, description, initialDuration }:
                 className="absolute inset-0 h-1.5 w-full cursor-pointer appearance-none bg-transparent opacity-0"
               />
             </div>
-            <span className="w-10 text-xs tabular-nums text-muted-foreground">
+            <span className="shrink-0 w-10 text-xs leading-none tabular-nums text-muted-foreground">
               {formatTime(duration)}
             </span>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={restart}
+                disabled={isLoading}
+                aria-label="Reiniciar"
+                title="Reiniciar"
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reiniciar
+              </button>
+              <button
+                type="button"
+                onClick={cycleRate}
+                aria-label={`Velocidad ${rate}x`}
+                title="Cambiar velocidad"
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <Gauge className="h-3.5 w-3.5" />
+                {rate}x
+              </button>
+              <a
+                href={audioUrl}
+                download
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Descargar
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={restart}
-          disabled={isLoading}
-          aria-label="Reiniciar"
-          title="Reiniciar"
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Reiniciar
-        </button>
-        <button
-          type="button"
-          onClick={cycleRate}
-          aria-label={`Velocidad ${rate}x`}
-          title="Cambiar velocidad"
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <Gauge className="h-3.5 w-3.5" />
-          {rate}x
-        </button>
-        <a
-          href={audioUrl}
-          download
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Descargar
-        </a>
       </div>
       {errorMessage ? (
         <p className="mt-3 text-sm text-error" role="alert">

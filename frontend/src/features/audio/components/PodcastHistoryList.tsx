@@ -7,7 +7,6 @@ import {
 } from "react";
 
 import type { PodcastOut } from "../types/audio.types";
-import { formatTime } from "../utils/formatTime";
 import { PodcastPlayer } from "./PodcastPlayer";
 
 type Props = {
@@ -26,12 +25,6 @@ type CardProps = {
   onDelete: (podcast: PodcastOut) => void;
 };
 
-const FORMAT_LABELS: Record<string, string> = {
-  deep_dive: "Analisis en profundidad",
-  brief: "Breve resumen",
-  critique: "Critica",
-  debate: "Debate",
-};
 
 function PodcastCard({
   podcast,
@@ -59,46 +52,42 @@ function PodcastCard({
     onDelete(podcast);
   };
 
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between px-1">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {FORMAT_LABELS[podcast.format_type] ?? podcast.format_type} ·{" "}
-          {formatTime(podcast.duration_seconds)}
-        </span>
-        <div className="relative" ref={menuRef}>
+  const menuSlot = (
+    <div className="relative shrink-0 ml-auto" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setIsMenuOpen((prev) => !prev)}
+        disabled={isAnyDeleting}
+        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+        aria-label={`Opciones de ${podcast.title}`}
+        aria-expanded={isMenuOpen}
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      {isMenuOpen ? (
+        <div className="absolute right-0 z-20 mt-2 w-40 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
           <button
             type="button"
-            onClick={() => setIsMenuOpen((prev) => !prev)}
+            onClick={handleDelete}
             disabled={isAnyDeleting}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label={`Opciones de ${podcast.title}`}
-            aria-expanded={isMenuOpen}
+            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <MoreVertical className="h-4 w-4" />
+            <Trash2 className={`h-4 w-4 ${isDeleting ? "animate-pulse" : ""}`} />
+            Eliminar
           </button>
-          {isMenuOpen ? (
-            <div className="absolute right-0 z-20 mt-2 w-40 origin-top-right rounded-lg border border-border bg-surface py-1 shadow-lg ring-1 ring-black/5">
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isAnyDeleting}
-                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Trash2 className={`h-4 w-4 ${isDeleting ? "animate-pulse" : ""}`} />
-                Eliminar
-              </button>
-            </div>
-          ) : null}
         </div>
-      </div>
-      <PodcastPlayer
-        audioUrl={podcast.audio_url}
-        title={podcast.title}
-        description={podcast.description ?? undefined}
-        initialDuration={podcast.duration_seconds}
-      />
+      ) : null}
     </div>
+  );
+
+  return (
+    <PodcastPlayer
+      audioUrl={podcast.audio_url}
+      title={podcast.title}
+      description={podcast.description ?? undefined}
+      initialDuration={podcast.duration_seconds}
+      menuSlot={menuSlot}
+    />
   );
 }
 
