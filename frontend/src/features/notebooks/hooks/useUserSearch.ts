@@ -1,8 +1,12 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { collaborationApi } from "../api/collaborationApi";
 import type { UserSearchItem } from "../types/collaboration.types";
 import { toNotebookErrorMessage } from "../utils/notebookErrors";
+
+const DEBOUNCE_MS = 250;
 
 type Result = {
   users: UserSearchItem[];
@@ -11,47 +15,27 @@ type Result = {
 };
 
 export function useUserSearch(query: string, enabled: boolean): Result {
-  const [users, setUsers] = useState<UserSearchItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
     const value = query.trim();
     if (!enabled || value.length < 2) {
-      setUsers([]);
-      setIsLoading(false);
-      setError(null);
-      return;
+      const timeout = window.setTimeout(() => setDebouncedQuery(""), 0);
+      return () => window.clearTimeout(timeout);
     }
-
-    let active = true;
-    setIsLoading(true);
-    setError(null);
-
-    const timeout = window.setTimeout(async () => {
-      try {
-        const data = await collaborationApi.searchUsers(value);
-        if (active) {
-          setUsers(data);
-        }
-      } catch (e) {
-        if (active) {
-          setUsers([]);
-          setError(toNotebookErrorMessage(e));
-        }
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    }, 250);
-
-    return () => {
-      active = false;
-      window.clearTimeout(timeout);
-    };
+    const timeout = window.setTimeout(() => setDebouncedQuery(value), DEBOUNCE_MS);
+    return () => window.clearTimeout(timeout);
   }, [query, enabled]);
 
-  return { users, isLoading, error };
-}
+  const { data, error, isLoading } = useSWR<UserSearchItem[]>(
+    debouncedQuery ? swrKeys.userSearch(debouncedQuery) : null,
+    () => collaborationApi.searchUsers(debouncedQuery),
+    { revalidateOnFocus: false, keepPreviousData: false },
+  );
 
+  return {
+    users: debouncedQuery && data ? data : [],
+    isLoading: Boolean(debouncedQuery) && isLoading && !data,
+    error: error ? toNotebookErrorMessage(error) : null,
+  };
+}

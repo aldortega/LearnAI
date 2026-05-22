@@ -30,4 +30,17 @@ export const swrKeys = {
   audioHistory: (notebookId: string) => ["audio-history", notebookId] as const,
   podcastDetail: (notebookId: string, podcastId: string) =>
     ["podcast-detail", notebookId, podcastId] as const,
+  reportDetail: (notebookId: string, reportId: string) =>
+    ["report-detail", notebookId, reportId] as const,
+  presentationDetail: (notebookId: string, presentationId: string) =>
+    ["presentation-detail", notebookId, presentationId] as const,
+  quizAttempts: (notebookId: string, levelId: string) =>
+    ["quiz-attempts", notebookId, levelId] as const,
+  quizQuestions: (notebookId: string, levelId: string) =>
+    ["quiz-questions", notebookId, levelId] as const,
+  userSearch: (query: string) => ["user-search", query] as const,
+  notebookInvitations: (notebookId: string) =>
+    ["notebook-invitations", notebookId] as const,
+  notifications: () => ["notifications"] as const,
+  notificationsUnreadCount: () => ["notifications-unread-count"] as const,
 };

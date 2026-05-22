@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
+import useSWR from "swr";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quizApi } from "../api/quizApi";
 import type {
@@ -18,131 +20,102 @@ type Result = {
   reload: () => Promise<void>;
 };
 
+type FetchResult = {
+  questions: QuizQuestionOut[];
+  status: RoadmapQuestionStatus;
+};
+
 export function useQuizQuestions(
   notebookId?: string,
   levelId?: string | null,
 ): Result {
-  const [questions, setQuestions] = useState<QuizQuestionOut[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<RoadmapQuestionStatus>("idle");
-  const statusRef = useRef<RoadmapQuestionStatus>("idle");
-  const hasTriggeredGenerationRef = useRef(false);
-  const pollStartedAtRef = useRef<number | null>(null);
-  const isPollingRequestInFlightRef = useRef(false);
+  const generationByKeyRef = useRef<
+    Map<string, { triggered: boolean; pollStartedAt: number | null }>
+  >(new Map());
 
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
+  const key = notebookId && levelId ? `${notebookId}:${levelId}` : null;
 
-  const reload = useCallback(async () => {
+  const fetcher = useCallback(async (): Promise<FetchResult> => {
     if (!notebookId || !levelId) {
-      setQuestions([]);
-      setError(null);
-      setStatus("idle");
-      hasTriggeredGenerationRef.current = false;
-      pollStartedAtRef.current = null;
-      isPollingRequestInFlightRef.current = false;
-      setIsLoading(false);
-      return;
+      return { questions: [], status: "idle" };
     }
 
-    setIsLoading(true);
-    setError(null);
+    const entry = generationByKeyRef.current.get(key as string) ?? {
+      triggered: false,
+      pollStartedAt: null,
+    };
 
-    if (!hasTriggeredGenerationRef.current || statusRef.current === "failed") {
-      try {
-        const generation = await quizApi.generateLevelQuestions(
-          notebookId,
-          levelId,
+    if (!entry.triggered) {
+      const generation = await quizApi.generateLevelQuestions(
+        notebookId,
+        levelId,
+      );
+      entry.triggered = true;
+      generationByKeyRef.current.set(key as string, entry);
+
+      if (generation.status === "failed") {
+        throw new Error(
+          generation.error ?? "No se pudieron generar preguntas.",
         );
-        hasTriggeredGenerationRef.current = true;
-        setStatus(generation.status);
-
-        if (generation.status === "failed") {
-          setError(generation.error ?? "No se pudieron generar preguntas.");
-          setQuestions([]);
-          pollStartedAtRef.current = null;
-          setIsLoading(false);
-          return;
-        }
-      } catch (e) {
-        setError(toNotebookErrorMessage(e));
-        setQuestions([]);
-        setStatus("failed");
-        pollStartedAtRef.current = null;
-        setIsLoading(false);
-        return;
       }
     }
-
-    let keepLoading = false;
 
     try {
       const result = await quizApi.listQuestions(notebookId, levelId);
       if (result.status === 202) {
-        setQuestions([]);
-        setStatus("generating");
-        if (!pollStartedAtRef.current) {
-          pollStartedAtRef.current = Date.now();
+        if (!entry.pollStartedAt) {
+          entry.pollStartedAt = Date.now();
+          generationByKeyRef.current.set(key as string, entry);
         }
-        const elapsed = Date.now() - (pollStartedAtRef.current ?? Date.now());
+        const elapsed = Date.now() - entry.pollStartedAt;
         if (elapsed > POLL_TIMEOUT_MS) {
-          setError("La generacion esta tardando mas de lo esperado.");
-          setStatus("failed");
-          pollStartedAtRef.current = null;
-          setIsLoading(false);
-          return;
+          entry.pollStartedAt = null;
+          generationByKeyRef.current.set(key as string, entry);
+          throw new Error("La generacion esta tardando mas de lo esperado.");
         }
-        keepLoading = true;
-        return;
+        return { questions: [], status: "generating" };
       }
 
-      pollStartedAtRef.current = null;
-      setQuestions(result.data ?? []);
-      setStatus("ready");
+      entry.pollStartedAt = null;
+      generationByKeyRef.current.set(key as string, entry);
+      return { questions: result.data ?? [], status: "ready" };
     } catch (e) {
       const apiError = e as ApiError | undefined;
       if (apiError?.status === 202) {
-        keepLoading = true;
-        setStatus("generating");
-      } else {
-        setError(toNotebookErrorMessage(e));
-        setStatus("failed");
-        pollStartedAtRef.current = null;
+        return { questions: [], status: "generating" };
       }
-      setQuestions([]);
-    } finally {
-      if (!keepLoading) {
-        setIsLoading(false);
-      }
+      throw e;
     }
-  }, [notebookId, levelId]);
+  }, [notebookId, levelId, key]);
 
-  useEffect(() => {
-    if (!notebookId || !levelId) return;
-    hasTriggeredGenerationRef.current = false;
-    pollStartedAtRef.current = null;
-    isPollingRequestInFlightRef.current = false;
-    setStatus("idle");
-    void reload();
-  }, [notebookId, levelId, reload]);
+  const { data, error, isLoading, mutate } = useSWR<FetchResult>(
+    key ? swrKeys.quizQuestions(notebookId as string, levelId as string) : null,
+    fetcher,
+    {
+      refreshInterval: (latest) =>
+        latest?.status === "generating" ? POLL_INTERVAL_MS : 0,
+      revalidateOnFocus: false,
+    },
+  );
 
-  useEffect(() => {
-    if (!notebookId || !levelId) return;
-    if (status !== "generating") return;
+  const reload = useCallback(async () => {
+    if (!key) return;
+    generationByKeyRef.current.set(key, {
+      triggered: false,
+      pollStartedAt: null,
+    });
+    try {
+      await mutate();
+    } catch {
+      // consumers read `error`
+    }
+  }, [mutate, key]);
 
-    const intervalId = window.setInterval(() => {
-      if (isPollingRequestInFlightRef.current) return;
-      isPollingRequestInFlightRef.current = true;
-
-      void reload().finally(() => {
-        isPollingRequestInFlightRef.current = false;
-      });
-    }, POLL_INTERVAL_MS);
-
-    return () => window.clearInterval(intervalId);
-  }, [notebookId, levelId, reload, status]);
-
-  return { questions, isLoading, error, reload };
+  return {
+    questions: data?.questions ?? [],
+    isLoading:
+      (isLoading && data === undefined) || data?.status === "generating",
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

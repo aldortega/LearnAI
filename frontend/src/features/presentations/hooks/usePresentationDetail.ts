@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { presentationsApi } from "../api/presentationsApi";
 import type { PresentationOut } from "../types/presentations.types";
@@ -16,43 +18,40 @@ export function usePresentationDetail(
   notebookId?: string,
   presentationId?: string,
 ): Result {
-  const [presentation, setPresentation] = useState<PresentationOut | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading, mutate } = useSWR<PresentationOut | null>(
+    notebookId && presentationId
+      ? swrKeys.presentationDetail(notebookId, presentationId)
+      : null,
+    async () => {
+      try {
+        return await presentationsApi.getPresentation(
+          notebookId as string,
+          presentationId as string,
+        );
+      } catch (e) {
+        const apiError = e as ApiError | undefined;
+        if (apiError?.status === 404) {
+          return null;
+        }
+        throw e;
+      }
+    },
+  );
 
   const reload = useCallback(async () => {
-    if (!notebookId || !presentationId) {
-      setPresentation(null);
-      setError(null);
-      return null;
-    }
-
-    setIsLoading(true);
-    setError(null);
+    if (!notebookId || !presentationId) return null;
     try {
-      const data = await presentationsApi.getPresentation(notebookId, presentationId);
-      setPresentation(data);
-      return data;
-    } catch (e) {
-      const apiError = e as ApiError | undefined;
-      if (apiError?.status === 404) {
-        setPresentation(null);
-        return null;
-      }
-      setError(toNotebookErrorMessage(e));
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId, presentationId]);
+  }, [mutate, notebookId, presentationId]);
 
-  useEffect(() => {
-    if (!notebookId || !presentationId) {
-      setPresentation(null);
-      return;
-    }
-    void reload();
-  }, [notebookId, presentationId, reload]);
-
-  return { presentation, isLoading, error, reload };
+  return {
+    presentation: data ?? null,
+    isLoading: isLoading && data === undefined,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

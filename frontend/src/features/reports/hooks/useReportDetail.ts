@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
 import type { ApiError } from "../../../shared/lib/apiClient";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { reportsApi } from "../api/reportsApi";
 import type { ReportOut } from "../types/reports.types";
@@ -13,43 +15,37 @@ type Result = {
 };
 
 export function useReportDetail(notebookId?: string, reportId?: string): Result {
-  const [report, setReport] = useState<ReportOut | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading, mutate } = useSWR<ReportOut | null>(
+    notebookId && reportId
+      ? swrKeys.reportDetail(notebookId, reportId)
+      : null,
+    async () => {
+      try {
+        return await reportsApi.getReport(notebookId as string, reportId as string);
+      } catch (e) {
+        const apiError = e as ApiError | undefined;
+        if (apiError?.status === 404) {
+          return null;
+        }
+        throw e;
+      }
+    },
+  );
 
   const reload = useCallback(async () => {
-    if (!notebookId || !reportId) {
-      setReport(null);
-      setError(null);
-      return null;
-    }
-
-    setIsLoading(true);
-    setError(null);
+    if (!notebookId || !reportId) return null;
     try {
-      const data = await reportsApi.getReport(notebookId, reportId);
-      setReport(data);
-      return data;
-    } catch (e) {
-      const apiError = e as ApiError | undefined;
-      if (apiError?.status === 404) {
-        setReport(null);
-        return null;
-      }
-      setError(toNotebookErrorMessage(e));
+      const next = await mutate();
+      return next ?? null;
+    } catch {
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [notebookId, reportId]);
+  }, [mutate, notebookId, reportId]);
 
-  useEffect(() => {
-    if (!notebookId || !reportId) {
-      setReport(null);
-      return;
-    }
-    void reload();
-  }, [notebookId, reportId, reload]);
-
-  return { report, isLoading, error, reload };
+  return {
+    report: data ?? null,
+    isLoading: isLoading && data === undefined,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

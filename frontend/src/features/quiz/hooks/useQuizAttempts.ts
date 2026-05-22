@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { quizApi } from "../api/quizApi";
 import type { QuizAttemptOut } from "../types/quiz.types";
@@ -15,34 +17,24 @@ export function useQuizAttempts(
   notebookId?: string,
   levelId?: string | null,
 ): Result {
-  const [attempts, setAttempts] = useState<QuizAttemptOut[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading, mutate } = useSWR<QuizAttemptOut[]>(
+    notebookId && levelId ? swrKeys.quizAttempts(notebookId, levelId) : null,
+    () => quizApi.listAttempts(notebookId as string, levelId as string),
+  );
 
   const reload = useCallback(async () => {
-    if (!notebookId || !levelId) {
-      setAttempts([]);
-      setError(null);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
+    if (!notebookId || !levelId) return;
     try {
-      const data = await quizApi.listAttempts(notebookId, levelId);
-      setAttempts(data);
-    } catch (e) {
-      setError(toNotebookErrorMessage(e));
-      setAttempts([]);
-    } finally {
-      setIsLoading(false);
+      await mutate();
+    } catch {
+      // swallow; consumers read `error`
     }
-  }, [notebookId, levelId]);
+  }, [mutate, notebookId, levelId]);
 
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  return { attempts, isLoading, error, reload };
+  return {
+    attempts: data ?? [],
+    isLoading: isLoading && data === undefined,
+    error: error ? toNotebookErrorMessage(error) : null,
+    reload,
+  };
 }

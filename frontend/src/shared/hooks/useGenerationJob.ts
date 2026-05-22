@@ -44,9 +44,21 @@ export function useGenerationJob<TPayload, TJob extends GenerationJobBase>(
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastNotebookId, setLastNotebookId] = useState(notebookId);
   const activeRunIdRef = useRef(0);
   const isMountedRef = useRef(true);
   const isRunningRef = useRef(false);
+
+  if (notebookId !== lastNotebookId) {
+    setLastNotebookId(notebookId);
+    setIsGenerating(false);
+    setError(null);
+  }
+
+  useEffect(() => {
+    activeRunIdRef.current += 1;
+    isRunningRef.current = false;
+  }, [notebookId]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -57,13 +69,6 @@ export function useGenerationJob<TPayload, TJob extends GenerationJobBase>(
       activeRunIdRef.current += 1;
     };
   }, []);
-
-  useEffect(() => {
-    activeRunIdRef.current += 1;
-    isRunningRef.current = false;
-    setIsGenerating(false);
-    setError(null);
-  }, [notebookId]);
 
   const clearError = useCallback(() => setError(null), []);
 

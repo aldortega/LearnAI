@@ -29,15 +29,19 @@ export function PodcastPlayer({ audioUrl, title, description, initialDuration, m
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [rate, setRate] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [lastSource, setLastSource] = useState<{ url: string; initialDuration: number | undefined }>(
+    { url: audioUrl, initialDuration },
+  );
 
-  useEffect(() => {
+  if (lastSource.url !== audioUrl || lastSource.initialDuration !== initialDuration) {
+    setLastSource({ url: audioUrl, initialDuration });
     setIsPlaying(false);
     setIsLoading(true);
     setCurrentTime(0);
     setRate(1);
     setErrorMessage(null);
     setDuration(initialDuration ?? 0);
-  }, [audioUrl, initialDuration]);
+  }
 
   useEffect(() => {
     const audio = audioRef.current;

@@ -21,11 +21,23 @@ type Result = {
 export function useGenerateAudioSuggestions(notebookId?: string): Result {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastNotebookId, setLastNotebookId] = useState(notebookId);
   const activeRunIdRef = useRef(0);
   const isMountedRef = useRef(true);
   const isRunningRef = useRef(false);
 
   const clearError = useCallback(() => setError(null), []);
+
+  if (notebookId !== lastNotebookId) {
+    setLastNotebookId(notebookId);
+    setIsGenerating(false);
+    setError(null);
+  }
+
+  useEffect(() => {
+    activeRunIdRef.current += 1;
+    isRunningRef.current = false;
+  }, [notebookId]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -35,13 +47,6 @@ export function useGenerateAudioSuggestions(notebookId?: string): Result {
       activeRunIdRef.current += 1;
     };
   }, []);
-
-  useEffect(() => {
-    activeRunIdRef.current += 1;
-    isRunningRef.current = false;
-    setIsGenerating(false);
-    setError(null);
-  }, [notebookId]);
 
   const startRun = useCallback(() => {
     const nextRunId = activeRunIdRef.current + 1;

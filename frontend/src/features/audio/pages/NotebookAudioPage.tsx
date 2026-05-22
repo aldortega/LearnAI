@@ -32,7 +32,18 @@ export function NotebookAudioPage() {
   const canManageDocuments = notebook?.can_manage_documents ?? false;
 
   const nav = useAudioStudioNav(notebookId);
-  const sources = useNotebookStudioSources(notebookId);
+  const {
+    fileInputRef,
+    documents,
+    hasReadySources,
+    isUploading,
+    deletingDocumentIds,
+    deleteTarget: sourceDeleteTarget,
+    setDeleteTarget: setSourceDeleteTarget,
+    handleFileChange,
+    handleDeleteConfirm,
+    pickFile,
+  } = useNotebookStudioSources(notebookId);
   const { config, isLoading: isConfigLoading, reload: reloadConfig } =
     useAudioConfig(notebookId);
   const {
@@ -76,25 +87,30 @@ export function NotebookAudioPage() {
   );
   const [deleteTarget, setDeleteTarget] = useState<PodcastOut | null>(null);
   const [isRefreshingSuggestions, setIsRefreshingSuggestions] = useState(false);
+  const [lastNotebookId, setLastNotebookId] = useState(notebookId);
   const hasCheckedLatestJobRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const hasResolvedInitialViewRef = useRef(false);
 
-  useEffect(() => {
-    hasCheckedLatestJobRef.current = false;
-    hasTriggeredAutoSuggestionsRef.current = false;
-    hasResolvedInitialViewRef.current = false;
+  if (notebookId !== lastNotebookId) {
+    setLastNotebookId(notebookId);
     setViewMode("history");
     setSelectedFormat(null);
     setSelectedDuration("default");
     setTopic("");
     setSelectedSuggestionId(null);
     setDeleteTarget(null);
+  }
+
+  useEffect(() => {
+    hasCheckedLatestJobRef.current = false;
+    hasTriggeredAutoSuggestionsRef.current = false;
+    hasResolvedInitialViewRef.current = false;
   }, [notebookId]);
 
   const templates = useMemo(() => config?.templates ?? [], [config]);
   const suggestions = useMemo(() => config?.suggestions ?? [], [config]);
-  const canGenerate = config?.has_ready_sources ?? sources.hasReadySources;
+  const canGenerate = config?.has_ready_sources ?? hasReadySources;
   const suggestionsStatus = config?.suggestions_status ?? "missing";
   const suggestionsAreStale = config?.suggestions_is_stale ?? false;
   const isSuggestionsLoading =
@@ -229,34 +245,34 @@ export function NotebookAudioPage() {
   return (
     <NotebookShell
       title={notebook?.title}
-      documents={sources.documents}
+      documents={documents}
       canManageDocuments={canManageDocuments}
       isNotebookLoading={isNotebookLoading}
-      isUploading={sources.isUploading}
-      deletingDocumentIds={sources.deletingDocumentIds}
+      isUploading={isUploading}
+      deletingDocumentIds={deletingDocumentIds}
       onAddSource={() => {
         if (!canManageDocuments) return;
-        sources.pickFile();
+        pickFile();
       }}
       onDeleteDocument={(document) => {
         if (!canManageDocuments) return;
-        sources.setDeleteTarget(document);
+        setSourceDeleteTarget(document);
       }}
       mode="audio"
       isStudioLocked={false}
-      canStartQuiz={sources.hasReadySources}
+      canStartQuiz={hasReadySources}
       isGeneratingQuiz={false}
-      canStartQuickstart={sources.hasReadySources}
+      canStartQuickstart={hasReadySources}
       isGeneratingQuickstart={false}
-      canStartReports={sources.hasReadySources}
+      canStartReports={hasReadySources}
       isGeneratingReports={false}
-      canStartPresentations={sources.hasReadySources}
+      canStartPresentations={hasReadySources}
       isGeneratingPresentations={false}
-      canStartMindmap={sources.hasReadySources}
+      canStartMindmap={hasReadySources}
       isGeneratingMindmap={false}
-      canStartFlashcards={sources.hasReadySources}
+      canStartFlashcards={hasReadySources}
       isGeneratingFlashcards={false}
-      canStartAudio={sources.hasReadySources}
+      canStartAudio={hasReadySources}
       isGeneratingAudio={isGenerating}
       onGoChat={nav.goChat}
       onGoQuiz={nav.goQuiz}
@@ -268,25 +284,25 @@ export function NotebookAudioPage() {
       onGoAudio={nav.goAudio}
       beforeMain={
         <input
-          ref={sources.fileInputRef}
+          ref={fileInputRef}
           type="file"
           className="hidden"
           accept=".pdf,.docx,.txt,.pptx"
-          onChange={sources.handleFileChange}
+          onChange={handleFileChange}
         />
       }
       footer={
         <>
           <DeleteDocumentModal
-            isOpen={Boolean(sources.deleteTarget)}
-            documentName={sources.deleteTarget?.file_name}
+            isOpen={Boolean(sourceDeleteTarget)}
+            documentName={sourceDeleteTarget?.file_name}
             isDeleting={
-              sources.deleteTarget
-                ? sources.deletingDocumentIds.has(sources.deleteTarget.id)
+              sourceDeleteTarget
+                ? deletingDocumentIds.has(sourceDeleteTarget.id)
                 : false
             }
-            onCancel={() => sources.setDeleteTarget(null)}
-            onConfirm={sources.handleDeleteConfirm}
+            onCancel={() => setSourceDeleteTarget(null)}
+            onConfirm={handleDeleteConfirm}
           />
           <DeletePodcastModal
             isOpen={Boolean(deleteTarget)}

@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import useSWR from "swr";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { Button } from "../../../shared/ui/Button";
 import { Modal } from "../../../shared/ui/Modal";
 import { collaborationApi } from "../api/collaborationApi";
@@ -33,48 +35,45 @@ export function InviteUserModal({
   const [selectedUsername, setSelectedUsername] = useState("");
   const [permission, setPermission] = useState<InvitationPermission>("read_only");
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [invitations, setInvitations] = useState<NotebookInvite[]>([]);
-  const [isLoadingInvitations, setIsLoadingInvitations] = useState(false);
   const [invitationError, setInvitationError] = useState<string | null>(null);
-  const [memberActions, setMemberActions] = useState<Record<string, MemberAction>>({});
+  const [memberActionOverrides, setMemberActionOverrides] = useState<
+    Record<string, MemberAction>
+  >({});
   const [isApplyingChanges, setIsApplyingChanges] = useState(false);
 
   const { invite, isLoading, error, clearError } = useInviteUser();
   const { users, isLoading: isSearching, error: searchError } = useUserSearch(searchQuery, isOpen);
 
-  const reloadInvitations = useCallback(async () => {
-    if (!notebookId) {
-      setInvitations([]);
-      return;
-    }
+  const {
+    data: invitations,
+    error: invitationsSwrError,
+    isLoading: isLoadingInvitations,
+    mutate: mutateInvitations,
+  } = useSWR<NotebookInvite[]>(
+    isOpen && notebookId ? swrKeys.notebookInvitations(notebookId) : null,
+    () => collaborationApi.listInvitations(notebookId as string),
+  );
 
-    setIsLoadingInvitations(true);
+  const reloadInvitations = useCallback(async () => {
+    if (!notebookId) return;
     setInvitationError(null);
     try {
-      const data = await collaborationApi.listInvitations(notebookId);
-      setInvitations(data);
+      await mutateInvitations();
     } catch (e) {
       setInvitationError(toNotebookErrorMessage(e));
-    } finally {
-      setIsLoadingInvitations(false);
     }
-  }, [notebookId]);
+  }, [mutateInvitations, notebookId]);
 
-  useEffect(() => {
-    if (!isOpen || !notebookId) return;
-    void reloadInvitations();
-  }, [isOpen, notebookId, reloadInvitations]);
-
-  useEffect(() => {
-    if (isOpen) return;
+  const handleRequestClose = useCallback(() => {
     setSearchQuery("");
     setSelectedUsername("");
     setPermission("read_only");
     setHasSubmitted(false);
     setInvitationError(null);
-    setMemberActions({});
+    setMemberActionOverrides({});
     clearError();
-  }, [clearError, isOpen]);
+    onClose();
+  }, [clearError, onClose]);
 
   const normalizedQuery = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
 
@@ -94,24 +93,22 @@ export function InviteUserModal({
   }, [isInviteeValid, isLoading, notebookId]);
 
   const acceptedInvitations = useMemo(
-    () => invitations.filter((item) => item.status === "accepted"),
+    () => (invitations ?? []).filter((item) => item.status === "accepted"),
     [invitations],
   );
 
   const pendingInvitations = useMemo(
-    () => invitations.filter((item) => item.status === "pending"),
+    () => (invitations ?? []).filter((item) => item.status === "pending"),
     [invitations],
   );
 
-  useEffect(() => {
-    setMemberActions((previous) => {
-      const next: Record<string, MemberAction> = {};
-      for (const item of acceptedInvitations) {
-        next[item.invitee_id] = previous[item.invitee_id] ?? item.permission;
-      }
-      return next;
-    });
-  }, [acceptedInvitations]);
+  const memberActions = useMemo(() => {
+    const next: Record<string, MemberAction> = {};
+    for (const item of acceptedInvitations) {
+      next[item.invitee_id] = memberActionOverrides[item.invitee_id] ?? item.permission;
+    }
+    return next;
+  }, [acceptedInvitations, memberActionOverrides]);
 
   const pendingChanges = useMemo(() => {
     return acceptedInvitations
@@ -159,6 +156,7 @@ export function InviteUserModal({
         await collaborationApi.updateMemberPermission(notebookId, change.memberId, change.action);
       }
 
+      setMemberActionOverrides({});
       await reloadInvitations();
       onSuccess();
     } catch (e) {
@@ -169,16 +167,14 @@ export function InviteUserModal({
   };
 
   const handleMemberActionChange = (memberId: string, action: MemberAction) => {
-    setMemberActions((previous) => ({
+    setMemberActionOverrides((previous) => ({
       ...previous,
       [memberId]: action,
     }));
   };
 
-  const handleRequestClose = () => {
-    setMemberActions({});
-    onClose();
-  };
+  const displayedInvitationError =
+    invitationError ?? (invitationsSwrError ? toNotebookErrorMessage(invitationsSwrError) : null);
 
   return (
     <Modal
@@ -206,7 +202,7 @@ export function InviteUserModal({
 
       <AccessPeopleSection
         isLoading={isLoadingInvitations}
-        error={invitationError}
+        error={displayedInvitationError}
         owner={user}
         acceptedInvitations={acceptedInvitations}
         memberActions={memberActions}

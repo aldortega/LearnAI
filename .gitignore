@@ -8,3 +8,4 @@ redis_data/
 .claude
 .codex
 .opencode
+.agents

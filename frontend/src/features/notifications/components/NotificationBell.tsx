@@ -1,10 +1,14 @@
-﻿import { Bell, Check, X } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 
 import { collaborationApi } from "../../notebooks/api/collaborationApi";
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
+import { swrKeys } from "../../../shared/lib/swrKeys";
 import { notificationsApi } from "../api/notificationsApi";
 import type { NotificationItem } from "../types/notifications.types";
+
+const UNREAD_REFRESH_MS = 30000;
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -17,49 +21,32 @@ function formatDate(value: string): string {
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
-  const [items, setItems] = useState<NotificationItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const refreshUnread = useCallback(async () => {
-    try {
-      const response = await notificationsApi.unreadCount();
-      setUnreadCount(response.unread_count);
-    } catch {
-      // Keep current badge value if request fails.
-    }
-  }, []);
+  const { data: unreadData, mutate: mutateUnread } = useSWR(
+    swrKeys.notificationsUnreadCount(),
+    () => notificationsApi.unreadCount(),
+    { refreshInterval: UNREAD_REFRESH_MS, revalidateOnFocus: true },
+  );
+  const unreadCount = unreadData?.unread_count ?? 0;
 
-  const loadNotifications = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
+  const {
+    data: listData,
+    error: listError,
+    isLoading: isListLoading,
+    mutate: mutateList,
+  } = useSWR(
+    isOpen ? swrKeys.notifications() : null,
+    async () => {
       const response = await notificationsApi.list();
-      setItems(response.items);
-    } catch (e) {
-      setError(toNotebookErrorMessage(e));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      return response.items;
+    },
+    { revalidateOnFocus: true },
+  );
 
-  useEffect(() => {
-    void refreshUnread();
-    const interval = window.setInterval(() => {
-      void refreshUnread();
-    }, 30000);
-    return () => window.clearInterval(interval);
-  }, [refreshUnread]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    void loadNotifications();
-    void refreshUnread();
-  }, [isOpen, loadNotifications, refreshUnread]);
+  const items = useMemo<NotificationItem[]>(() => listData ?? [], [listData]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -80,14 +67,16 @@ export function NotificationBell() {
         return;
       }
 
-      setItems((current) =>
-        current.map((item) =>
-          item.id === notificationId ? { ...item, is_read: true } : item,
-        ),
+      await mutateList(
+        (current) =>
+          (current ?? []).map((item) =>
+            item.id === notificationId ? { ...item, is_read: true } : item,
+          ),
+        { revalidate: false },
       );
-      void refreshUnread();
+      void mutateUnread();
     },
-    [refreshUnread],
+    [mutateList, mutateUnread],
   );
 
   const handleInvitationAction = useCallback(
@@ -95,29 +84,34 @@ export function NotificationBell() {
       if (!item.invitation) return;
 
       setActionId(item.id);
-      setError(null);
+      setActionError(null);
       try {
         if (action === "accept") {
           await collaborationApi.acceptInvitation(item.invitation.invitation_id);
         } else {
           await collaborationApi.rejectInvitation(item.invitation.invitation_id);
         }
-        setItems((current) => current.filter((currentItem) => currentItem.id !== item.id));
-        await Promise.all([loadNotifications(), refreshUnread()]);
+        await mutateList(
+          (current) => (current ?? []).filter((currentItem) => currentItem.id !== item.id),
+          { revalidate: false },
+        );
+        await Promise.all([mutateList(), mutateUnread()]);
         window.dispatchEvent(new Event("notebook-collaboration-changed"));
       } catch (e) {
-        setError(toNotebookErrorMessage(e));
+        setActionError(toNotebookErrorMessage(e));
       } finally {
         setActionId(null);
       }
     },
-    [loadNotifications, refreshUnread],
+    [mutateList, mutateUnread],
   );
 
   const hasPendingInvitations = useMemo(
     () => items.some((item) => item.invitation?.status === "pending"),
     [items],
   );
+
+  const error = actionError ?? (listError ? toNotebookErrorMessage(listError) : null);
 
   return (
     <div className="relative" ref={containerRef}>
@@ -151,7 +145,7 @@ export function NotificationBell() {
               </p>
             ) : null}
 
-            {isLoading ? (
+            {isListLoading ? (
               <p className="px-2 py-4 text-sm text-muted-foreground">Cargando...</p>
             ) : items.length === 0 ? (
               <p className="px-2 py-4 text-sm text-muted-foreground">
@@ -219,4 +213,3 @@ export function NotificationBell() {
     </div>
   );
 }
-

@@ -35,11 +35,12 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
   const navigate = useNavigate();
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
-  const hasResolvedInitialViewRef = useRef(false);
+  const [hasResolvedInitialView, setHasResolvedInitialView] = useState(false);
   const hasCheckedLatestReportJobRef = useRef(false);
   const hasCheckedLatestSuggestionsJobRef = useRef(false);
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
+  const didNavigateEmptyRef = useRef(false);
   const [viewMode, setViewMode] = useState<ReportViewMode>(() =>
     routeMode === "new" ? "templates" : "history",
   );
@@ -50,6 +51,10 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
   const [deleteReportTarget, setDeleteReportTarget] = useState<ReportOut | null>(null);
   const [isRefreshingSuggestions, setIsRefreshingSuggestions] = useState(false);
   const [suggestionsSyncTimedOut, setSuggestionsSyncTimedOut] = useState(false);
+  const [lastResetKey, setLastResetKey] = useState<string>(`${notebookId ?? ""}|${routeMode}`);
+  const [lastSuggestionsStatusForTimeout, setLastSuggestionsStatusForTimeout] = useState<
+    string | null
+  >(null);
   const {
     fileInputRef,
     documents,
@@ -124,12 +129,10 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
       isRefreshingSuggestions ||
       isGeneratingSuggestions ||
       suggestionsStatus === "generating");
-  useEffect(() => {
-    hasResolvedInitialViewRef.current = false;
-    hasCheckedLatestReportJobRef.current = false;
-    hasCheckedLatestSuggestionsJobRef.current = false;
-    hasTriggeredAutoSuggestionsRef.current = false;
-    previousReadySignatureRef.current = null;
+  const currentResetKey = `${notebookId ?? ""}|${routeMode}`;
+  if (currentResetKey !== lastResetKey) {
+    setLastResetKey(currentResetKey);
+    setHasResolvedInitialView(false);
     setViewMode(routeMode === "new" ? "templates" : "history");
     setHistoryView("cards");
     setEditTarget(null);
@@ -138,7 +141,15 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
     setDeleteReportTarget(null);
     setSuggestionsSyncTimedOut(false);
     clearGenerateSuggestionsError();
-  }, [notebookId, clearGenerateSuggestionsError, routeMode]);
+  }
+
+  useEffect(() => {
+    hasCheckedLatestReportJobRef.current = false;
+    hasCheckedLatestSuggestionsJobRef.current = false;
+    hasTriggeredAutoSuggestionsRef.current = false;
+    previousReadySignatureRef.current = null;
+    didNavigateEmptyRef.current = false;
+  }, [notebookId, routeMode]);
   useEffect(() => {
     hasTriggeredAutoSuggestionsRef.current = false;
   }, [notebookId, readySignature]);
@@ -162,19 +173,19 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
     resumeLatestSuggestions,
     reloadConfig,
   ]);
+  if (lastSuggestionsStatusForTimeout !== suggestionsStatus) {
+    setLastSuggestionsStatusForTimeout(suggestionsStatus);
+    if (suggestionsSyncTimedOut) {
+      setSuggestionsSyncTimedOut(false);
+    }
+  }
+
   useEffect(() => {
     if (!notebookId || !hasConfigLoaded || isConfigLoading) return;
-    if (suggestionsStatus !== "generating") {
-      if (suggestionsSyncTimedOut) {
-        setSuggestionsSyncTimedOut(false);
-      }
-      return;
-    }
+    if (suggestionsStatus !== "generating") return;
 
     let cancelled = false;
     const deadline = Date.now() + SUGGESTIONS_SYNC_TIMEOUT_MS;
-
-    setSuggestionsSyncTimedOut(false);
 
     const syncSuggestionsConfig = async () => {
       while (!cancelled && Date.now() < deadline) {
@@ -201,7 +212,6 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
     hasConfigLoaded,
     isConfigLoading,
     suggestionsStatus,
-    suggestionsSyncTimedOut,
     reloadConfig,
   ]);
   useEffect(() => {
@@ -270,25 +280,30 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
     resumeLatest,
     routeMode,
   ]);
-  useEffect(() => {
-    if (!notebookId || isReportsLoading || hasResolvedInitialViewRef.current) return;
-    hasResolvedInitialViewRef.current = true;
-
+  if (
+    notebookId &&
+    !isReportsLoading &&
+    !hasResolvedInitialView &&
+    !(routeMode !== "new" && reports.length === 0)
+  ) {
+    setHasResolvedInitialView(true);
     if (routeMode === "new") {
       setViewMode("templates");
-      return;
+    } else {
+      setViewMode("history");
+      setHistoryView("cards");
+      setSelectedReportId((prev) =>
+        prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
+      );
     }
-
-    if (reports.length === 0) {
-      navigate(`/notebook/${notebookId}/reports/new`, { replace: true });
-      return;
-    }
-
-    setViewMode("history");
-    setHistoryView("cards");
-    setSelectedReportId((prev) =>
-      prev && reports.some((report) => report.id === prev) ? prev : reports[0].id,
-    );
+  }
+  useEffect(() => {
+    if (!notebookId || isReportsLoading) return;
+    if (routeMode === "new") return;
+    if (reports.length > 0) return;
+    if (didNavigateEmptyRef.current) return;
+    didNavigateEmptyRef.current = true;
+    navigate(`/notebook/${notebookId}/reports/new`, { replace: true });
   }, [notebookId, isReportsLoading, reports, routeMode, navigate]);
   const runGeneration = useCallback(
     async (formatType: ReportFormatType, prompt: string, suggestionId: string | null = null) => {
