@@ -4,18 +4,50 @@ from datetime import datetime, timezone
 import httpx
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, status
+from langchain_core.messages import HumanMessage, SystemMessage
 from pymongo import ReturnDocument
 from supabase import create_client
 
 from ..config import settings
 from ..db import db
+from ..gemini import create_chat_model_with_fallback
 from ..schemas.notebooks import NotebookCreate, NotebookOut, NotebookUpdate
 from .auth import get_current_user
 from .notebook_access import require_notebook_owner, resolve_notebook_access
 
 router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 
-DEFAULT_NOTEBOOK_EMOJI = "??"
+DEFAULT_NOTEBOOK_EMOJI = "📓"
+
+
+def _generate_emoji(title: str) -> str:
+    try:
+        llm = create_chat_model_with_fallback(
+            model_name=settings.gemini_chat_model,
+            temperature=0.7,
+        )
+        messages = [
+            SystemMessage(
+                content=(
+                    "Responde únicamente con un solo emoji que represente visualmente el tema dado. "
+                    "Sin texto adicional, sin explicaciones, sin puntuación."
+                )
+            ),
+            HumanMessage(content=title),
+        ]
+        response = llm.invoke(messages)
+        raw = response.content
+        if isinstance(raw, list):
+            for block in raw:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    text = str(block.get("text", "")).strip()
+                    if text:
+                        return text
+            return DEFAULT_NOTEBOOK_EMOJI
+        content = str(raw).strip()
+        return content if content else DEFAULT_NOTEBOOK_EMOJI
+    except Exception:
+        return DEFAULT_NOTEBOOK_EMOJI
 
 
 def notebook_to_out(
@@ -55,12 +87,13 @@ def parse_storage_path(file_path: str) -> tuple[str, str]:
 async def create_notebook(payload: NotebookCreate, request: Request) -> NotebookOut:
     user = await get_current_user(request)
     now = datetime.now(timezone.utc)
-    emoji = payload.emoji.strip() if payload.emoji else None
+    title = payload.title.strip()
+    emoji = await asyncio.to_thread(_generate_emoji, title)
     notebook_doc = {
         "owner_id": user["_id"],
-        "title": payload.title.strip(),
-        "description": payload.description.strip() if payload.description else None,
-        "emoji": emoji or DEFAULT_NOTEBOOK_EMOJI,
+        "title": title,
+        "description": None,
+        "emoji": emoji,
         "created_at": now,
         "updated_at": now,
     }

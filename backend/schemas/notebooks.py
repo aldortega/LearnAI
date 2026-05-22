@@ -6,8 +6,6 @@ from pydantic import BaseModel, Field
 
 class NotebookCreate(BaseModel):
     title: str = Field(min_length=1, max_length=120)
-    description: Optional[str] = Field(default=None, max_length=500)
-    emoji: Optional[str] = Field(default=None, max_length=16)
 
 
 class NotebookUpdate(BaseModel):

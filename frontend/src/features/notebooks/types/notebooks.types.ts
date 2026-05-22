@@ -13,8 +13,6 @@ export type Notebook = {
 
 export type NotebookCreate = {
   title: string;
-  description?: string | null;
-  emoji?: string | null;
 };
 
 export type NotebookUpdate = {

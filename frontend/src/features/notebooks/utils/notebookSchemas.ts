@@ -11,12 +11,6 @@ export const notebookCreateSchema = z.object({
     .string()
     .min(1, "El título es obligatorio")
     .max(120, "El título no puede superar los 120 caracteres"),
-  description: z
-    .string()
-    .max(500, "La descripción no puede superar los 500 caracteres")
-    .optional()
-    .nullable(),
-  emoji: notebookEmojiSchema,
 });
 
 export const notebookUpdateSchema = z.object({
