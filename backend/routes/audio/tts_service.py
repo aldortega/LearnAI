@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 TTS_SAMPLE_RATE = 24000
 TTS_CHANNELS = 1
 TTS_SAMPLE_WIDTH = 2  # 16-bit PCM
+TTS_MAX_CHARS_PER_CHUNK = 2200
+TTS_MAX_CONCURRENT_CALLS = 3
 
 
 class TTSResult:
@@ -44,6 +46,33 @@ def _format_script_for_tts(
     for segment in segments:
         lines.append(f"{segment.speaker}: {segment.text}")
     return "\n".join(lines)
+
+
+def _chunk_segments(
+    format_type: AudioFormatType,
+    segments: list[AudioScriptSegment],
+) -> list[list[AudioScriptSegment]]:
+    multi_speaker = is_multi_speaker_format(format_type)
+    chunks: list[list[AudioScriptSegment]] = []
+    current: list[AudioScriptSegment] = []
+    current_chars = 0
+
+    for segment in segments:
+        overhead = (len(segment.speaker) + 2) if multi_speaker else 1
+        segment_cost = len(segment.text) + overhead
+
+        if current and current_chars + segment_cost > TTS_MAX_CHARS_PER_CHUNK:
+            chunks.append(current)
+            current = []
+            current_chars = 0
+
+        current.append(segment)
+        current_chars += segment_cost
+
+    if current:
+        chunks.append(current)
+
+    return chunks
 
 
 def _build_speech_config(format_type: AudioFormatType) -> types.SpeechConfig:
@@ -138,16 +167,28 @@ async def synthesize_script(
             detail="Gemini no configurado: falta GEMINI_API_KEY principal",
         )
 
-    script_text = _format_script_for_tts(format_type, segments)
-    if not script_text.strip():
+    chunks = _chunk_segments(format_type, segments)
+    chunk_scripts = [
+        _format_script_for_tts(format_type, chunk) for chunk in chunks
+    ]
+    chunk_scripts = [script for script in chunk_scripts if script.strip()]
+    if not chunk_scripts:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="El guion del podcast esta vacio",
         )
 
+    semaphore = asyncio.Semaphore(TTS_MAX_CONCURRENT_CALLS)
+
+    async def _synth_one(script_text: str) -> bytes:
+        async with semaphore:
+            return await asyncio.to_thread(
+                _call_tts_sdk, primary_api_key, script_text, format_type
+            )
+
     try:
-        pcm_bytes = await asyncio.to_thread(
-            _call_tts_sdk, primary_api_key, script_text, format_type
+        pcm_chunks = await asyncio.gather(
+            *(_synth_one(script) for script in chunk_scripts)
         )
     except HTTPException:
         raise
@@ -157,12 +198,13 @@ async def synthesize_script(
             detail=f"No se pudo generar el audio del podcast: {exc}",
         ) from exc
 
-    if not pcm_bytes:
+    if any(not pcm for pcm in pcm_chunks):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="El modelo TTS no devolvio audio",
         )
 
+    pcm_bytes = b"".join(pcm_chunks)
     return _wrap_pcm_as_wav(pcm_bytes)
 
 
