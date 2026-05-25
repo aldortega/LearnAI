@@ -93,7 +93,7 @@ export function GeneratePresentationPanel({
                     className={
                       "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
                       (isActive
-                        ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
                       (disabled ? " cursor-not-allowed opacity-60" : "")
                     }
@@ -119,7 +119,7 @@ export function GeneratePresentationPanel({
                 className={
                   "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
                   (generationMode === "text"
-                    ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
                   (disabled ? " cursor-not-allowed opacity-60" : "")
                 }
@@ -134,7 +134,7 @@ export function GeneratePresentationPanel({
                 className={
                   "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
                   (generationMode === "image"
-                    ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground") +
                   (disabled ? " cursor-not-allowed opacity-60" : "")
                 }

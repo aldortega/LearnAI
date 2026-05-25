@@ -220,9 +220,7 @@ export function NotebookAudioPage() {
 
   const blockedReason = !canGenerate
     ? "Necesitas al menos una fuente lista para generar audios."
-    : !selectedFormat
-      ? "Selecciona un formato para generar el podcast."
-      : null;
+    : null;
 
   const headerAction = (
     <button

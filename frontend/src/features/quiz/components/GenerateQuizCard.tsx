@@ -63,7 +63,7 @@ export function GenerateQuizCard({
                     className={
                       "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
                       (isActive
-                        ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground")
                     }
                     aria-pressed={isActive}
@@ -98,7 +98,7 @@ export function GenerateQuizCard({
                     className={
                       "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
                       (isActive
-                        ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-muted-hover/60 hover:text-muted-foreground")
                     }
                     aria-pressed={isActive}

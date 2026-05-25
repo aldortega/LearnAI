@@ -1,7 +1,7 @@
 import { Layers } from "lucide-react";
 import { useState } from "react";
 
-import { TextArea } from "../../../shared/ui/TextArea";
+import { TextField } from "../../../shared/ui/TextField";
 import { Button } from "../../../shared/ui/Button";
 import type {
   FlashcardCountPreset,
@@ -49,6 +49,7 @@ export function GenerateFlashcardsCard({
       difficulty,
       topic_prompt: topicPrompt.trim(),
     });
+    setTopicPrompt("");
   };
 
   const buttonLabel =
@@ -69,77 +70,74 @@ export function GenerateFlashcardsCard({
         </p>
 
         {showConfiguration ? (
-          <div className="mt-6 grid gap-4 rounded-2xl border border-border bg-surface p-4 text-left sm:p-5">
-            <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Numero de tarjetas</p>
-                  <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
-                    {([
-                      { value: "less", label: "Menos" },
-                      { value: "default", label: "Por defecto" },
-                      { value: "more", label: "Mas" },
-                    ] as const).map((option) => {
-                      const isActive = option.value === cardCount;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setCardCount(option.value)}
-                          aria-pressed={isActive}
-                          className={
-                            "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
-                            (isActive
-                              ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
-                              : "text-muted-foreground hover:bg-muted-hover/60")
-                          }
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Dificultad</p>
-                  <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
-                    {([
-                      { value: "easy", label: "Facil" },
-                      { value: "medium", label: "Medio" },
-                      { value: "hard", label: "Dificil" },
-                    ] as const).map((option) => {
-                      const isActive = option.value === difficulty;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setDifficulty(option.value)}
-                          aria-pressed={isActive}
-                          className={
-                            "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
-                            (isActive
-                              ? "bg-surface text-foreground shadow-sm ring-1 ring-black/5 ring-border-strong"
-                              : "text-muted-foreground hover:bg-muted-hover/60")
-                          }
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+          <div className="mt-6 grid gap-4 text-left">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Numero de tarjetas</p>
+                <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+                  {([
+                    { value: "less", label: "Menos" },
+                    { value: "default", label: "Por defecto" },
+                    { value: "more", label: "Mas" },
+                  ] as const).map((option) => {
+                    const isActive = option.value === cardCount;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setCardCount(option.value)}
+                        aria-pressed={isActive}
+                        className={
+                          "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                          (isActive
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:bg-muted-hover/60")
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <TextArea
-                label="Cual deberia ser el tema?"
-                name="topicPrompt"
-                value={topicPrompt}
-                onChange={setTopicPrompt}
-                placeholder="Ej: fundamentos de redes neuronales para principiantes"
-                rows={3}
-              />
-            </>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Dificultad</p>
+                <div className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+                  {([
+                    { value: "easy", label: "Facil" },
+                    { value: "medium", label: "Medio" },
+                    { value: "hard", label: "Dificil" },
+                  ] as const).map((option) => {
+                    const isActive = option.value === difficulty;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setDifficulty(option.value)}
+                        aria-pressed={isActive}
+                        className={
+                          "rounded-lg px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary " +
+                          (isActive
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:bg-muted-hover/60")
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <TextField
+              label="Cual deberia ser el tema?"
+              name="topicPrompt"
+              value={topicPrompt}
+              onChange={setTopicPrompt}
+              placeholder="Ej: fundamentos de redes neuronales para principiantes"
+            />
           </div>
         ) : null}
 

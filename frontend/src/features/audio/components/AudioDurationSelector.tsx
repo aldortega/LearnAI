@@ -15,12 +15,12 @@ const OPTIONS: { value: AudioDuration; label: string; hint: string }[] = [
 
 export function AudioDurationSelector({ value, disabled, onChange }: Props) {
   return (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">Duracion</h3>
+    <div>
+      <p className="text-sm font-semibold text-foreground">Duracion</p>
       <div
         role="radiogroup"
         aria-label="Duracion del podcast"
-        className="inline-flex rounded-xl border border-border bg-surface p-1"
+        className="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1"
       >
         {OPTIONS.map((option) => {
           const isSelected = value === option.value;
@@ -33,27 +33,20 @@ export function AudioDurationSelector({ value, disabled, onChange }: Props) {
               onClick={() => onChange(option.value)}
               disabled={disabled}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-lg px-4 py-2 text-xs font-medium transition",
+                "flex flex-col items-center gap-0.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 isSelected
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted",
+                  : "text-muted-foreground hover:bg-muted-hover/60",
                 disabled && "cursor-not-allowed opacity-60",
               )}
             >
               <span>{option.label}</span>
-              <span
-                className={cn(
-                  "text-[10px] font-normal",
-                  isSelected ? "text-primary-foreground/80" : "text-muted-foreground",
-                )}
-              >
-                {option.hint}
-              </span>
+              <span className="text-[10px] font-normal">{option.hint}</span>
             </button>
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

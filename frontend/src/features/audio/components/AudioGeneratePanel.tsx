@@ -1,7 +1,7 @@
 import { Headphones } from "lucide-react";
 
 import { Button } from "../../../shared/ui/Button";
-import { TextArea } from "../../../shared/ui/TextArea";
+import { TextField } from "../../../shared/ui/TextField";
 import { AudioDurationSelector } from "./AudioDurationSelector";
 import { AudioFormatPicker } from "./AudioFormatPicker";
 import { AudioTopicSuggestions } from "./AudioTopicSuggestions";
@@ -70,17 +70,14 @@ export function AudioGeneratePanel({
         disabled={disabled}
         onChange={onSelectDuration}
       />
-      <section className="space-y-2">
-        <TextArea
-          label="Tema (opcional)"
-          name="podcast-topic"
-          value={topic}
-          onChange={onTopicChange}
-          placeholder="Describe el tema o enfoque del podcast. Si lo dejas vacio, la IA lo inferira de las fuentes."
-          rows={3}
-          inputProps={{ disabled, maxLength: 500 }}
-        />
-      </section>
+      <TextField
+        label="Tema (opcional)"
+        name="podcast-topic"
+        value={topic}
+        onChange={onTopicChange}
+        placeholder="Describe el tema o enfoque del podcast. Si lo dejas vacio, la IA lo inferira de las fuentes."
+        inputProps={{ disabled, maxLength: 500 }}
+      />
       <AudioTopicSuggestions
         suggestions={suggestions}
         disabled={disabled}
@@ -105,7 +102,7 @@ export function AudioGeneratePanel({
           {blockedReason}
         </p>
       ) : null}
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-center pt-2">
         <Button
           variant="primary"
           onClick={onGenerate}
