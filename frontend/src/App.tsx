@@ -161,7 +161,7 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <RequireReadySources>
-                        <NotebookReportsPage routeMode="list" />
+                        <NotebookReportsPage key="reports-list" routeMode="list" />
                       </RequireReadySources>
                     </ProtectedRoute>
                   }
@@ -171,7 +171,7 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <RequireReadySources>
-                        <NotebookReportsPage routeMode="new" />
+                        <NotebookReportsPage key="reports-new" routeMode="new" />
                       </RequireReadySources>
                     </ProtectedRoute>
                   }

@@ -41,6 +41,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
   const hasTriggeredAutoSuggestionsRef = useRef(false);
   const previousReadySignatureRef = useRef<string | null>(null);
   const didNavigateEmptyRef = useRef(false);
+  const routeModeRef = useRef(routeMode);
   const [viewMode, setViewMode] = useState<ReportViewMode>(() =>
     routeMode === "new" ? "templates" : "history",
   );
@@ -143,6 +144,9 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
     clearGenerateSuggestionsError();
   }
 
+  useEffect(() => {
+    routeModeRef.current = routeMode;
+  }, [routeMode]);
   useEffect(() => {
     hasCheckedLatestReportJobRef.current = false;
     hasCheckedLatestSuggestionsJobRef.current = false;
@@ -261,8 +265,10 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
 
     void (async () => {
       const result = await resumeLatest({ suppressFailedError: true });
+      if (routeModeRef.current === "new") return;
       if (result?.status !== "done") return;
       const updatedReports = await reloadReports();
+      if (routeModeRef.current === "new") return;
       if (updatedReports.length === 0) return;
       setViewMode("history");
       setHistoryView("cards");
@@ -506,11 +512,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
   }, [notebookId, navigate]);
   const canReturnToHistory = reports.length > 0;
   const isHeaderActionDisabled =
-    viewMode === "history"
-      ? historyView === "detail"
-        ? false
-        : isGenerating || !canGenerateReports
-      : isGenerating || !canReturnToHistory;
+    viewMode === "templates" && !canReturnToHistory;
   const headerActionLabel =
     viewMode === "history"
       ? historyView === "detail"
