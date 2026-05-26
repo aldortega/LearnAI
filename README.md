@@ -1,156 +1,89 @@
-# 🚀 LearnAI
+# 🌱 LearnAI
 
-**LearnAI** es una plataforma de estudio inteligente que integra **Inteligencia Artificial** y un sistema **RAG (Retrieval-Augmented Generation)** para ayudar a estudiantes a aprender cualquier tema a partir de sus propios materiales.
+**Aprende cualquier tema con IA, a partir de tus propios materiales.**
 
-La aplicación permite crear **espacios de trabajo** donde los usuarios pueden subir archivos fuente y luego interactuar con ese contenido mediante chat con IA, roadmaps de preguntas y generación automática de contenido educativo.
-
----
-
-## 🧠 Problema que resuelve
-
-Muchos estudiantes:
-- Estudian desde múltiples archivos y fuentes
-- No saben qué preguntar ni cómo estructurar su aprendizaje
-- Consumen contenido de forma pasiva sin reforzar conocimientos
-
-**LearnAI** centraliza las fuentes, las transforma en conocimiento interactivo y guía al estudiante con inteligencia artificial contextualizada.
+LearnAI es una plataforma de estudio inteligente que transforma tus documentos, presentaciones y notas en una experiencia de aprendizaje interactiva y personalizada. Sube tus fuentes, y deja que la inteligencia artificial te guíe.
 
 ---
 
-## ✨ Funcionalidades
+## 🧠 ¿Qué es LearnAI?
 
-### 🔐 Autenticación
-- Registro e inicio de sesión
-- Login con Google (OAuth 2.0)
-- Flujo de completar perfil para usuarios OAuth
-- Gestión segura de sesiones con cookies
-- Soporte "recordarme"
+Muchos estudiantes y profesionales estudian desde múltiples archivos dispersos, sin una forma clara de estructurar el conocimiento ni de verificar si realmente lo han comprendido.
 
-### 📂 Gestión de fuentes
-- Subida de archivos:
-  - PDF
-  - DOCX
-  - TXT
-  - PPTX
-- Carga de URLs como fuente de estudio
-- Almacenamiento en la nube (Supabase Storage)
+LearnAI resuelve eso centralizando tus fuentes en **cuadernos de estudio** y convirtiéndolas en un compañero de aprendizaje activo: un chat que responde solo con base en tu material, evaluaciones progresivas, mapas mentales, informes y contenido educativo generado automáticamente.
 
-### 💬 Chat con IA (RAG)
-- Consultas inteligentes basadas **exclusivamente** en las fuentes cargadas
-- Respuestas contextualizadas con referencias a las fuentes
-- Reducción de alucinaciones del modelo
-- Conversación persistente por notebook
-- Streaming de respuestas en tiempo real 
-- Fallback controlado cuando no hay contexto suficiente
+---
 
-### 📝 Quickstart (Resumen y temas)
-- Generación asíncrona de resumen y temas iniciales del material
-- Estados de sincronización: `missing | ready | stale` según huella de fuentes
-- Expansión de temas con cache y referencias a las fuentes originales
+## 🚀 Cómo funciona
 
-### 🧭 Roadmap de aprendizaje
-- Generación automática de preguntas con IA
-- Organización progresiva por niveles (básico, intermedio, avanzado)
-- Aprendizaje guiado tipo *learning path*
-- Quiz por nivel con seguimiento de progreso
-- Múltiples intentos y reset de respuestas
+1. **Crea un cuaderno** de estudio sobre cualquier tema.
+2. **Sube tus fuentes**: PDFs, documentos Word, presentaciones, textos o incluso URLs.
+3. **Explora los modos de estudio** para aprender, evaluarte y profundizar de forma interactiva.
 
-### 📥 Ingesta de documentos
-- Procesamiento en background mediante cola RQ
-- Estados de procesamiento en tiempo real (SSE)
-- Soporte para PDFs, DOCX, PPTX y TXT
+---
 
-### 📄 Informes
-- Generación asíncrona de informes personalizados con IA
-- Selección de tipo de informe (guías, resúmenes extendidos, etc.)
-- Plantillas de generación configurables
-- Historial de informes generados por notebook
-- Sugerencias de formatos con IA
+## ✨ Modos de estudio
+
+### 📝 Inicio Rapido
+Obtén al instante un **resumen inteligente** de todo tu material y una lista de **temas clave** para empezar. Expande cada tema para profundizar con explicaciones generadas por IA y referencias directas a tus fuentes.
+
+### 💬 Chat
+Haz preguntas naturales sobre tu material y recibe respuestas **contextualizadas y con citas** a las fuentes originales. La conversación es persistente y las respuestas se transmiten en tiempo real. Si no hay información suficiente, la IA te lo dice honestamente.
+
+### 🎙️ Chat de voz
+Interactúa con la IA **hablando en lugar de escribir**. Ideal para repasar conceptos mientras caminas o cuando prefieres la conversación oral.
+
+### 🧭 Quiz
+Un **camino de aprendizaje** adaptativo con preguntas organizadas por niveles:
+- **Básico** → **Intermedio** → **Avanzado**
+
+Progresa a tu ritmo, repite niveles las veces que necesites y reinicia tu progreso cuando quieras volver a practicar.
+
+### 🗂️ Flashcards
+Genera **tarjetas de memorización** automáticamente a partir de tus fuentes para reforzar conceptos clave con repetición espaciada.
 
 ### 🗺️ Mapa mental
-- Generación automática de árboles conceptuales con IA
-- Visualización interactiva de nodos y conexiones
-- Detalle de cada nodo con contexto de las fuentes
-- Expansión adaptativa de ramas
+Visualiza la estructura de conocimiento de tu material como un **árbol conceptual interactivo**. Explora nodos, conexiones y detalles de cada concepto, generados automáticamente a partir de tus fuentes.
 
-### 👥 Colaboración en notebooks
-- Invitar colaboradores por nombre de usuario
-- Roles: propietario y colaborador 
-- Sistema de notificaciones para invitaciones
-- Revocar acceso de colaboradores
-- Notebooks compartidos visibles en home
+### 📊 Presentaciones
+La IA genera **diapositivas estructuradas** a partir de tu material para que puedas estudiar o presentar el contenido de forma organizada.
 
-### 🎨 Generación de contenido educativo
-- Infografías explicativas
-- Presentaciones (slides)
-- Podcasts / audios explicativos
-- Contenido generado a partir de las fuentes del usuario
+### 📄 Informes
+Genera **guías de estudio, resúmenes extendidos y documentos personalizados** con IA. Elige el tipo de informe que necesites y consulta tu historial de informes generados por notebook.
 
-### 🖥️ Modos de estudio por Notebook
-- Entorno integrado de estudio con cinco modos:
-  - **Quickstart**: Resumen y temas iniciales
-  - **Chat**: Consulta interactiva con IA
-  - **Quiz**: Evaluación por niveles
-  - **Mindmap**: Mapa mental visual
-  - **Reports**: Informes y guías personalizadas
+### 🔊 Audio / Podcasts
+Convierte tu material en **contenido de audio explicativo** generado por IA. Ideal para estudiar en movimiento o reforzar lo aprendido de forma auditiva.
+
 ---
 
-## 🏗️ Arquitectura general
+## 🤝 Invitaciones y colaboración
 
-LearnAI utiliza una arquitectura moderna orientada a servicios y procesamiento asíncrono:
+Invita a otros usuarios a colaborar en tus notebooks. Recibe notificaciones de invitaciones, acepta o rechaza, y gestiona el acceso de colaboradores en cualquier momento. Los notebooks compartidos aparecen en tu panel principal.
 
-- Frontend (React + TypeScript)
-- Backend API con FastAPI
-- Pipeline RAG con embeddings y búsqueda semántica
-- Procesamiento con Docling 
-- Workers (RQ) para tareas pesadas:
-  - `ingestion`: procesamiento de documentos
-  - `quiz`: generación de roadmaps y preguntas
-  - `quickstart`: generación de resúmenes
-  - `mindmap`: generación de mapas mentales
-  - `reports`: generación de informes
+
+
+## 🏗️ Tecnología detrás de la plataforma
+
+LearnAI se apoya en una arquitectura moderna de **Recuperación Aumentada por Generación (RAG)**:
+
+- **IA generativa** para crear contenido educativo.
+- **Búsqueda semántica** sobre tus fuentes para reducir alucinaciones.
+- **Procesamiento asíncrono** que indexa documentos en segundo plano.
+- **Embeddings y base de datos vectorial** para encontrar exactamente la información relevante de tu material.
 
 ---
 
 ## 🛠️ Stack tecnológico
 
-### Frontend
-- React
-- TypeScript
-- Tailwind CSS 
-
-### Backend
-- FastAPI
-- LangChain
-- Gemini (LLM)
-- RQ (cola de tareas)
-- Pydantic
-- Docling
-
-### Bases de datos y almacenamiento
-- MongoDB – datos de usuarios y espacios de trabajo
-- Qdrant – base de datos vectorial para embeddings
-- Supabase Storage – almacenamiento de archivos
-- Redis – cola de tareas y workers
-
-### Infraestructura
-- Docker
-- Docker Compose
+| Capa | Tecnologías |
+|------|-------------|
+| **Frontend** | React, TypeScript, Tailwind CSS |
+| **Backend** | FastAPI, LangChain, LlamaIndex|
+| **IA** | Gemini |
+| **Bases de datos** | MongoDB, Qdrant, Redis |
+| **Almacenamiento** | Supabase Storage |
+| **Infraestructura** | Docker |
 
 ---
 
-## 🔄 Flujo RAG (alto nivel)
-
-1. El usuario sube archivos o URLs
-2. El backend:
-   - Extrae el texto
-   - Fragmenta el contenido
-   - Genera embeddings
-3. Los embeddings se almacenan en Qdrant
-4. Al realizar una consulta:
-   - Se recuperan los fragmentos más relevantes
-   - Se construye el contexto
-   - El LLM genera la respuesta basada en ese contexto
-
----
-
+> LearnAI convierte tus documentos en conocimiento activo. **Sube, pregunta, evalúa y domina cualquier tema.**
