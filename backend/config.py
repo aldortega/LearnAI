@@ -21,9 +21,12 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = None
     gemini_api_keys: Optional[str] = None
     gemini_rotation_mode: Literal["failover", "per_call"] = "failover"
-    gemini_chat_model: str = "gemini-3.1-flash-lite-preview"
+    gemini_chat_model: str = "gemini-3.1-flash-lite"
     gemini_image_model: str = "gemini-3.1-flash-image-preview"
     gemini_tts_model: str = "gemini-3.1-flash-tts-preview"
+    gemini_live_model: str = "gemini-3.1-flash-live-preview"
+    gemini_live_token_ttl_minutes: int = 30
+    gemini_live_session_start_ttl_seconds: int = 120
     gemini_failover_redis_prefix: str = "learnai:gemini:failover"
     gemini_failover_lock_seconds: int = 3
     rag_top_k: int = 8

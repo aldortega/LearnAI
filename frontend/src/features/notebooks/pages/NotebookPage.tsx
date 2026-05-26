@@ -191,6 +191,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       isGeneratingFlashcards={false}
       canStartAudio={hasReadySources}
       isGeneratingAudio={false}
+      canStartVoice={hasReadySources}
       onGoChat={() => {
         // already on chat
       }}
@@ -221,6 +222,10 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       onGoAudio={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/audio`);
+      }}
+      onGoVoice={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/voice`);
       }}
       beforeMain={
         <input

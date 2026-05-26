@@ -25,6 +25,7 @@ import { NotebookQuickstartTopicPage } from "./features/quickstart/pages/Noteboo
 import { NotebookQuizPage } from "./features/quiz/pages/NotebookQuizPage";
 import { NotebookPresentationsPage } from "./features/presentations/pages/NotebookPresentationsPage";
 import { NotebookReportsPage } from "./features/reports/pages/NotebookReportsPage";
+import { NotebookVoicePage } from "./features/voice-chat/pages/NotebookVoicePage";
 import { useAuth } from "./shared/hooks/useAuth";
 import { ToastProvider } from "./shared/ui/toast/ToastProvider";
 import { NotebookLoadingScreen } from "./shared/ui/NotebookLoadingScreen";
@@ -222,6 +223,16 @@ function App() {
                     <ProtectedRoute>
                       <RequireReadySources>
                         <NotebookMindmapPage />
+                      </RequireReadySources>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebook/:notebookId/voice"
+                  element={
+                    <ProtectedRoute>
+                      <RequireReadySources>
+                        <NotebookVoicePage />
                       </RequireReadySources>
                     </ProtectedRoute>
                   }

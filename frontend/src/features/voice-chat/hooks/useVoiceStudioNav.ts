@@ -13,7 +13,7 @@ type Result = {
   goVoice: () => void;
 };
 
-export function useAudioStudioNav(notebookId?: string): Result {
+export function useVoiceStudioNav(notebookId?: string): Result {
   const navigate = useNavigate();
 
   const goChat = useCallback(() => {

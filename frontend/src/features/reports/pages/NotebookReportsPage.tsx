@@ -578,6 +578,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
       isGeneratingFlashcards={false}
       canStartAudio={hasReadySources}
       isGeneratingAudio={false}
+      canStartVoice={hasReadySources}
       onGoChat={handleStudioNavChat}
       onGoQuiz={handleStudioNavQuiz}
       onGoQuickstart={handleStudioNavQuickstart}
@@ -586,6 +587,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
       onGoMindmap={handleStudioNavMindmap}
       onGoFlashcards={handleStudioNavFlashcards}
       onGoAudio={() => notebookId && navigate(`/notebook/${notebookId}/audio`)}
+      onGoVoice={() => notebookId && navigate(`/notebook/${notebookId}/voice`)}
       beforeMain={
         <input
           ref={fileInputRef}

@@ -272,6 +272,7 @@ export function NotebookAudioPage() {
       isGeneratingFlashcards={false}
       canStartAudio={hasReadySources}
       isGeneratingAudio={isGenerating}
+      canStartVoice={hasReadySources}
       onGoChat={nav.goChat}
       onGoQuiz={nav.goQuiz}
       onGoQuickstart={nav.goQuickstart}
@@ -280,6 +281,7 @@ export function NotebookAudioPage() {
       onGoMindmap={nav.goMindmap}
       onGoFlashcards={nav.goFlashcards}
       onGoAudio={nav.goAudio}
+      onGoVoice={nav.goVoice}
       beforeMain={
         <input
           ref={fileInputRef}

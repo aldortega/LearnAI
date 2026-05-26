@@ -249,6 +249,7 @@ export function NotebookQuickstartPage() {
       isGeneratingFlashcards={false}
       canStartAudio={hasReadySources}
       isGeneratingAudio={false}
+      canStartVoice={hasReadySources}
       onGoChat={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/chat`);
@@ -279,6 +280,10 @@ export function NotebookQuickstartPage() {
       onGoAudio={() => {
         if (!notebookId) return;
         navigate(`/notebook/${notebookId}/audio`);
+      }}
+      onGoVoice={() => {
+        if (!notebookId) return;
+        navigate(`/notebook/${notebookId}/voice`);
       }}
       beforeMain={
         <input

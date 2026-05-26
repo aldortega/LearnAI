@@ -145,6 +145,7 @@ export function NotebookFlashcardsPage() {
       isGeneratingFlashcards={isGenerating}
       canStartAudio={hasReadySources}
       isGeneratingAudio={false}
+      canStartVoice={hasReadySources}
       onGoChat={() => notebookId && navigate(`/notebook/${notebookId}/chat`)}
       onGoQuiz={() => notebookId && navigate(`/notebook/${notebookId}/quiz`)}
       onGoQuickstart={() => notebookId && navigate(`/notebook/${notebookId}/quickstart`)}
@@ -155,6 +156,7 @@ export function NotebookFlashcardsPage() {
       onGoMindmap={() => notebookId && navigate(`/notebook/${notebookId}/mindmap`)}
       onGoFlashcards={() => undefined}
       onGoAudio={() => notebookId && navigate(`/notebook/${notebookId}/audio`)}
+      onGoVoice={() => notebookId && navigate(`/notebook/${notebookId}/voice`)}
       beforeMain={
         <input
           ref={fileInputRef}
