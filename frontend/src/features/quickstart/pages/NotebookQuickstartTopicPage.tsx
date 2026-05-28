@@ -53,12 +53,7 @@ export function NotebookQuickstartTopicPage() {
     error: quickstartError,
     reload: reloadQuickstart,
   } = useQuickstart(notebookId);
-  const {
-    generate,
-    isGenerating,
-    error: generateError,
-    clearError: clearGenerateError,
-  } = useGenerateQuickstart(notebookId);
+  const { isGenerating, error: generateError } = useGenerateQuickstart(notebookId);
 
   const topic = useMemo(
     () => quickstart?.topics.find((item) => item.id === topicId) ?? null,
@@ -196,15 +191,6 @@ export function NotebookQuickstartTopicPage() {
     }
   };
 
-  const handleGenerateQuickstart = async () => {
-    if (!notebookId) return;
-    clearGenerateError();
-    const result = await generate();
-    if (!result) return;
-    await reloadQuickstart();
-    navigate(`/notebook/${notebookId}/quickstart`, { replace: true });
-  };
-
   const handleSelectDetail = (
     itemType: "additional_key_point" | "question",
     itemText: string,
@@ -309,16 +295,14 @@ export function NotebookQuickstartTopicPage() {
       }
     >
       <QuickstartShell
-        showRefreshAction={Boolean(quickstart && quickstart.status !== "missing")}
-        canRefresh={hasReadySources}
-        isRefreshing={isGenerating}
-        onRefresh={() => {
-          void handleGenerateQuickstart();
+        onBack={() => {
+          if (!notebookId) return;
+          navigate(`/notebook/${notebookId}/quickstart`);
         }}
       >
         {isQuickstartLoading && !quickstart ? (
           <div className="mx-auto flex h-full w-full max-w-4xl items-center justify-center px-6">
-            <p className="text-sm text-foreground/75">Cargando inicio rapido...</p>
+            <p className="text-sm text-foreground/75">Cargando inicio rápido…</p>
           </div>
         ) : showTopicView && topic ? (
           <QuickstartTopicDetailView
@@ -338,7 +322,7 @@ export function NotebookQuickstartTopicPage() {
           <div className="mx-auto flex h-full w-full max-w-4xl items-center justify-center px-6">
             <div className="space-y-4 rounded-2xl border border-border bg-surface p-6 text-center shadow-sm">
               <p className="text-sm text-foreground/75" role={combinedError ? "alert" : undefined}>
-                {combinedError ?? "No se encontro el tema solicitado."}
+                {combinedError ?? "No se encontró el tema solicitado."}
               </p>
               <Button
                 variant="ghost"
@@ -348,7 +332,7 @@ export function NotebookQuickstartTopicPage() {
                   navigate(`/notebook/${notebookId}/quickstart`, { replace: true });
                 }}
               >
-                Volver a quickstart
+                Volver al inicio rápido
               </Button>
             </div>
           </div>
