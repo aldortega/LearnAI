@@ -44,12 +44,17 @@ export function QuickstartTopicSuggestions({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-md font-bold text-foreground">
-          Temas sugeridos
-        </h2>
-        <div className="flex items-center gap-2">
+    <section className="flex flex-col gap-4">
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
+            Temas sugeridos
+          </h3>
+          <p className="text-xs text-foreground/65">
+            Ideas extra a partir de tus fuentes. Toca una para añadirla a tus temas.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             aria-label="Actualizar sugerencias"
@@ -64,27 +69,33 @@ export function QuickstartTopicSuggestions({
           </button>
           <button
             type="button"
-            aria-label="Agregar tema personalizado"
-            title="Agregar tema"
+            title="Agregar tema personalizado"
             disabled={isDisabled}
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full cursor-pointer bg-muted text-foreground/80 transition hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground/80 transition hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
+            <span>Agregar tema</span>
           </button>
         </div>
       </div>
 
-      <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="flex flex-col gap-3">
         {isStale ? (
           <p className="text-xs text-warning" role="alert">
-            Regenera el inicio rapido para agregar nuevos temas.
+            Regenera el inicio rápido para agregar nuevos temas.
+          </p>
+        ) : null}
+
+        {!isStale && remaining > 0 ? (
+          <p className="text-[11px] font-medium tabular-nums text-muted-foreground/70">
+            {remaining} de {topicLimit} disponibles
           </p>
         ) : null}
 
         {!isStale && remaining <= 0 ? (
           <p className="text-xs text-foreground/75" role="alert">
-            Alcanzaste el limite de temas para esta notebook.
+            Alcanzaste el límite de temas para esta notebook.
           </p>
         ) : null}
 
@@ -118,7 +129,7 @@ export function QuickstartTopicSuggestions({
                     void onAddTopic(suggestion, "suggestion");
                   }}
                   disabled={isDisabled}
-                  className="cursor-pointer rounded-full  bg-muted px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:border-primary/40 hover:bg-muted-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                  className="cursor-pointer rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-foreground/80 transition hover:border-primary/40 hover:bg-muted-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {suggestion}
                 </button>
@@ -127,15 +138,16 @@ export function QuickstartTopicSuggestions({
           )}
         </div>
 
-        <AddQuickstartTopicModal
-          isOpen={isAddModalOpen}
-          isAdding={isAdding}
-          isDisabled={isDisabled}
-          error={error}
-          onCancel={() => setIsAddModalOpen(false)}
-          onConfirm={handleConfirmCustomTopic}
-        />
-      </section>
-    </div>
+      </div>
+
+      <AddQuickstartTopicModal
+        isOpen={isAddModalOpen}
+        isAdding={isAdding}
+        isDisabled={isDisabled}
+        error={error}
+        onCancel={() => setIsAddModalOpen(false)}
+        onConfirm={handleConfirmCustomTopic}
+      />
+    </section>
   );
 }

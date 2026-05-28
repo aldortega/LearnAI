@@ -1,4 +1,4 @@
-﻿import { Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { Button } from "../../../shared/ui/Button";
 
@@ -23,10 +23,12 @@ export function QuickstartEmptyState({
         </div>
 
         <h2 className="mt-4 text-lg font-semibold text-foreground">
-          {isGenerating ? "Generando inicio rápido..." : "Todavía no hay inicio rápido"}
+          {isGenerating ? "Generando inicio rápido…" : "Todavía no hay inicio rápido"}
         </h2>
-        <p className="mt-2 text-sm text-foreground/75">
-          Genera un resumen de temas para presentar tu notebook rapidamente.
+        <p className="mx-auto mt-2 max-w-md text-sm text-foreground/75">
+          {canGenerate
+            ? "Crea un resumen y una lista de temas a partir de tus fuentes para empezar a estudiar más rápido."
+            : "Sube al menos un documento (PDF, DOCX, TXT o PPTX) y espera a que aparezca como Listo para generar tu inicio rápido."}
         </p>
 
         {error ? (
@@ -40,7 +42,7 @@ export function QuickstartEmptyState({
 
         <div className="mt-6 flex justify-center">
           <Button onClick={onGenerate} disabled={!canGenerate} loading={isGenerating}>
-            Generar inicio rapido
+            Generar inicio rápido
           </Button>
         </div>
 
@@ -53,4 +55,3 @@ export function QuickstartEmptyState({
     </div>
   );
 }
-
