@@ -2,6 +2,9 @@ export type ChatRole = "user" | "assistant";
 
 export type ChatSource = {
   file_name: string;
+  index?: number | null;
+  page?: number | null;
+  snippet?: string | null;
 };
 
 export type ChatConversation = {

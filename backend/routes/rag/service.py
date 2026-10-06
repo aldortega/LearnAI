@@ -54,19 +54,24 @@ def message_to_out(message: dict) -> ChatMessageOut:
 
 
 def build_source_summaries(sources: list[RagSource]) -> list[dict]:
-    seen: set[str] = set()
     summaries: list[dict] = []
-    for source in sources:
-        file_name = source.file_name
-        if not file_name or file_name in seen:
-            continue
-        seen.add(file_name)
-        summaries.append({"file_name": file_name})
+    for position, source in enumerate(sources, start=1):
+        summaries.append(
+            {
+                "file_name": source.file_name or "Documento",
+                "index": position,
+                "page": source.page,
+                "snippet": source.text.strip(),
+            }
+        )
     return summaries
 
 
 def build_prompt_messages(
-    context_lines: list[str], question: str, include_notice: bool = True
+    context_lines: list[str],
+    question: str,
+    include_notice: bool = True,
+    cite: bool = False,
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Usa el contexto como fuente principal. "
@@ -81,6 +86,16 @@ def build_prompt_messages(
         system_prompt += (
             "Si el contexto esta vacio, responde solo con conocimiento general."
         )
+    if cite and context_lines:
+        system_prompt += (
+            " Los fragmentos del contexto estan numerados como [1], [2], etc. "
+            "Cuando una afirmacion provenga de un fragmento, cita su numero entre "
+            "corchetes al final de la frase, por ejemplo [1] o [1][3]. "
+            "No inventes numeros que no existan y no cites cuando uses conocimiento general."
+        )
+        context_lines = [
+            f"[{position}] {line}" for position, line in enumerate(context_lines, start=1)
+        ]
     context_text = "\n\n".join(context_lines).strip()
     if context_text:
         user_prompt = "Contexto:\n" + context_text + "\n\nPregunta:\n" + question
@@ -376,10 +391,12 @@ async def retrieve_context(
     return context_lines, sources, document_ids, selected_top_k
 
 
-async def generate_answer(question: str, context_lines: list[str]) -> str:
+async def generate_answer(
+    question: str, context_lines: list[str], cite: bool = False
+) -> str:
     include_notice = bool(context_lines)
     system_message, user_message = build_prompt_messages(
-        context_lines, question, include_notice=include_notice
+        context_lines, question, include_notice=include_notice, cite=cite
     )
     llm = create_llm()
     answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
@@ -390,7 +407,9 @@ async def generate_answer(question: str, context_lines: list[str]) -> str:
 
 
 async def stream_answer(question: str, context_lines: list[str]):
-    system_message, user_message = build_prompt_messages(context_lines, question)
+    system_message, user_message = build_prompt_messages(
+        context_lines, question, cite=True
+    )
     llm = create_llm()
 
     if hasattr(llm, "astream"):
@@ -469,7 +488,7 @@ async def run_rag_query(
     context_lines, sources, document_ids, selected_top_k = await retrieve_context(
         question, notebook_object_id, user, top_k
     )
-    answer_text = await generate_answer(question, context_lines)
+    answer_text = await generate_answer(question, context_lines, cite=True)
     latency_ms = await record_rag_query(
         start, question, notebook_object_id, user, document_ids, selected_top_k, sources
     )

@@ -32,6 +32,9 @@ class ConversationOut(BaseModel):
 
 class ChatMessageSource(BaseModel):
     file_name: str
+    index: Optional[int] = None
+    page: Optional[int] = None
+    snippet: Optional[str] = None
 
 
 class ChatMessageCreate(BaseModel):
