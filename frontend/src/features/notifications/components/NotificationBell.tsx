@@ -149,7 +149,7 @@ export function NotificationBell() {
               <p className="px-2 py-4 text-sm text-muted-foreground">Cargando...</p>
             ) : items.length === 0 ? (
               <p className="px-2 py-4 text-sm text-muted-foreground">
-                No tienes invitaciones nuevas.
+                No tenés invitaciones nuevas.
               </p>
             ) : (
               <ul className="space-y-2">
