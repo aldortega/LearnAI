@@ -8,12 +8,12 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-import type { ChatSource } from "../types/chat.types";
-import { cleanSnippet } from "../utils/citations";
+import type { CitableSource } from "../lib/citations";
+import { cleanSnippet } from "../lib/citations";
 
 type Props = {
   label: number;
-  source: ChatSource | null;
+  source: CitableSource | null;
 };
 
 const POPOVER_WIDTH = 320;
@@ -51,6 +51,7 @@ export function CitationChip({ label, source }: Props) {
   const closeTimerRef = useRef<number | null>(null);
   const popoverId = useId();
   const isOpen = popoverStyle !== null;
+  const fileName = source?.file_name ?? "Documento";
 
   const cancelClose = useCallback(() => {
     if (closeTimerRef.current === null) return;
@@ -110,7 +111,7 @@ export function CitationChip({ label, source }: Props) {
         className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/10 px-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         aria-expanded={isOpen}
         aria-describedby={isOpen ? popoverId : undefined}
-        aria-label={`Fuente ${label}: ${source.file_name}`}
+        aria-label={`Fuente ${label}: ${fileName}`}
         onClick={isOpen ? close : open}
         onFocus={open}
         onBlur={scheduleClose}
@@ -128,7 +129,7 @@ export function CitationChip({ label, source }: Props) {
               onMouseLeave={scheduleClose}
               className="fixed z-[1000] flex flex-col rounded-xl border border-border bg-surface p-3 text-left text-xs font-normal leading-relaxed text-foreground shadow-xl"
             >
-              <p className="shrink-0 break-words text-sm font-semibold leading-snug">{source.file_name}</p>
+              <p className="shrink-0 break-words text-sm font-semibold leading-snug">{fileName}</p>
               {source.page ? (
                 <p className="mt-0.5 shrink-0 text-muted-foreground">Página {source.page}</p>
               ) : null}

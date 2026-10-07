@@ -9,8 +9,8 @@ import {
 
 import type { ChatMessage } from "../types/chat.types";
 import { Button } from "../../../shared/ui/Button";
+import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { cn } from "../../../shared/lib/cn";
-import { ChatMarkdown } from "./ChatMarkdown";
 import { ClearChatModal } from "./ClearChatModal";
 
 type Props = {
@@ -210,7 +210,7 @@ export function ChatArea({
                     >
                       {isAssistant ? (
                         <div className="text-sm leading-relaxed">
-                          <ChatMarkdown
+                          <MarkdownWithCitations
                             content={message.content}
                             sources={message.sources}
                           />
@@ -230,7 +230,7 @@ export function ChatArea({
                 <div className="flex flex-col items-start">
                   <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground shadow-sm">
                     <div className="text-sm leading-relaxed">
-                      <ChatMarkdown content={streamingContent} sources={[]} />
+                      <MarkdownWithCitations content={streamingContent} sources={[]} />
                     </div>
                   </div>
                 </div>

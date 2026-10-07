@@ -1,20 +1,20 @@
 import { useMemo, type ComponentProps } from "react";
 import { Streamdown } from "streamdown";
 
-import type { ChatSource } from "../types/chat.types";
+import type { CitableSource } from "../lib/citations";
 import {
   findSourceByIndex,
   linkifyCitations,
   parseCitation,
-} from "../utils/citations";
+} from "../lib/citations";
 import { CitationChip } from "./CitationChip";
 
 type Props = {
   content: string;
-  sources: ChatSource[];
+  sources: CitableSource[];
 };
 
-export function ChatMarkdown({ content, sources }: Props) {
+export function MarkdownWithCitations({ content, sources }: Props) {
   const components = useMemo(
     () => ({
       a: ({ href, children, ...rest }: ComponentProps<"a">) => {

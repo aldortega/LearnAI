@@ -1,4 +1,9 @@
-import type { ChatSource } from "../types/chat.types";
+export type CitableSource = {
+  file_name?: string | null;
+  index?: number | null;
+  page?: number | null;
+  snippet?: string | null;
+};
 
 const CITATION_PATTERN = /\[(\d{1,3})\](?!\()/g;
 const CITATION_HREF_PREFIX = "#cite-";
@@ -35,8 +40,8 @@ export function parseCitation(href: string | undefined): ParsedCitation | null {
 }
 
 export function findSourceByIndex(
-  sources: ChatSource[],
+  sources: CitableSource[],
   index: number,
-): ChatSource | null {
+): CitableSource | null {
   return sources.find((source) => source.index === index) ?? null;
 }
