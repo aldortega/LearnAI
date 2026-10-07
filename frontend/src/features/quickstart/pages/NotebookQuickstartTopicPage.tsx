@@ -307,6 +307,7 @@ export function NotebookQuickstartTopicPage() {
         ) : showTopicView && topic ? (
           <QuickstartTopicDetailView
             topic={topic}
+            sources={quickstart?.sources ?? []}
             isStale={Boolean(isStale)}
             expansion={expansion}
             isExpansionLoading={isExpansionLoading}

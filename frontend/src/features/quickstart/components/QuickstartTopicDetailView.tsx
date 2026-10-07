@@ -1,16 +1,16 @@
 import { ChevronDown } from "lucide-react";
-import { Streamdown } from "streamdown";
 
 import { Spinner } from "../../../shared/ui/Spinner";
+import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import type {
   QuickstartDetailItemType,
   QuickstartExpansionOut,
+  QuickstartSourceRef,
   QuickstartTopic,
   QuickstartTopicDetailOut,
 } from "../types/quickstart.types";
 import { normalizeMarkdown } from "../utils/markdown";
 import { resolveTopicEmoji } from "../utils/topicEmoji";
-import { QuickstartQuestionsExplorer } from "./QuickstartQuestionsExplorer";
 
 type SelectedDetail = {
   itemType: QuickstartDetailItemType;
@@ -19,6 +19,7 @@ type SelectedDetail = {
 
 type Props = {
   topic: QuickstartTopic;
+  sources: QuickstartSourceRef[];
   isStale: boolean;
   expansion: QuickstartExpansionOut | null;
   isExpansionLoading: boolean;
@@ -42,6 +43,7 @@ const markdownInlineClass =
 
 export function QuickstartTopicDetailView({
   topic,
+  sources,
   isStale,
   expansion,
   isExpansionLoading,
@@ -58,8 +60,8 @@ export function QuickstartTopicDetailView({
   const shouldShowExpansionSkeleton =
     !isStale && !expansion && !expansionError;
 
-  const isPointSelected = (itemText: string) => {
-    if (!selectedDetail || selectedDetail.itemType !== "additional_key_point") {
+  const isItemSelected = (itemType: QuickstartDetailItemType, itemText: string) => {
+    if (!selectedDetail || selectedDetail.itemType !== itemType) {
       return false;
     }
     return (
@@ -70,30 +72,31 @@ export function QuickstartTopicDetailView({
 
   const topicEmoji = resolveTopicEmoji(topic.emoji);
 
-  const renderPointsList = () => {
-    if (additionalPoints.length === 0) {
-      return (
-        <p className="text-sm text-foreground/75">
-          No hay puntos adicionales para este tema.
-        </p>
-      );
+  const renderAccordionList = (
+    items: string[],
+    itemType: QuickstartDetailItemType,
+    idPrefix: string,
+    emptyMessage: string,
+  ) => {
+    if (items.length === 0) {
+      return <p className="text-sm text-foreground/75">{emptyMessage}</p>;
     }
     return (
       <ol className="flex flex-col border-t border-border">
-        {additionalPoints.map((point, index) => {
-          const active = isPointSelected(point);
+        {items.map((point, index) => {
+          const active = isItemSelected(itemType, point);
           const numeral = String(index + 1).padStart(2, "0");
-          const panelId = `${topic.id}-additional-point-${index}-panel`;
+          const panelId = `${topic.id}-${idPrefix}-${index}-panel`;
           return (
             <li
-              key={`${topic.id}-additional-point-${index}`}
+              key={`${topic.id}-${idPrefix}-${index}`}
               className="border-b border-border"
             >
               <button
                 type="button"
                 aria-expanded={active}
                 aria-controls={panelId}
-                onClick={() => onSelectDetail("additional_key_point", point)}
+                onClick={() => onSelectDetail(itemType, point)}
                 className={`group flex w-full cursor-pointer items-start gap-4 py-4 text-left transition ${active ? "" : "hover:bg-muted/40"}`}
               >
                 <span
@@ -105,7 +108,10 @@ export function QuickstartTopicDetailView({
                 <span
                   className={`min-w-0 flex-1 ${active ? "font-semibold text-foreground" : "text-foreground/90"} ${markdownInlineClass}`}
                 >
-                  <Streamdown>{normalizeMarkdown(point)}</Streamdown>
+                  <MarkdownWithCitations
+                    content={normalizeMarkdown(point)}
+                    sources={expansion?.sources ?? []}
+                  />
                 </span>
                 <ChevronDown
                   className={`mt-1 h-4 w-4 shrink-0 transition-transform duration-200 ${active ? "rotate-180 text-primary" : "text-muted-foreground"}`}
@@ -135,7 +141,10 @@ export function QuickstartTopicDetailView({
                         ) : null}
                         {!isDetailLoading && !detailError && detail && isDetailReady ? (
                           <div className={markdownBlockClass}>
-                            <Streamdown>{normalizeMarkdown(detail.content)}</Streamdown>
+                            <MarkdownWithCitations
+                              content={normalizeMarkdown(detail.content)}
+                              sources={detail.sources}
+                            />
                           </div>
                         ) : null}
                       </>
@@ -164,7 +173,10 @@ export function QuickstartTopicDetailView({
           </div>
           {topic.summary?.trim() ? (
             <div className={`max-w-[68ch] ${markdownBlockClass} text-[15px]`}>
-              <Streamdown>{normalizeMarkdown(topic.summary)}</Streamdown>
+              <MarkdownWithCitations
+                content={normalizeMarkdown(topic.summary)}
+                sources={sources}
+              />
             </div>
           ) : null}
         </header>
@@ -187,7 +199,10 @@ export function QuickstartTopicDetailView({
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div className={`min-w-0 flex-1 leading-6 ${markdownInlineClass}`}>
-                    <Streamdown>{normalizeMarkdown(point)}</Streamdown>
+                    <MarkdownWithCitations
+                      content={normalizeMarkdown(point)}
+                      sources={sources}
+                    />
                   </div>
                 </li>
               ))}
@@ -224,7 +239,10 @@ export function QuickstartTopicDetailView({
           <>
             {expansion.content.trim() ? (
               <section className={`max-w-[68ch] ${markdownBlockClass} text-[15px]`}>
-                <Streamdown>{normalizeMarkdown(expansion.content)}</Streamdown>
+                <MarkdownWithCitations
+                  content={normalizeMarkdown(expansion.content)}
+                  sources={expansion.sources}
+                />
               </section>
             ) : null}
 
@@ -239,7 +257,12 @@ export function QuickstartTopicDetailView({
                   </span>
                 ) : null}
               </div>
-              {renderPointsList()}
+              {renderAccordionList(
+                additionalPoints,
+                "additional_key_point",
+                "additional-point",
+                "No hay puntos adicionales para este tema.",
+              )}
             </section>
 
             <section className="flex flex-col gap-4">
@@ -253,15 +276,12 @@ export function QuickstartTopicDetailView({
                   </span>
                 ) : null}
               </div>
-              <QuickstartQuestionsExplorer
-                questions={suggestedQuestions}
-                selectedDetail={selectedDetail}
-                detail={detail}
-                isDetailLoading={isDetailLoading}
-                isDetailReady={isDetailReady}
-                detailError={detailError}
-                onSelect={(text) => onSelectDetail("question", text)}
-              />
+              {renderAccordionList(
+                suggestedQuestions,
+                "question",
+                "question",
+                "No hay preguntas sugeridas para este tema.",
+              )}
             </section>
           </>
         ) : null}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
-import { Streamdown } from "streamdown";
 
 import { swrKeys } from "../../../shared/lib/swrKeys";
+import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { normalizeMarkdown } from "../utils/markdown";
 import type { QuickstartOut, QuickstartTopic } from "../types/quickstart.types";
 import { useAddQuickstartTopic } from "../hooks/useAddQuickstartTopic";
@@ -173,7 +173,10 @@ export function QuickstartOverview({
             Resumen
           </h2>
           <div className="max-w-[68ch] text-[15px] leading-7 text-foreground/90 [&_p]:my-2 [&_strong]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1">
-            <Streamdown>{normalizeMarkdown(displaySummary)}</Streamdown>
+            <MarkdownWithCitations
+              content={normalizeMarkdown(displaySummary)}
+              sources={quickstart.sources}
+            />
           </div>
         </section>
 
@@ -184,7 +187,7 @@ export function QuickstartOverview({
                 Temas principales
               </h2>
               <p className="text-xs text-foreground/65">
-                Generados automáticamente desde tus fuentes. Abre uno para profundizar.
+                Generados automáticamente desde tus fuentes. Abrí uno para profundizar.
               </p>
             </div>
             {topicCount > 0 ? (
