@@ -19,6 +19,15 @@ export const flashcardsApi = {
     });
   },
 
+  deleteSet: async (notebookId: string, setId: string): Promise<void> => {
+    await apiRequest<void>(
+      `/notebooks/${notebookId}/flashcards/sets/${encodeURIComponent(setId)}`,
+      {
+        method: "DELETE",
+      },
+    );
+  },
+
   generate: async (
     notebookId: string,
     payload?: FlashcardsGenerateRequest,

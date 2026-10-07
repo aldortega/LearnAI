@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNotebook } from "../../notebooks";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
+import { DeleteFlashcardSetModal } from "../components/DeleteFlashcardSetModal";
 import { FlashcardSetsList } from "../components/FlashcardSetsList";
 import { GenerateFlashcardsCard } from "../components/GenerateFlashcardsCard";
 import { FlashcardsShell } from "../components/FlashcardsShell";
 import { FlashcardsStudyView } from "../components/FlashcardsStudyView";
 import { useFlashcardsNotebookSources } from "../hooks/useFlashcardsNotebookSources";
+import { useDeleteFlashcardSet } from "../hooks/useDeleteFlashcardSet";
 import { useGenerateFlashcards } from "../hooks/useGenerateFlashcards";
 import { useFlashcards } from "../hooks/useFlashcards";
 import type { FlashcardsGenerateRequest } from "../types/flashcards.types";
@@ -23,6 +25,7 @@ export function NotebookFlashcardsPage() {
   const [selectedSetId, setSelectedSetId] = useState<string | null>(null);
   const [studyEntry, setStudyEntry] = useState<"first" | "last">("first");
   const [generateSessionToken, setGenerateSessionToken] = useState(0);
+  const [setToDeleteId, setSetToDeleteId] = useState<string | null>(null);
 
   const {
     fileInputRef,
@@ -50,6 +53,13 @@ export function NotebookFlashcardsPage() {
     error: generateError,
     clearError: clearGenerateError,
   } = useGenerateFlashcards(notebookId);
+
+  const {
+    deleteSet,
+    isDeleting: isDeletingSet,
+    error: deleteSetError,
+    clearError: clearDeleteSetError,
+  } = useDeleteFlashcardSet(notebookId);
 
   useEffect(() => {
     hasCheckedLatestJobRef.current = false;
@@ -110,6 +120,11 @@ export function NotebookFlashcardsPage() {
     selectedSetIndex > 0
       ? sets[selectedSetIndex - 1].set_id
       : null;
+
+  const setToDelete = useMemo(
+    () => sets.find((setItem) => setItem.set_id === setToDeleteId) ?? null,
+    [setToDeleteId, sets],
+  );
 
   const combinedError = generateError ?? flashcardsError;
 
@@ -175,6 +190,23 @@ export function NotebookFlashcardsPage() {
             onCancel={() => setDeleteTarget(null)}
             onConfirm={handleDeleteConfirm}
           />
+          <DeleteFlashcardSetModal
+            isOpen={Boolean(setToDelete)}
+            setTitle={setToDelete?.set_title}
+            isDeleting={isDeletingSet}
+            error={deleteSetError}
+            onCancel={() => setSetToDeleteId(null)}
+            onConfirm={() => {
+              if (!setToDelete) return;
+              void (async () => {
+                const ok = await deleteSet(setToDelete.set_id);
+                if (!ok) return;
+                setSetToDeleteId(null);
+                if (selectedSetId === setToDelete.set_id) setSelectedSetId(null);
+                await reloadFlashcards();
+              })();
+            }}
+          />
         </>
       }
     >
@@ -224,6 +256,10 @@ export function NotebookFlashcardsPage() {
         ) : effectiveViewMode === "sets" || !selectedSet ? (
           <FlashcardSetsList
             sets={sets}
+            onDeleteSet={(setId) => {
+              clearDeleteSetError();
+              setSetToDeleteId(setId);
+            }}
             onSelectSet={(setId) => {
               setStudyEntry("first");
               setSelectedSetId(setId);
