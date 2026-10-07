@@ -7,6 +7,7 @@ from ...rq_queue import quickstart_queue
 from ...schemas.quickstart import (
     QuickstartGenerationJobOut,
     QuickstartOut,
+    QuickstartSourceRef,
     QuickstartSuggestionsOut,
     QuickstartTopicOut,
 )
@@ -42,6 +43,7 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
     status_value: str = "missing"
     notebook_summary = ""
     topics_out: list[QuickstartTopicOut] = []
+    sources_out: list[QuickstartSourceRef] = []
     generated_at: datetime | None = None
 
     if summary:
@@ -58,6 +60,11 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
             notebook["title"],
             topics_list,
         )
+        sources_out = [
+            QuickstartSourceRef(**source)
+            for source in summary.get("sources", [])
+            if isinstance(source, dict)
+        ]
         generated_at = summary.get("updated_at") or summary.get("created_at")
 
     return QuickstartOut(
@@ -71,6 +78,7 @@ async def get_quickstart(notebook_id: str, request: Request) -> QuickstartOut:
         generated_at=generated_at,
         notebook_summary=notebook_summary,
         topics=topics_out,
+        sources=sources_out,
     )
 
 

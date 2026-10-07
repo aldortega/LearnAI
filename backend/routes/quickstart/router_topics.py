@@ -7,6 +7,7 @@ from ...schemas.quickstart import (
     QuickstartAddTopicRequest,
     QuickstartExpansionOut,
     QuickstartReorderTopicsRequest,
+    QuickstartSourceRef,
     QuickstartTopicDetailOut,
     QuickstartTopicDetailRequest,
     QuickstartTopicOut,
@@ -26,6 +27,7 @@ from .service import (
     normalize_item_text,
     normalize_topic_title,
     resolve_quickstart_topic_context,
+    sources_to_refs,
     topic_to_out,
 )
 
@@ -330,9 +332,14 @@ async def get_quickstart_topic_detail(
             item_type=payload.item_type,
             item_text=coerce_text(cached_detail.get("item_text")) or resolved_item_text,
             content=coerce_text(cached_detail.get("content")),
+            sources=[
+                QuickstartSourceRef(**source)
+                for source in cached_detail.get("sources", [])
+                if isinstance(source, dict)
+            ],
         )
 
-    content = await generate_topic_item_detail(
+    content, sources = await generate_topic_item_detail(
         notebook_title=coerce_text(notebook.get("title")),
         topic_title=coerce_text(topic.get("title")),
         item_type=payload.item_type,
@@ -340,6 +347,7 @@ async def get_quickstart_topic_detail(
         notebook_object_id=notebook["_id"],
         user=user,
     )
+    sources_out = sources_to_refs(sources)
     now = datetime.now(timezone.utc)
     await db.quickstart_topic_details.update_one(
         detail_filter,
@@ -353,6 +361,7 @@ async def get_quickstart_topic_detail(
                 "item_text": resolved_item_text,
                 "sources_fingerprint": fingerprint,
                 "content": content,
+                "sources": [source.model_dump() for source in sources_out],
                 "updated_at": now,
             },
             "$setOnInsert": {"created_at": now},
@@ -365,4 +374,5 @@ async def get_quickstart_topic_detail(
         item_type=payload.item_type,
         item_text=resolved_item_text,
         content=content,
+        sources=sources_out,
     )

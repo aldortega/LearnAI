@@ -12,6 +12,16 @@ class QuickstartTopicOut(BaseModel):
     key_points: list[str] = Field(default_factory=list)
 
 
+class QuickstartSourceRef(BaseModel):
+    document_id: str
+    chunk_id: int
+    score: float
+    file_name: Optional[str] = None
+    page: Optional[int] = None
+    index: Optional[int] = None
+    snippet: Optional[str] = None
+
+
 class QuickstartOut(BaseModel):
     notebook_id: str
     has_ready_sources: bool
@@ -19,6 +29,7 @@ class QuickstartOut(BaseModel):
     generated_at: Optional[datetime] = None
     notebook_summary: str = ""
     topics: list[QuickstartTopicOut] = Field(default_factory=list)
+    sources: list[QuickstartSourceRef] = Field(default_factory=list)
 
 
 class QuickstartGenerationJobOut(BaseModel):
@@ -27,14 +38,6 @@ class QuickstartGenerationJobOut(BaseModel):
     error: Optional[str] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-
-
-class QuickstartSourceRef(BaseModel):
-    document_id: str
-    chunk_id: int
-    score: float
-    file_name: Optional[str] = None
-    page: Optional[int] = None
 
 
 class QuickstartExpansionOut(BaseModel):
@@ -66,6 +69,7 @@ class QuickstartTopicDetailOut(BaseModel):
     item_type: QuickstartDetailItemType
     item_text: str
     content: str
+    sources: list[QuickstartSourceRef] = Field(default_factory=list)
 
 
 class QuickstartSuggestionsOut(BaseModel):

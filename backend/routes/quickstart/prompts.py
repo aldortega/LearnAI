@@ -1,6 +1,7 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ...schemas.quickstart import QuickstartDetailItemType
+from ..rag import CITATION_INSTRUCTION
 from .constants import (
     DETAIL_SCHEMA,
     EXPANSION_SCHEMA,
@@ -13,7 +14,7 @@ from .constants import (
 
 
 def build_quickstart_prompt(
-    title: str, context_text: str
+    title: str, context_text: str, has_context: bool = False
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
@@ -22,6 +23,8 @@ def build_quickstart_prompt(
         "Sigue exactamente este esquema:\n"
         f"{QUICKSTART_SCHEMA}"
     )
+    if has_context:
+        system_prompt += CITATION_INSTRUCTION
     user_prompt = (
         f"Tema general (usa exactamente este tema): {title}\n\n"
         f"Contexto:\n{context_text}\n\n"
@@ -39,6 +42,7 @@ def build_expansion_prompt(
     summary: str,
     key_points: list[str],
     context_text: str,
+    has_context: bool = False,
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
@@ -47,6 +51,8 @@ def build_expansion_prompt(
         "Sigue exactamente este esquema:\n"
         f"{EXPANSION_SCHEMA}"
     )
+    if has_context:
+        system_prompt += CITATION_INSTRUCTION
     key_points_text = "\n".join(f"- {point}" for point in key_points)
     user_prompt = (
         f"Tema general (usa exactamente este tema): {notebook_title}\n"
@@ -54,7 +60,10 @@ def build_expansion_prompt(
         f"Resumen actual: {summary}\n"
         f"Puntos clave:\n{key_points_text}\n\n"
         f"Contexto:\n{context_text}\n\n"
-        "Expande el tema en detalle. En content entrega informacion general "
+        f"Expande unicamente el tema \"{topic_title}\", ampliando su resumen y sus "
+        "puntos clave. Usa del contexto solo los fragmentos que traten de este "
+        "tema e ignora los que hablen de otros temas del notebook; no cambies de "
+        "tema ni introduzcas conceptos ajenos. En content entrega informacion "
         "adicional y util para estudio (no repitas literal el resumen actual), "
         "en 2 a 4 parrafos claros. Cada parrafo debe tener 2 a 4 oraciones y "
         "debe estar separado por una linea en blanco (\\n\\n). "
@@ -70,6 +79,7 @@ def build_topic_detail_prompt(
     item_type: QuickstartDetailItemType,
     item_text: str,
     context_text: str,
+    has_context: bool = False,
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Responde solo con JSON valido en espanol. "
@@ -78,6 +88,8 @@ def build_topic_detail_prompt(
         "Sigue exactamente este esquema:\n"
         f"{DETAIL_SCHEMA}"
     )
+    if has_context:
+        system_prompt += CITATION_INSTRUCTION
     item_label = (
         "pregunta sugerida"
         if item_type == "question"

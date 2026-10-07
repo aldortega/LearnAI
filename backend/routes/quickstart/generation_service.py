@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 
 from ...schemas.quickstart import QuickstartDetailItemType
 from ...schemas.rag import RagSource
-from ..rag import create_llm, retrieve_context
+from ..rag import create_llm, number_context_lines, retrieve_context
 from .constants import (
     QuickstartExpansionLLM,
     QuickstartPayloadLLM,
@@ -40,12 +40,14 @@ async def generate_quickstart_topics(
     title: str,
     notebook_object_id: ObjectId,
     user: dict,
-) -> dict:
-    context_lines, _, _, _ = await retrieve_context(
+) -> tuple[dict, list[RagSource]]:
+    context_lines, sources, _, _ = await retrieve_context(
         f"Conceptos clave sobre {title}", notebook_object_id, user
     )
-    context_text = compact_context(context_lines)
-    system_message, user_message = build_quickstart_prompt(title, context_text)
+    context_text = compact_context(number_context_lines(context_lines))
+    system_message, user_message = build_quickstart_prompt(
+        title, context_text, has_context=bool(context_lines)
+    )
     llm = create_llm()
     structured_llm = llm.with_structured_output(
         schema=QuickstartPayloadLLM.model_json_schema(), method="json_schema"
@@ -59,7 +61,7 @@ async def generate_quickstart_topics(
             "Quickstart estructurado:\n%s",
             json.dumps(payload_data, ensure_ascii=False),
         )
-        return normalize_quickstart_payload(payload_data, title)
+        return normalize_quickstart_payload(payload_data, title), sources
     except Exception as exc:
         logger.exception("Quickstart JSON invalido", extra={"error": str(exc)})
         raise HTTPException(
@@ -74,17 +76,31 @@ async def generate_topic_expansion(
     notebook_object_id: ObjectId,
     user: dict,
 ) -> tuple[dict, list[RagSource]]:
-    question = f"Explica en profundidad el tema: {topic.get('title', '')}"
+    topic_title = coerce_text(topic.get("title"))
+    topic_summary = coerce_text(topic.get("summary"))
+    topic_points = [coerce_text(point) for point in topic.get("key_points", [])]
+    question = "\n".join(
+        part
+        for part in (
+            f"{notebook_title}: {topic_title}",
+            topic_summary,
+            *topic_points,
+        )
+        if part
+    )
     context_lines, sources, _, _ = await retrieve_context(
         question, notebook_object_id, user
     )
-    context_text = compact_context(context_lines, max_chars=4500)
+    context_text = compact_context(
+        number_context_lines(context_lines), max_chars=4500
+    )
     system_message, user_message = build_expansion_prompt(
         notebook_title,
         coerce_text(topic.get("title")),
         coerce_text(topic.get("summary")),
         [coerce_text(point) for point in topic.get("key_points", [])],
         context_text,
+        has_context=bool(context_lines),
     )
     llm = create_llm()
     structured_llm = llm.with_structured_output(
@@ -120,16 +136,25 @@ async def generate_topic_item_detail(
     item_text: str,
     notebook_object_id: ObjectId,
     user: dict,
-) -> str:
+) -> tuple[str, list[RagSource]]:
     item_query = (
         f"Responde esta pregunta del tema {topic_title}: {item_text}"
         if item_type == "question"
         else f"Explica en detalle este punto del tema {topic_title}: {item_text}"
     )
-    context_lines, _, _, _ = await retrieve_context(item_query, notebook_object_id, user)
-    context_text = compact_context(context_lines, max_chars=4500)
+    context_lines, sources, _, _ = await retrieve_context(
+        item_query, notebook_object_id, user
+    )
+    context_text = compact_context(
+        number_context_lines(context_lines), max_chars=4500
+    )
     system_message, user_message = build_topic_detail_prompt(
-        notebook_title, topic_title, item_type, item_text, context_text
+        notebook_title,
+        topic_title,
+        item_type,
+        item_text,
+        context_text,
+        has_context=bool(context_lines),
     )
     llm = create_llm()
     structured_llm = llm.with_structured_output(
@@ -142,8 +167,8 @@ async def generate_topic_item_detail(
         payload_data = coerce_payload(payload, QuickstartTopicDetailLLM)
         content = normalize_item_text(coerce_text(payload_data.get("content")))
         if content:
-            return content
-        return f"Detalle adicional sobre {item_text}."
+            return content, sources
+        return f"Detalle adicional sobre {item_text}.", sources
     except Exception as exc:
         logger.exception("Detalle quickstart invalido", extra={"error": str(exc)})
         raise HTTPException(
