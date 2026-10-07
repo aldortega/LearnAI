@@ -29,6 +29,17 @@ GENERAL_KNOWLEDGE_NOTICE = (
     "respondo con conocimiento general."
 )
 
+CITATION_INSTRUCTION = (
+    " Los fragmentos del contexto estan numerados como [1], [2], etc. "
+    "Cuando una afirmacion provenga de un fragmento, cita su numero entre "
+    "corchetes al final de la frase, por ejemplo [1] o [1][3]. "
+    "No inventes numeros que no existan y no cites cuando uses conocimiento general."
+)
+
+
+def number_context_lines(context_lines: list[str]) -> list[str]:
+    return [f"[{position}] {line}" for position, line in enumerate(context_lines, start=1)]
+
 
 def conversation_to_out(conversation: dict) -> ConversationOut:
     return ConversationOut(
@@ -87,15 +98,8 @@ def build_prompt_messages(
             "Si el contexto esta vacio, responde solo con conocimiento general."
         )
     if cite and context_lines:
-        system_prompt += (
-            " Los fragmentos del contexto estan numerados como [1], [2], etc. "
-            "Cuando una afirmacion provenga de un fragmento, cita su numero entre "
-            "corchetes al final de la frase, por ejemplo [1] o [1][3]. "
-            "No inventes numeros que no existan y no cites cuando uses conocimiento general."
-        )
-        context_lines = [
-            f"[{position}] {line}" for position, line in enumerate(context_lines, start=1)
-        ]
+        system_prompt += CITATION_INSTRUCTION
+        context_lines = number_context_lines(context_lines)
     context_text = "\n\n".join(context_lines).strip()
     if context_text:
         user_prompt = "Contexto:\n" + context_text + "\n\nPregunta:\n" + question
