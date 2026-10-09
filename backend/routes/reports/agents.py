@@ -56,6 +56,7 @@ async def research_section(
         section.research_query,
         notebook_object_id,
         user,
+        grade=True,
     )
     section.notes = compact_context(context_lines, max_chars=SECTION_CONTEXT_CHARS)
     section.sources = sources

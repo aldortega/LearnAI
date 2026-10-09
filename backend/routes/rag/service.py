@@ -21,6 +21,7 @@ from ...gemini import (
 )
 from ...schemas.rag import ChatMessageOut, ChatMessageSource, ConversationOut, RagSource
 from ..notebook_access import resolve_notebook_access
+from .grading import grade_candidates
 
 logger = logging.getLogger(__name__)
 
@@ -246,6 +247,27 @@ def select_candidates(candidates: list[dict], selected_top_k: int) -> list[dict]
     return selected
 
 
+def select_grading_pool(candidates: list[dict]) -> list[dict]:
+    relaxed_semantic_floor = max(0.0, settings.rag_min_score - 0.2)
+    pool_size = max(1, settings.rag_grading_candidates)
+    return [
+        candidate
+        for candidate in candidates
+        if float(candidate.get("semantic_score", 0.0)) >= relaxed_semantic_floor
+    ][:pool_size]
+
+
+async def select_relevant_candidates(
+    question: str, candidates: list[dict], selected_top_k: int
+) -> list[dict]:
+    try:
+        relevant = await grade_candidates(question, select_grading_pool(candidates))
+    except Exception:
+        logger.warning("No se pudo evaluar la relevancia de fragmentos", exc_info=True)
+        return select_candidates(candidates, selected_top_k)
+    return relevant[:selected_top_k]
+
+
 def build_context_line(candidate: dict) -> str:
     child_text = coerce_text(candidate.get("text")).strip()
     if not child_text:
@@ -306,6 +328,7 @@ async def retrieve_context(
     notebook_object_id: ObjectId,
     user: dict,
     top_k: int | None = None,
+    grade: bool = False,
 ) -> tuple[list[str], list[RagSource], list[str], int]:
     if not has_gemini_api_keys():
         raise HTTPException(
@@ -316,6 +339,9 @@ async def retrieve_context(
     fetch_multiplier = max(1, settings.rag_fetch_k_multiplier)
     fetch_limit = max(selected_top_k, selected_top_k * fetch_multiplier)
     fetch_limit = min(fetch_limit, max(selected_top_k, settings.rag_fetch_k_max))
+    should_grade = grade and settings.rag_grading_enabled
+    if should_grade:
+        fetch_limit = max(fetch_limit, settings.rag_grading_candidates)
     source_owner_id = user.get("_source_owner_id")
     if not isinstance(source_owner_id, ObjectId):
         notebook_doc = await db.notebooks.find_one(
@@ -367,7 +393,12 @@ async def retrieve_context(
 
     hits = result.get("result", []) or []
     ranked_candidates = rank_candidates(question, hits)
-    selected_candidates = select_candidates(ranked_candidates, selected_top_k)
+    if should_grade:
+        selected_candidates = await select_relevant_candidates(
+            question, ranked_candidates, selected_top_k
+        )
+    else:
+        selected_candidates = select_candidates(ranked_candidates, selected_top_k)
 
     sources: list[RagSource] = []
     context_lines: list[str] = []
@@ -490,7 +521,7 @@ async def run_rag_query(
 ) -> tuple[str, list[RagSource], list[str], int, int]:
     start = time.perf_counter()
     context_lines, sources, document_ids, selected_top_k = await retrieve_context(
-        question, notebook_object_id, user, top_k
+        question, notebook_object_id, user, top_k, grade=True
     )
     answer_text = await generate_answer(question, context_lines, cite=True)
     latency_ms = await record_rag_query(
