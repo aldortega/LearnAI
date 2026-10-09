@@ -30,6 +30,8 @@ def map_report_generation_job(job_doc: dict) -> ReportGenerationJobOut:
         status=job_doc["status"],
         error=job_doc.get("error"),
         report_id=str(job_doc["report_id"]) if job_doc.get("report_id") else None,
+        stage=job_doc.get("stage"),
+        progress=job_doc.get("progress"),
         started_at=job_doc.get("started_at"),
         finished_at=job_doc.get("finished_at"),
     )

@@ -8,7 +8,8 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from ...config import settings
 from ...db import db
-from .constants import REPORT_TEMPLATE_CONFIGS
+from ...schemas.reports import ReportGenerationStage
+from .constants import REPORT_STAGE_PROGRESS, REPORT_TEMPLATE_CONFIGS
 from .generation_service import generate_report_payload
 from .normalization import coerce_text
 from .repository import compute_sources_fingerprint
@@ -28,6 +29,18 @@ async def mark_report_job_processing(
     await db_ref.report_generation_jobs.update_one(
         {"job_id": job_id},
         {"$set": {"status": "processing", "started_at": now, "error": None}},
+    )
+
+
+async def set_report_job_stage(
+    job_id: str,
+    stage: ReportGenerationStage,
+    db_client: AsyncIOMotorDatabase | None = None,
+) -> None:
+    db_ref = db if db_client is None else db_client
+    await db_ref.report_generation_jobs.update_one(
+        {"job_id": job_id},
+        {"$set": {"stage": stage, "progress": REPORT_STAGE_PROGRESS[stage]}},
     )
 
 
@@ -53,7 +66,15 @@ async def mark_report_job_done(
     now = datetime.now(timezone.utc)
     await db_ref.report_generation_jobs.update_one(
         {"job_id": job_id},
-        {"$set": {"status": "done", "report_id": report_id, "finished_at": now}},
+        {
+            "$set": {
+                "status": "done",
+                "report_id": report_id,
+                "stage": None,
+                "progress": 100,
+                "finished_at": now,
+            }
+        },
     )
 
 
@@ -199,6 +220,9 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
             )
             return
 
+        async def on_stage(stage: ReportGenerationStage) -> None:
+            await set_report_job_stage(job_id, stage, db_client=worker_db)
+
         try:
             (
                 report_title,
@@ -214,6 +238,7 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                on_stage=on_stage,
             )
             if not report_title or not report_description:
                 raise ValueError("No se pudo generar la metadata del informe")

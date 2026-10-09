@@ -38,11 +38,21 @@ export type ReportGenerateRequest = {
   suggestion_id?: string;
 };
 
+export type ReportGenerationStage =
+  | "planning"
+  | "researching"
+  | "writing"
+  | "reviewing"
+  | "summarizing"
+  | "assembling";
+
 export type ReportGenerationJobOut = {
   job_id: string;
   status: "queued" | "processing" | "done" | "failed";
   error?: string | null;
   report_id?: string | null;
+  stage?: ReportGenerationStage | null;
+  progress?: number | null;
   started_at?: string | null;
   finished_at?: string | null;
 };
