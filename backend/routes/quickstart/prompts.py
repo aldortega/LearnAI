@@ -27,8 +27,15 @@ def build_quickstart_prompt(
         system_prompt += CITATION_INSTRUCTION
     user_prompt = (
         f"Tema general (usa exactamente este tema): {title}\n\n"
-        f"Contexto:\n{context_text}\n\n"
-        "Genera un notebook_summary general de 2 parrafos breves. "
+        "Contexto (fragmentos repartidos de cada fuente, con su nombre de archivo):\n"
+        f"{context_text}\n\n"
+        "Genera un notebook_summary de 2 parrafos breves que sea un vistazo general "
+        "del conjunto de fuentes, no un resumen de su contenido. Describe que tipo "
+        "de material es, que grandes areas cubre en conjunto, como se relacionan "
+        "entre si y que podra estudiar el usuario con el. Considera todas las "
+        "fuentes por igual. No definas conceptos, no expliques metodologias ni "
+        "detalles puntuales y no te centres en ningun tema concreto: eso lo cubren "
+        "los temas. "
         f"Genera un inicio rapido con exactamente {TOPIC_COUNT} temas. "
         "Cada tema debe tener un resumen breve, un emoji representativo (solo emoji) "
         "y una lista de 3 a 5 puntos clave."

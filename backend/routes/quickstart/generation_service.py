@@ -25,6 +25,7 @@ from .normalization import (
     normalize_single_topic,
     normalize_suggestions,
 )
+from .overview_context import OVERVIEW_CONTEXT_MAX_CHARS, sample_overview_context
 from .prompts import (
     build_expansion_prompt,
     build_quickstart_prompt,
@@ -41,10 +42,14 @@ async def generate_quickstart_topics(
     notebook_object_id: ObjectId,
     user: dict,
 ) -> tuple[dict, list[RagSource]]:
-    context_lines, sources, _, _ = await retrieve_context(
-        f"Conceptos clave sobre {title}", notebook_object_id, user
+    context_lines, sources = await sample_overview_context(notebook_object_id, user)
+    if not context_lines:
+        context_lines, sources, _, _ = await retrieve_context(
+            f"Conceptos clave sobre {title}", notebook_object_id, user
+        )
+    context_text = compact_context(
+        number_context_lines(context_lines), max_chars=OVERVIEW_CONTEXT_MAX_CHARS
     )
-    context_text = compact_context(number_context_lines(context_lines))
     system_message, user_message = build_quickstart_prompt(
         title, context_text, has_context=bool(context_lines)
     )
