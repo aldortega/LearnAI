@@ -6,6 +6,8 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { EmptyState } from "../../../shared/ui/EmptyState";
+import { EmptyAudioIllustration } from "../../../shared/ui/illustrations/EmptyAudioIllustration";
 import type { PodcastOut } from "../types/audio.types";
 import { PodcastPlayer } from "./PodcastPlayer";
 
@@ -137,9 +139,11 @@ export function PodcastHistoryList({
           ))}
         </div>
       ) : !isLoading && hasResolved ? (
-        <p className="text-sm text-muted-foreground">
-          Aun no has generado ningun podcast.
-        </p>
+        <EmptyState
+          illustration={<EmptyAudioIllustration />}
+          title="Todavía no generaste podcasts"
+          description="Elegí un formato y generá tu primer podcast con tus fuentes."
+        />
       ) : null}
     </section>
   );

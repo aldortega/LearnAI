@@ -1,8 +1,8 @@
-import { Layers } from "lucide-react";
 import { useState } from "react";
 
 import { TextField } from "../../../shared/ui/TextField";
 import { Button } from "../../../shared/ui/Button";
+import { EmptyFlashcardsIllustration } from "../../../shared/ui/illustrations/EmptyFlashcardsIllustration";
 import type {
   FlashcardCountPreset,
   FlashcardDifficulty,
@@ -58,9 +58,7 @@ export function GenerateFlashcardsCard({
   return (
     <div className="flex h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-6 py-10 text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-primary/15 text-primary">
-          <Layers className="h-6 w-6" />
-        </div>
+        <EmptyFlashcardsIllustration className="mx-auto h-auto w-40" />
 
         <h2 className="mt-4 text-lg font-semibold text-foreground">
           {isGenerating ? "Generando flashcards..." : "Todavia no hay flashcards"}
@@ -158,7 +156,7 @@ export function GenerateFlashcardsCard({
 
         {!canGenerate ? (
           <p className="mt-3 text-xs text-muted-foreground" role="alert">
-            Necesitas al menos una fuente con estado "Listo".
+            Necesitás al menos una fuente con estado "Listo".
           </p>
         ) : null}
       </div>
