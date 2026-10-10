@@ -10,3 +10,5 @@ redis_data/
 .opencode
 .agents
 skills-lock.json
+docs
+.env.env
