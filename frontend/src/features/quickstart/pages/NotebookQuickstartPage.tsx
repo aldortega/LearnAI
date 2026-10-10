@@ -310,6 +310,7 @@ export function NotebookQuickstartPage() {
         showRefreshAction={!isEmpty}
         canRefresh={hasReadySources}
         isRefreshing={isGenerating}
+        topicCount={quickstart?.topics.length ?? 0}
         onRefresh={() => {
           void handleGenerateQuickstart();
         }}

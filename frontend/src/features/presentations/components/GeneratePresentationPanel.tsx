@@ -1,7 +1,7 @@
-import { Presentation } from "lucide-react";
 import { useId } from "react";
 
 import { Button } from "../../../shared/ui/Button";
+import { EmptyPresentationsIllustration } from "../../../shared/ui/illustrations/EmptyPresentationsIllustration";
 import type {
   PresentationDetailLevel,
   PresentationGenerationMode,
@@ -46,9 +46,7 @@ export function GeneratePresentationPanel({
   return (
     <div className="flex h-full overflow-y-auto">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-10 text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-primary/15 text-primary">
-          <Presentation className="h-6 w-6" />
-        </div>
+        <EmptyPresentationsIllustration className="mx-auto h-auto w-40" />
 
         <h2 className="mt-4 text-lg font-semibold text-foreground">
           {isGenerating ? "Generando presentacion…" : "Todavia no hay presentacion"}
@@ -167,7 +165,7 @@ export function GeneratePresentationPanel({
 
         {!canGenerate ? (
           <p className="mt-3 text-xs text-muted-foreground" role="alert">
-            Necesitas al menos una fuente con estado "Listo".
+            Necesitás al menos una fuente con estado "Listo".
           </p>
         ) : null}
       </div>

@@ -42,7 +42,7 @@ export function AddQuickstartTopicModal({
           value={topicTitle}
           onChange={(event) => setTopicTitle(event.target.value)}
           maxLength={120}
-          placeholder="Escribe un tema para agregar"
+          placeholder="Escribí un tema para agregar"
           disabled={isDisabled || isAdding}
           className="w-full rounded-xl border border-border-strong bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
         />

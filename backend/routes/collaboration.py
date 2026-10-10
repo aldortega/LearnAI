@@ -141,7 +141,7 @@ async def create_notebook_invitation(
     if invitee["_id"] == user["_id"]:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="No puedes invitarte a ti mismo",
+            detail="No podés invitarte a ti mismo",
         )
 
     existing_member = await db.notebook_memberships.find_one(
@@ -473,7 +473,7 @@ async def update_member_permission(
     if member_object_id == user["_id"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No puedes cambiar tu propio permiso",
+            detail="No podés cambiar tu propio permiso",
         )
 
     now = datetime.now(timezone.utc)
@@ -552,7 +552,7 @@ async def leave_notebook(
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No eres miembro de esta notebook",
+            detail="No sos miembro de esta notebook",
         )
 
     await db.notebook_invitations.update_many(
@@ -596,7 +596,7 @@ async def revoke_member_access(
     if member_object_id == user["_id"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No puedes revocarte a ti mismo",
+            detail="No podés revocarte a ti mismo",
         )
 
     now = datetime.now(timezone.utc)

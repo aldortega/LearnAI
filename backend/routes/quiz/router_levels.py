@@ -221,7 +221,7 @@ async def list_questions(
             )
         raise HTTPException(
             status_code=status.HTTP_202_ACCEPTED,
-            detail="Las preguntas se están generando. Reintenta en unos segundos.",
+            detail="Las preguntas se están generando. Reintentá en unos segundos.",
         )
 
     if questions and progress.get("questions_status") != "ready":

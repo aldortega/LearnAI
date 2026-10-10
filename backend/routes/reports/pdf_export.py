@@ -69,7 +69,7 @@ async def build_report_pdf_bytes(title: str, content: str) -> bytes:
             return pdf_bytes
     except PlaywrightError as exc:
         raise PdfExportError(
-            "No se pudo generar el PDF. Verifica Chromium con: playwright install chromium."
+            "No se pudo generar el PDF. Verificá Chromium con: playwright install chromium."
         ) from exc
 
 

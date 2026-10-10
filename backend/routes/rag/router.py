@@ -174,7 +174,9 @@ async def stream_conversation_message(
                 sources,
                 document_ids,
                 selected_top_k,
-            ) = await retrieve_context(question, notebook_object_id, user)
+            ) = await retrieve_context(
+                question, notebook_object_id, user, grade=True
+            )
         except HTTPException as exc:
             detail = (
                 exc.detail

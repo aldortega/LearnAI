@@ -1,6 +1,5 @@
-﻿import { Sparkles } from "lucide-react";
-
 import { Button } from "../../../shared/ui/Button";
+import { EmptyQuickstartIllustration } from "../../../shared/ui/illustrations/EmptyQuickstartIllustration";
 
 type Props = {
   isGenerating: boolean;
@@ -18,15 +17,15 @@ export function QuickstartEmptyState({
   return (
     <div className="flex h-full min-h-0 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-10 text-center">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-primary/15 text-primary">
-          <Sparkles className="h-6 w-6" />
-        </div>
+        <EmptyQuickstartIllustration className="mx-auto h-auto w-40" />
 
         <h2 className="mt-4 text-lg font-semibold text-foreground">
-          {isGenerating ? "Generando inicio rápido..." : "Todavía no hay inicio rápido"}
+          {isGenerating ? "Generando inicio rápido…" : "Todavía no hay inicio rápido"}
         </h2>
-        <p className="mt-2 text-sm text-foreground/75">
-          Genera un resumen de temas para presentar tu notebook rapidamente.
+        <p className="mx-auto mt-2 max-w-md text-sm text-foreground/75">
+          {canGenerate
+            ? "Creá un resumen y una lista de temas a partir de tus fuentes para empezar a estudiar más rápido."
+            : "Subí al menos un documento (PDF, DOCX, TXT o PPTX) y esperá a que aparezca como Listo para generar tu inicio rápido."}
         </p>
 
         {error ? (
@@ -40,17 +39,16 @@ export function QuickstartEmptyState({
 
         <div className="mt-6 flex justify-center">
           <Button onClick={onGenerate} disabled={!canGenerate} loading={isGenerating}>
-            Generar inicio rapido
+            Generar inicio rápido
           </Button>
         </div>
 
         {!canGenerate ? (
           <p className="mt-3 text-xs text-foreground/70" role="alert">
-            Necesitas al menos una fuente con estado "Listo".
+            Necesitás al menos una fuente con estado "Listo".
           </p>
         ) : null}
       </div>
     </div>
   );
 }
-

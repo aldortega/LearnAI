@@ -2,6 +2,8 @@ import { FileText, MoreVertical, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 
 import { cn } from "../../../shared/lib/cn";
+import { EmptyState } from "../../../shared/ui/EmptyState";
+import { EmptyReportsIllustration } from "../../../shared/ui/illustrations/EmptyReportsIllustration";
 
 import type { ReportOut } from "../types/reports.types";
 
@@ -168,6 +170,12 @@ export function ReportsHistoryList({
             );
           })}
         </div>
+      ) : hasResolved && !isLoading ? (
+        <EmptyState
+          illustration={<EmptyReportsIllustration />}
+          title="Todavía no generaste informes"
+          description="Elegí una plantilla o describí el informe que necesitás."
+        />
       ) : null}
     </section>
   );

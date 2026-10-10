@@ -10,6 +10,7 @@ from ...config import settings
 from ...db import db
 from .generation_service import generate_quickstart_topics
 from .repository import compute_sources_fingerprint
+from .topic_service import sources_to_refs
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ async def _process_quickstart_generation(
             return
 
         try:
-            quickstart_payload = await generate_quickstart_topics(
+            quickstart_payload, sources = await generate_quickstart_topics(
                 notebook["title"],
                 notebook_object_id,
                 {
@@ -118,6 +119,7 @@ async def _process_quickstart_generation(
                     "_source_owner_id": notebook["owner_id"],
                 },
             )
+            sources_out = sources_to_refs(sources)
             now = datetime.now(timezone.utc)
             await worker_db.quickstart_summaries.update_one(
                 {"owner_id": owner_object_id, "notebook_id": notebook_object_id},
@@ -128,6 +130,7 @@ async def _process_quickstart_generation(
                         "sources_fingerprint": fingerprint,
                         "notebook_summary": quickstart_payload["notebook_summary"],
                         "topics": quickstart_payload["topics"],
+                        "sources": [source.model_dump() for source in sources_out],
                         "updated_at": now,
                     },
                     "$setOnInsert": {"created_at": now},

@@ -9,6 +9,8 @@ import { DeleteNotebookModal } from "../../notebooks/components/DeleteNotebookMo
 import { EditNotebookModal } from "../../notebooks/components/EditNotebookModal";
 import { InviteUserModal } from "../../notebooks/components/InviteUserModal";
 import { LeaveNotebookModal } from "../../notebooks/components/LeaveNotebookModal";
+import { EmptyState } from "../../../shared/ui/EmptyState";
+import { EmptyNotebooksIllustration } from "../../../shared/ui/illustrations/EmptyNotebooksIllustration";
 import { Header } from "../components/Header";
 import { NotebookCard } from "../components/NotebookCard";
 import { NotebookListItem } from "../components/NotebookListItem";
@@ -226,9 +228,11 @@ export function HomePage() {
                   {notebooksError}
                 </div>
               ) : (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No tenés cuadernos aún. ¡Creá tu primero!
-                </div>
+                <EmptyState
+                  illustration={<EmptyNotebooksIllustration />}
+                  title="Todavía no tenés cuadernos"
+                  description="Creá tu primero y subí tus fuentes para empezar a estudiar con IA."
+                />
               )}
             </div>
           </section>

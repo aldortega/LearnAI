@@ -6,7 +6,7 @@ type Props = {
 };
 
 const PHASE_LABEL: Record<VoicePhase, string> = {
-  idle: "Toca para iniciar",
+  idle: "Tocá para iniciar",
   connecting: "Conectando...",
   listening: "Escuchando",
   speaking: "Hablando",

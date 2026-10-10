@@ -1,8 +1,8 @@
+import type { CitableSource } from "../../../shared/lib/citations";
+
 export type ChatRole = "user" | "assistant";
 
-export type ChatSource = {
-  file_name: string;
-};
+export type ChatSource = CitableSource;
 
 export type ChatConversation = {
   id: string;

@@ -1,7 +1,7 @@
-import { Network } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "../../../shared/ui/Button";
+import { EmptyMindmapIllustration } from "../../../shared/ui/illustrations/EmptyMindmapIllustration";
 import { TextField } from "../../../shared/ui/TextField";
 
 type Props = {
@@ -27,9 +27,7 @@ export function MindmapEmptyState({
   return (
     <div className="flex h-full items-center justify-center px-6">
       <div className="w-full max-w-2xl text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Network className="h-6 w-6" />
-        </div>
+        <EmptyMindmapIllustration className="mx-auto h-auto w-40" />
         <h3 className="text-lg font-semibold text-foreground">Mapa mental</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Genera un mapa mental de tu notebook y explora sus ramas de forma interactiva.
@@ -56,7 +54,7 @@ export function MindmapEmptyState({
         </div>
         {!canGenerate ? (
           <p className="mt-4 text-sm text-muted-foreground" role="alert">
-            Necesitas al menos una fuente lista para generar el mapa mental.
+            Necesitás al menos una fuente lista para generar el mapa mental.
           </p>
         ) : null}
         {error ? (

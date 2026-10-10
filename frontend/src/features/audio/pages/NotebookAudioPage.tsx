@@ -219,7 +219,7 @@ export function NotebookAudioPage() {
   }, [deleteTarget, deletePodcast, removePodcast, reloadHistory]);
 
   const blockedReason = !canGenerate
-    ? "Necesitas al menos una fuente lista para generar audios."
+    ? "Necesitás al menos una fuente lista para generar audios."
     : null;
 
   const headerAction = (
@@ -372,16 +372,6 @@ export function NotebookAudioPage() {
                     setDeleteTarget(podcast);
                   }}
                 />
-                {podcasts.length === 0 && hasHistoryResolved && !isHistoryLoading ? (
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("create")}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Crear primer podcast
-                  </button>
-                ) : null}
               </div>
             )}
           </div>

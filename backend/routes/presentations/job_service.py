@@ -152,7 +152,7 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
         if ready_count == 0:
             await mark_presentation_job_failed(
                 job_id,
-                "Necesitas al menos una fuente lista para generar presentaciones",
+                "Necesitás al menos una fuente lista para generar presentaciones",
                 db_client=worker_db,
             )
             return

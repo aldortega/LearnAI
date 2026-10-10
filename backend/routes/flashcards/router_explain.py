@@ -103,7 +103,7 @@ async def explain_flashcard(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para explicar flashcards",
+            detail="Necesitás al menos una fuente lista para explicar flashcards",
         )
 
     term, definition = resolve_requested_card(

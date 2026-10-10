@@ -189,7 +189,7 @@ async def _process_audio_generation(notebook_id: str, owner_id: str) -> None:
         if ready_count == 0:
             await mark_audio_job_failed(
                 job_id,
-                "Necesitas al menos una fuente lista para generar audios",
+                "Necesitás al menos una fuente lista para generar audios",
                 db_client=worker_db,
             )
             return
@@ -311,7 +311,7 @@ async def _process_audio_suggestions_generation(
         if ready_count == 0:
             await mark_audio_suggestions_job_failed(
                 job_id,
-                "Necesitas al menos una fuente lista para generar sugerencias",
+                "Necesitás al menos una fuente lista para generar sugerencias",
                 db_client=worker_db,
             )
             return

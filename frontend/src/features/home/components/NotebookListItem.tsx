@@ -54,7 +54,7 @@ export function NotebookListItem({
         : `${sourceCount} fuentes`;
 
   const noSourcesHint =
-    sourceCount === 0 ? " · Agrega tu primera fuente" : "";
+    sourceCount === 0 ? " · Agregá tu primera fuente" : "";
 
   return (
     <div

@@ -103,6 +103,33 @@ async def delete_flashcards(notebook_id: str, request: Request) -> None:
     )
 
 
+@router.delete(
+    "/{notebook_id}/flashcards/sets/{set_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_flashcard_set(
+    notebook_id: str,
+    set_id: str,
+    request: Request,
+) -> None:
+    user = await get_current_user(request)
+    notebook = await get_notebook_or_404(notebook_id, user)
+
+    set_filter = {
+        "owner_id": user["_id"],
+        "notebook_id": notebook["_id"],
+        "set_id": set_id.strip(),
+    }
+    result = await db.flashcard_sets.delete_one(set_filter)
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Set de flashcards no encontrado",
+        )
+
+    await db.flashcard_explanations.delete_many(set_filter)
+
+
 @router.post(
     "/{notebook_id}/flashcards/generate",
     response_model=FlashcardsGenerationJobOut,
@@ -124,7 +151,7 @@ async def generate_flashcards(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar flashcards",
+            detail="Necesitás al menos una fuente lista para generar flashcards",
         )
 
     generate_payload = payload or FlashcardsGenerateRequest()

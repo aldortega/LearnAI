@@ -13,6 +13,7 @@ export type QuickstartOut = {
   generated_at?: string | null;
   notebook_summary: string;
   topics: QuickstartTopic[];
+  sources: QuickstartSourceRef[];
 };
 
 export type QuickstartGenerationJobOut = {
@@ -29,6 +30,8 @@ export type QuickstartSourceRef = {
   score: number;
   file_name?: string | null;
   page?: number | null;
+  index?: number | null;
+  snippet?: string | null;
 };
 
 export type QuickstartExpansionOut = {
@@ -51,6 +54,7 @@ export type QuickstartTopicDetailOut = {
   item_type: QuickstartDetailItemType;
   item_text: string;
   content: string;
+  sources: QuickstartSourceRef[];
 };
 
 export type QuickstartSuggestionsOut = {

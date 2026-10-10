@@ -21,14 +21,23 @@ def topic_to_out(topic: dict) -> QuickstartTopicOut:
     )
 
 
-def source_to_ref(source: RagSource) -> QuickstartSourceRef:
+def source_to_ref(source: RagSource, position: int) -> QuickstartSourceRef:
     return QuickstartSourceRef(
         document_id=source.document_id,
         chunk_id=source.chunk_id,
         score=source.score,
         file_name=source.file_name,
         page=source.page,
+        index=position,
+        snippet=source.text.strip(),
     )
+
+
+def sources_to_refs(sources: list[RagSource]) -> list[QuickstartSourceRef]:
+    return [
+        source_to_ref(source, position)
+        for position, source in enumerate(sources, start=1)
+    ]
 
 
 def expansion_to_out(topic_id: str, expansion_doc: dict) -> QuickstartExpansionOut:
@@ -69,7 +78,7 @@ async def get_or_create_topic_expansion(
     expansion, sources = await generate_topic_expansion(
         notebook["title"], topic, notebook["_id"], user
     )
-    sources_out = [source_to_ref(source) for source in sources]
+    sources_out = sources_to_refs(sources)
     now = datetime.now(timezone.utc)
     await db.quickstart_expansions.update_one(
         expansion_filter,

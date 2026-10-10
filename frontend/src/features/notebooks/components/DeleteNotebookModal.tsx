@@ -30,7 +30,7 @@ export function DeleteNotebookModal({
           </div>
         ) : null}
         <p className="text-sm text-muted-foreground">
-          ¿Seguro que quieres eliminar este cuaderno? También se eliminarán sus
+          ¿Seguro que querés eliminar este cuaderno? También se eliminarán sus
           fuentes.
         </p>
         {notebookName ? (

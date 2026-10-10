@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from ...schemas.reports import ReportFormatType
+from ...schemas.reports import ReportFormatType, ReportGenerationStage
 
 
 SUGGESTION_COUNT = 4
@@ -91,14 +91,22 @@ SUGGESTIONS_SCHEMA = (
     "}\n"
 )
 
-REPORT_GENERATION_SCHEMA = (
-    "{\n"
-    '  "title": "string",\n'
-    '  "description": "string",\n'
-    '  "introduction": "string",\n'
-    '  "content": "string"\n'
-    "}\n"
-)
+MAX_REPORT_SECTIONS = 8
+MAX_PARALLEL_AGENTS = 3
+MAX_REVIEW_ROUNDS = 2
+MAX_SECTION_RETRIES = 1
+SECTION_CONTEXT_CHARS = 3500
+OVERVIEW_CONTEXT_CHARS = 2500
+SUMMARY_BODY_CHARS = 12000
+
+REPORT_STAGE_PROGRESS: dict[ReportGenerationStage, int] = {
+    "planning": 5,
+    "researching": 20,
+    "writing": 45,
+    "reviewing": 75,
+    "summarizing": 90,
+    "assembling": 95,
+}
 
 
 class ReportSuggestionLLM(BaseModel):
@@ -111,8 +119,32 @@ class ReportSuggestionsPayloadLLM(BaseModel):
     suggestions: list[ReportSuggestionLLM] = Field(min_length=1, max_length=20)
 
 
-class ReportGenerationPayloadLLM(BaseModel):
-    title: str = Field(min_length=1, max_length=MAX_REPORT_TITLE_CHARS)
-    description: str = Field(min_length=1, max_length=MAX_REPORT_DESCRIPTION_CHARS)
-    introduction: str = Field(min_length=1, max_length=MAX_REPORT_INTRODUCTION_CHARS)
+class ReportOutlineSectionLLM(BaseModel):
+    heading: str = Field(min_length=1)
+    objective: str = Field(min_length=1)
+    research_query: str = Field(min_length=1)
+
+
+class ReportOutlineLLM(BaseModel):
+    title: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    sections: list[ReportOutlineSectionLLM] = Field(min_length=1)
+
+
+class ReportSectionDraftLLM(BaseModel):
     content: str = Field(min_length=1)
+
+
+class ReportReviewFindingLLM(BaseModel):
+    section_index: int
+    issue: str = Field(min_length=1)
+
+
+class ReportReviewLLM(BaseModel):
+    findings: list[ReportReviewFindingLLM]
+
+
+class ReportSummaryLLM(BaseModel):
+    title: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    introduction: str = Field(min_length=1)

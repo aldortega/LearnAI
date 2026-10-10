@@ -25,7 +25,7 @@ def send_password_reset(email: str, reset_url: str) -> dict:
             <h1 style="color: #111827; margin-bottom: 24px; font-size: 24px;">Recuperación de contraseña</h1>
             
             <p style="margin-bottom: 16px; color: #4b5563;">
-                Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente botón para crear una nueva contraseña:
+                Recibimos una solicitud para restablecer tu contraseña. Hacé clic en el siguiente botón para crear una nueva contraseña:
             </p>
             
             <div style="text-align: center; margin: 32px 0;">
@@ -40,7 +40,7 @@ def send_password_reset(email: str, reset_url: str) -> dict:
             </p>
             
             <p style="color: #9ca3af; font-size: 14px;">
-                Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña seguirá siendo la misma.
+                Si no solicitaste este cambio, podés ignorar este correo. Tu contraseña seguirá siendo la misma.
             </p>
         </div>
         

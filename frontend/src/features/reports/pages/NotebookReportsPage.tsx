@@ -117,7 +117,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
   const suggestionsAreStale = config?.suggestions_is_stale ?? false;
   const generationError = generateError ?? configError;
   const suggestionsTimeoutError = suggestionsSyncTimedOut
-    ? "La sincronizacion de sugerencias tardo demasiado. Intenta actualizar nuevamente."
+    ? "La sincronizacion de sugerencias tardo demasiado. Intentá actualizar nuevamente."
     : null;
   const suggestionsError =
     suggestionsTimeoutError ??
@@ -689,7 +689,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
                 ) : null}
                 {!canGenerateReports ? (
                   <p className="text-sm text-muted-foreground" role="alert">
-                    Necesitas al menos una fuente lista para generar informes.
+                    Necesitás al menos una fuente lista para generar informes.
                   </p>
                 ) : null}
                 {generationError ? (

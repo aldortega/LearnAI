@@ -6,10 +6,12 @@ import {
   type DragEvent,
   type KeyboardEvent,
 } from "react";
-import { Streamdown } from "streamdown";
 
 import type { ChatMessage } from "../types/chat.types";
 import { Button } from "../../../shared/ui/Button";
+import { EmptyState } from "../../../shared/ui/EmptyState";
+import { EmptyChatIllustration } from "../../../shared/ui/illustrations/EmptyChatIllustration";
+import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { cn } from "../../../shared/lib/cn";
 import { ClearChatModal } from "./ClearChatModal";
 
@@ -150,10 +152,10 @@ export function ChatArea({
                 <Upload className="h-8 w-8" />
               </div>
               <h2 className="mb-2 text-xl font-semibold text-foreground">
-                Sube tus fuentes para comenzar
+                Subí tus fuentes para comenzar
               </h2>
               <p className="mb-6 text-muted-foreground">
-                Añade al menos una fuente para habilitar el studio y comenzar a
+                Añadí al menos una fuente para habilitar el studio y comenzar a
                 estudiar con IA.
               </p>
               <div
@@ -167,7 +169,7 @@ export function ChatArea({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
-                Arrastra y suelta un archivo aquí
+                Arrastrá y soltá un archivo aquí
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
                 Formatos soportados: PDF, DOCX, TXT o PPTX.
@@ -184,9 +186,11 @@ export function ChatArea({
               ) : null}
 
               {shouldShowEmptyState ? (
-                <div className="rounded-xl border border-dashed border-border bg-muted p-6 text-center text-sm text-muted-foreground">
-                  Haz tu primera pregunta sobre las fuentes cargadas.
-                </div>
+                <EmptyState
+                  illustration={<EmptyChatIllustration />}
+                  title="Empezá la conversación"
+                  description="Hacé tu primera pregunta sobre las fuentes cargadas."
+                />
               ) : null}
 
               {messages.map((message) => {
@@ -210,7 +214,10 @@ export function ChatArea({
                     >
                       {isAssistant ? (
                         <div className="text-sm leading-relaxed">
-                          <Streamdown>{message.content}</Streamdown>
+                          <MarkdownWithCitations
+                            content={message.content}
+                            sources={message.sources}
+                          />
                         </div>
                       ) : (
                         <p className="whitespace-pre-wrap leading-relaxed">
@@ -219,7 +226,6 @@ export function ChatArea({
                       )}
                     </div>
 
-                    {/* Sources removed */}
                   </div>
                 );
               })}
@@ -228,7 +234,7 @@ export function ChatArea({
                 <div className="flex flex-col items-start">
                   <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground shadow-sm">
                     <div className="text-sm leading-relaxed">
-                      <Streamdown>{streamingContent}</Streamdown>
+                      <MarkdownWithCitations content={streamingContent} sources={[]} />
                     </div>
                   </div>
                 </div>
@@ -271,7 +277,7 @@ export function ChatArea({
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Haz una pregunta sobre tus fuentes..."
+              placeholder="Hacé una pregunta sobre tus fuentes..."
               className={cn(
                 "min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground",
                 "placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",

@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     rag_fetch_k_max: int = 40
     rag_max_chunks_per_document: int = 2
     rag_lexical_weight: float = 0.2
+    rag_grading_enabled: bool = True
+    rag_grading_candidates: int = 20
     chunk_size: int = 1000
     chunk_overlap: int = 150
     section_max_tokens: int = 320

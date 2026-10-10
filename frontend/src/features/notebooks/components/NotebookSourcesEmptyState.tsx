@@ -1,7 +1,7 @@
-import { Upload } from "lucide-react";
 import { useState, type DragEvent } from "react";
 
 import { cn } from "../../../shared/lib/cn";
+import { EmptySourcesIllustration } from "../../../shared/ui/illustrations/EmptySourcesIllustration";
 
 type Props = {
   canManageDocuments: boolean;
@@ -39,14 +39,12 @@ export function NotebookSourcesEmptyState({
   return (
     <div className="flex h-full items-center justify-center p-8 text-center">
       <div className="max-w-md">
-        <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary">
-          <Upload className="h-8 w-8" />
-        </div>
+        <EmptySourcesIllustration className="mx-auto mb-4 h-auto w-48" />
         <h2 className="mb-2 text-xl font-semibold text-foreground">
-          Sube tus fuentes para comenzar
+          Subí tus fuentes para comenzar
         </h2>
         <p className="mb-6 text-muted-foreground">
-          Añade al menos una fuente para habilitar el studio y comenzar a estudiar
+          Añadí al menos una fuente para habilitar el studio y comenzar a estudiar
           con IA.
         </p>
         <div
@@ -63,8 +61,8 @@ export function NotebookSourcesEmptyState({
           onDrop={handleDrop}
         >
           {canManageDocuments
-            ? "Arrastra y suelta un archivo aquí"
-            : "No tienes permisos para subir fuentes en este cuaderno"}
+            ? "Arrastrá y soltá un archivo aquí"
+            : "No tenés permisos para subir fuentes en este cuaderno"}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
           Formatos permitidos: PDF, DOCX, TXT o PPTX.

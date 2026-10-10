@@ -13,6 +13,16 @@ ReportFormatType = Literal[
 ]
 
 
+ReportGenerationStage = Literal[
+    "planning",
+    "researching",
+    "writing",
+    "reviewing",
+    "summarizing",
+    "assembling",
+]
+
+
 class ReportPromptTemplateOut(BaseModel):
     type: ReportFormatType
     label: str
@@ -76,6 +86,8 @@ class ReportGenerationJobOut(BaseModel):
     status: Literal["queued", "processing", "done", "failed"]
     error: Optional[str] = None
     report_id: Optional[str] = None
+    stage: Optional[ReportGenerationStage] = None
+    progress: Optional[int] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
 

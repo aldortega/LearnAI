@@ -30,6 +30,8 @@ def map_report_generation_job(job_doc: dict) -> ReportGenerationJobOut:
         status=job_doc["status"],
         error=job_doc.get("error"),
         report_id=str(job_doc["report_id"]) if job_doc.get("report_id") else None,
+        stage=job_doc.get("stage"),
+        progress=job_doc.get("progress"),
         started_at=job_doc.get("started_at"),
         finished_at=job_doc.get("finished_at"),
     )
@@ -123,7 +125,7 @@ async def generate_report_suggestions(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar sugerencias",
+            detail="Necesitás al menos una fuente lista para generar sugerencias",
         )
 
     active_job_doc = await db.report_suggestion_generation_jobs.find_one(
@@ -241,7 +243,7 @@ async def generate_report(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar informes",
+            detail="Necesitás al menos una fuente lista para generar informes",
         )
 
     format_type = payload.format_type
