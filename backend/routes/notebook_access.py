@@ -76,6 +76,6 @@ async def require_document_manage_permission(
     if not access.can_manage_documents:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permisos para gestionar documentos",
+            detail="No tenés permisos para gestionar documentos",
         )
     return access

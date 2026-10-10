@@ -87,7 +87,7 @@ export function QuickstartTopicCard({
               "hidden sm:flex h-6 w-4 items-center justify-center text-muted-foreground/40 transition-colors",
               isDragging ? "text-primary cursor-grabbing" : "cursor-grab group-hover/row:text-muted-foreground/80",
             )}
-            title="Arrastra para reordenar"
+            title="Arrastrá para reordenar"
           >
             <GripVertical className="h-4 w-4" />
           </span>

@@ -35,7 +35,7 @@ export function SlideEditPromptPanel({
           maxLength={12000}
           disabled={isRegenerating}
           className={inputClassName}
-          placeholder="Escribe que quieres cambiar en esta diapositiva"
+          placeholder="Escribí qué querés cambiar en esta diapositiva"
         />
         </div>
         <div className="ml-auto flex items-center gap-2">

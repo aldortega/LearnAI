@@ -22,7 +22,7 @@ export function FlashcardSetsList({ sets, onSelectSet, onDeleteSet }: Props) {
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="mx-auto w-full max-w-6xl space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Selecciona un set</h3>
+        <h3 className="text-sm font-semibold text-foreground">Seleccioná un set</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sets.map((setItem) => (
             <div key={setItem.set_id} className="group relative">

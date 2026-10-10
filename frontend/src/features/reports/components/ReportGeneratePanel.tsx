@@ -59,7 +59,7 @@ export function ReportGeneratePanel({
 
       {!hasReadySources ? (
         <p className="text-xs text-muted-foreground" role="alert">
-          Necesitas al menos una fuente lista para generar informes.
+          Necesitás al menos una fuente lista para generar informes.
         </p>
       ) : null}
 

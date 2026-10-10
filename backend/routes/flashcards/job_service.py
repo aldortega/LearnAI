@@ -131,7 +131,7 @@ async def _process_flashcards_generation(notebook_id: str, owner_id: str) -> Non
         if ready_count == 0:
             await mark_flashcards_job_failed(
                 job_id,
-                "Necesitas al menos una fuente lista para generar flashcards",
+                "Necesitás al menos una fuente lista para generar flashcards",
                 db_client=worker_db,
             )
             return

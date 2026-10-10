@@ -61,7 +61,7 @@ async def add_quickstart_topic(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para agregar temas",
+            detail="Necesitás al menos una fuente lista para agregar temas",
         )
     if summary.get("sources_fingerprint") != fingerprint:
         raise HTTPException(

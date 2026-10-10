@@ -215,7 +215,7 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
         if ready_count == 0:
             await mark_report_job_failed(
                 job_id,
-                "Necesitas al menos una fuente lista para generar informes",
+                "Necesitás al menos una fuente lista para generar informes",
                 db_client=worker_db,
             )
             return
@@ -328,7 +328,7 @@ async def _process_report_suggestions_generation(
         if ready_count == 0:
             await mark_report_suggestions_job_failed(
                 job_id,
-                "Necesitas al menos una fuente lista para generar sugerencias",
+                "Necesitás al menos una fuente lista para generar sugerencias",
                 db_client=worker_db,
             )
             return

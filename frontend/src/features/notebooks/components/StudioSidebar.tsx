@@ -225,7 +225,7 @@ export function StudioSidebar({
               </div>
               {!isStudioLocked && hasAnyBlockedMode ? (
                 <p className="mt-3 text-xs text-muted-foreground" role="alert">
-                  Necesitas al menos una fuente lista para usar el modo estudio.
+                  Necesitás al menos una fuente lista para usar el modo estudio.
                 </p>
               ) : null}
             </div>

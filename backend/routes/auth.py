@@ -404,7 +404,7 @@ async def forgot_password(payload: ForgotPasswordRequest) -> ForgotPasswordRespo
 
     if recent_requests >= 3:
         return ForgotPasswordResponse(
-            message="Demasiadas solicitudes. Por favor, espera antes de intentar nuevamente."
+            message="Demasiadas solicitudes. Por favor, esperá antes de intentar nuevamente."
         )
 
     # Generate token and store hashed version
@@ -488,5 +488,5 @@ async def reset_password(payload: ResetPasswordRequest) -> ResetPasswordResponse
     )
 
     return ResetPasswordResponse(
-        message="Tu contraseña ha sido actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
+        message="Tu contraseña ha sido actualizada exitosamente. Por favor, iniciá sesión con tu nueva contraseña."
     )

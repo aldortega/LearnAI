@@ -20,7 +20,7 @@ export function DeleteDocumentModal({
     <Modal isOpen={isOpen} onClose={onCancel} title="Eliminar fuente">
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          ¿Seguro que quieres eliminar esta fuente?
+          ¿Seguro que querés eliminar esta fuente?
         </p>
         {documentName ? (
           <p className="truncate text-sm font-medium text-foreground">

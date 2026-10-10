@@ -30,7 +30,7 @@ export function LeaveNotebookModal({
           </div>
         ) : null}
         <p className="text-sm text-muted-foreground">
-          ¿Seguro que quieres salir de este cuaderno? Dejarás de tener acceso a
+          ¿Seguro que querés salir de este cuaderno? Dejarás de tener acceso a
           ella.
         </p>
         {notebookName ? (

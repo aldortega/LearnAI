@@ -14,7 +14,7 @@ type Props = {
 export function AuthPage({ initialMode = "login" }: Props) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
 
-  const title = mode === "login" ? "Bienvenido" : "Completa tus datos";
+  const title = mode === "login" ? "Bienvenido" : "Completá tus datos";
   const subtitle =
     mode === "login"
       ? "Ingresá tus datos para acceder."

@@ -151,7 +151,7 @@ async def generate_flashcards(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar flashcards",
+            detail="Necesitás al menos una fuente lista para generar flashcards",
         )
 
     generate_payload = payload or FlashcardsGenerateRequest()

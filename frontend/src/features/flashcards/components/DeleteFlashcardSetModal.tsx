@@ -22,7 +22,7 @@ export function DeleteFlashcardSetModal({
     <Modal isOpen={isOpen} onClose={onCancel} title="Eliminar set de flashcards">
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          ¿Seguro que quieres eliminar este set? Esta acción no se puede deshacer.
+          ¿Seguro que querés eliminar este set? Esta acción no se puede deshacer.
         </p>
         {setTitle ? (
           <p className="truncate text-sm font-medium text-foreground">{setTitle}</p>

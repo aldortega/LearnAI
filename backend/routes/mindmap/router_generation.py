@@ -62,7 +62,7 @@ async def generate_mindmap(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar el mapa mental",
+            detail="Necesitás al menos una fuente lista para generar el mapa mental",
         )
 
     prompt = coerce_text(payload.prompt if payload else "").strip() or None

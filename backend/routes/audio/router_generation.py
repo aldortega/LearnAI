@@ -117,7 +117,7 @@ async def generate_audio_suggestions_endpoint(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar sugerencias",
+            detail="Necesitás al menos una fuente lista para generar sugerencias",
         )
 
     active_job_doc = await db.audio_suggestion_generation_jobs.find_one(
@@ -236,7 +236,7 @@ async def generate_audio_endpoint(
     if ready_count == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Necesitas al menos una fuente lista para generar audios",
+            detail="Necesitás al menos una fuente lista para generar audios",
         )
 
     active_job_doc = await db.audio_generation_jobs.find_one(
