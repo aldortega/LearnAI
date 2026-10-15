@@ -26,11 +26,21 @@ export type PresentationRegenerateSlideOut = {
   slide: PresentationSlide;
 };
 
+export type PresentationGenerationStage =
+  | "planning"
+  | "researching"
+  | "writing"
+  | "reviewing"
+  | "illustrating"
+  | "assembling";
+
 export type PresentationGenerationJobOut = {
   job_id: string;
   status: "queued" | "processing" | "done" | "failed";
   error?: string | null;
   presentation_id?: string | null;
+  stage?: PresentationGenerationStage | null;
+  progress?: number | null;
   started_at?: string | null;
   finished_at?: string | null;
 };
