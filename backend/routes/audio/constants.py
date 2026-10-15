@@ -10,6 +10,12 @@ MAX_PODCAST_DESCRIPTION_CHARS = 180
 MAX_TOPIC_CHARS = 500
 MAX_SCRIPT_SEGMENTS = 80
 MAX_SEGMENT_CHARS = 1200
+MAX_PODCAST_BLOCKS = 8
+MAX_PARALLEL_AGENTS = 3
+MAX_REVIEW_ROUNDS = 1
+MAX_BLOCK_RETRIES = 1
+OVERVIEW_CONTEXT_CHARS = 3500
+BLOCK_CONTEXT_CHARS = 3500
 
 SPEAKER_HOST_A = "Anfitrion A"
 SPEAKER_HOST_B = "Anfitrion B"
@@ -51,6 +57,7 @@ AUDIO_FORMAT_CONFIGS: dict[AudioFormatType, dict[str, str]] = {
 AUDIO_DURATION_CONFIGS: dict[AudioDuration, dict[str, object]] = {
     "short": {
         "label": "Corto",
+        "blocks": 1,
         "min_segments": 6,
         "max_segments": 12,
         "target_minutes": "3 a 5 minutos",
@@ -58,6 +65,7 @@ AUDIO_DURATION_CONFIGS: dict[AudioDuration, dict[str, object]] = {
     },
     "default": {
         "label": "Por defecto",
+        "blocks": 3,
         "min_segments": 14,
         "max_segments": 24,
         "target_minutes": "7 a 10 minutos",
@@ -65,6 +73,7 @@ AUDIO_DURATION_CONFIGS: dict[AudioDuration, dict[str, object]] = {
     },
     "long": {
         "label": "Largo",
+        "blocks": 6,
         "min_segments": 28,
         "max_segments": 48,
         "target_minutes": "15 a 20 minutos",
@@ -106,7 +115,9 @@ SUGGESTIONS_SCHEMA = (
     "    {\n"
     '      "title": "string",\n'
     '      "description": "string",\n'
-    '      "default_topic": "string"\n'
+    '      "default_topic": "string",\n'
+    '      "format_type": "deep_dive | brief | critique | debate",\n'
+    '      "duration": "short | default | long"\n'
     "    }\n"
     "  ]\n"
     "}\n"
@@ -130,6 +141,8 @@ class AudioSuggestionLLM(BaseModel):
     title: str
     description: str
     default_topic: str
+    format_type: str = "deep_dive"
+    duration: str = "default"
 
 
 class AudioSuggestionsPayloadLLM(BaseModel):
@@ -147,3 +160,34 @@ class AudioScriptPayloadLLM(BaseModel):
     segments: list[AudioScriptSegmentLLM] = Field(
         min_length=1, max_length=MAX_SCRIPT_SEGMENTS
     )
+
+
+class PodcastOutlineBlockLLM(BaseModel):
+    title: str = Field(min_length=1)
+    objective: str = Field(min_length=1)
+    research_query: str = Field(min_length=1)
+
+
+class PodcastOutlineLLM(BaseModel):
+    title: str = Field(min_length=1, max_length=MAX_PODCAST_TITLE_CHARS)
+    description: str = Field(min_length=1, max_length=MAX_PODCAST_DESCRIPTION_CHARS)
+    stance_a: str
+    stance_b: str
+    blocks: list[PodcastOutlineBlockLLM] = Field(
+        min_length=1, max_length=MAX_PODCAST_BLOCKS
+    )
+
+
+class PodcastBlockLLM(BaseModel):
+    segments: list[AudioScriptSegmentLLM] = Field(
+        min_length=1, max_length=MAX_SCRIPT_SEGMENTS
+    )
+
+
+class PodcastReviewFindingLLM(BaseModel):
+    block_index: int
+    issue: str = Field(min_length=1)
+
+
+class PodcastReviewLLM(BaseModel):
+    findings: list[PodcastReviewFindingLLM]

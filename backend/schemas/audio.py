@@ -19,6 +19,8 @@ class AudioSuggestionOut(BaseModel):
     title: str
     description: str
     default_topic: str
+    format_type: AudioFormatType = "deep_dive"
+    duration: AudioDuration = "default"
 
 
 class AudioGenerateRequest(BaseModel):

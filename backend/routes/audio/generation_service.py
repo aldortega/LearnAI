@@ -11,12 +11,28 @@ from ...schemas.audio import (
     AudioScriptSegment,
     AudioSourceRef,
 )
+from ...schemas.rag import RagSource
+from ..agents import gather_limited
 from ..rag import create_llm, retrieve_context
+from .agents import (
+    BlockDraft,
+    plan_podcast,
+    research_blocks,
+    review_script,
+    write_block,
+)
 from .constants import (
+    AUDIO_DURATION_CONFIGS,
     AudioScriptPayloadLLM,
+    MAX_BLOCK_RETRIES,
+    MAX_PARALLEL_AGENTS,
     MAX_PODCAST_DESCRIPTION_CHARS,
     MAX_PODCAST_TITLE_CHARS,
+    MAX_REVIEW_ROUNDS,
     MAX_SEGMENT_CHARS,
+    OVERVIEW_CONTEXT_CHARS,
+    PodcastBlockLLM,
+    PodcastOutlineLLM,
     SPEAKER_HOST_A,
     SPEAKER_HOST_B,
     is_multi_speaker_format,
@@ -90,7 +106,211 @@ def _normalize_segments(
     return normalized
 
 
+def _generation_error() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail="No se pudo generar el guion del podcast",
+    )
+
+
+def _merge_sources(source_groups: list[list[RagSource]]) -> list[AudioSourceRef]:
+    seen: set[tuple[str, str]] = set()
+    merged: list[AudioSourceRef] = []
+    for group in source_groups:
+        for source in group:
+            key = (source.document_id, source.chunk_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(source_to_ref(source))
+    return merged
+
+
+async def _write_with_retry(
+    notebook_title: str,
+    format_type: AudioFormatType,
+    duration: AudioDuration,
+    outline: PodcastOutlineLLM,
+    blocks: list[BlockDraft],
+    block_index: int,
+    issues: list[str] | None = None,
+) -> PodcastBlockLLM:
+    last_exc: Exception | None = None
+    for _ in range(MAX_BLOCK_RETRIES + 1):
+        try:
+            return await write_block(
+                notebook_title,
+                format_type,
+                duration,
+                outline,
+                blocks,
+                block_index,
+                issues,
+            )
+        except HTTPException:
+            raise
+        except Exception as exc:
+            last_exc = exc
+            logger.warning(
+                "Fallo al redactar bloque",
+                extra={"block_index": block_index, "error": str(exc)},
+            )
+    raise last_exc or _generation_error()
+
+
+def _apply_draft(
+    block: BlockDraft, draft: PodcastBlockLLM, format_type: AudioFormatType
+) -> bool:
+    segments = _normalize_segments(
+        [segment.model_dump() for segment in draft.segments], format_type
+    )
+    if not segments:
+        return False
+    block.segments = segments
+    return True
+
+
+async def _rewrite_flagged_blocks(
+    notebook_title: str,
+    format_type: AudioFormatType,
+    duration: AudioDuration,
+    outline: PodcastOutlineLLM,
+    blocks: list[BlockDraft],
+    issues_by_block: dict[int, list[str]],
+) -> None:
+    block_indices = list(issues_by_block)
+    results = await gather_limited(
+        [
+            _write_with_retry(
+                notebook_title,
+                format_type,
+                duration,
+                outline,
+                blocks,
+                block_index,
+                issues_by_block[block_index],
+            )
+            for block_index in block_indices
+        ],
+        MAX_PARALLEL_AGENTS,
+    )
+    for block_index, result in zip(block_indices, results):
+        if isinstance(result, PodcastBlockLLM) and _apply_draft(
+            blocks[block_index - 1], result, format_type
+        ):
+            continue
+        logger.warning(
+            "Se conserva el borrador original del bloque",
+            extra={"block_index": block_index},
+        )
+
+
 async def generate_audio_script(
+    notebook_title: str,
+    format_type: AudioFormatType,
+    duration: AudioDuration,
+    topic: str,
+    notebook_object_id: ObjectId,
+    user: dict,
+) -> AudioScriptGenerationResult:
+    if int(AUDIO_DURATION_CONFIGS[duration]["blocks"]) <= 1:
+        return await _generate_single_call_script(
+            notebook_title, format_type, duration, topic, notebook_object_id, user
+        )
+    return await _generate_multi_agent_script(
+        notebook_title, format_type, duration, topic, notebook_object_id, user
+    )
+
+
+async def _generate_multi_agent_script(
+    notebook_title: str,
+    format_type: AudioFormatType,
+    duration: AudioDuration,
+    topic: str,
+    notebook_object_id: ObjectId,
+    user: dict,
+) -> AudioScriptGenerationResult:
+    topic = topic.strip()
+    overview_lines, overview_sources, _, _ = await retrieve_context(
+        f"Informacion para podcast sobre {topic or notebook_title}",
+        notebook_object_id,
+        user,
+    )
+    outline = await plan_podcast(
+        notebook_title,
+        format_type,
+        duration,
+        topic,
+        compact_context(overview_lines, max_chars=OVERVIEW_CONTEXT_CHARS),
+    )
+    title = normalize_title(outline.title)[:MAX_PODCAST_TITLE_CHARS]
+    description = normalize_prompt(outline.description)[:MAX_PODCAST_DESCRIPTION_CHARS]
+    blocks = [
+        BlockDraft(
+            title=normalize_title(item.title),
+            objective=normalize_prompt(item.objective),
+            research_query=normalize_prompt(item.research_query),
+        )
+        for item in outline.blocks
+    ]
+    if not title or not description or not blocks:
+        raise _generation_error()
+
+    await research_blocks(blocks, notebook_object_id, user)
+
+    draft_results = await gather_limited(
+        [
+            _write_with_retry(
+                notebook_title, format_type, duration, outline, blocks, index
+            )
+            for index in range(1, len(blocks) + 1)
+        ],
+        MAX_PARALLEL_AGENTS,
+    )
+    for block, result in zip(blocks, draft_results):
+        if isinstance(result, HTTPException):
+            raise result
+        if not isinstance(result, PodcastBlockLLM) or not _apply_draft(
+            block, result, format_type
+        ):
+            raise _generation_error()
+
+    for _ in range(MAX_REVIEW_ROUNDS):
+        try:
+            issues_by_block = await review_script(
+                notebook_title, format_type, topic, blocks
+            )
+        except Exception as exc:
+            logger.warning("Fallo la revision del guion", extra={"error": str(exc)})
+            break
+        if not issues_by_block:
+            break
+        await _rewrite_flagged_blocks(
+            notebook_title, format_type, duration, outline, blocks, issues_by_block
+        )
+
+    segments = _normalize_segments(
+        [
+            segment.model_dump()
+            for block in blocks
+            for segment in block.segments
+        ],
+        format_type,
+    )
+    if not segments:
+        raise _generation_error()
+
+    return AudioScriptGenerationResult(
+        title=title,
+        description=description,
+        segments=segments,
+        sources=_merge_sources(
+            [overview_sources] + [block.sources for block in blocks]
+        ),
+    )
+
+
+async def _generate_single_call_script(
     notebook_title: str,
     format_type: AudioFormatType,
     duration: AudioDuration,

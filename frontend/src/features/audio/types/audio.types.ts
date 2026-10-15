@@ -13,6 +13,8 @@ export type AudioSuggestion = {
   title: string;
   description: string;
   default_topic: string;
+  format_type: AudioFormatType;
+  duration: AudioDuration;
 };
 
 export type AudioSuggestionsStatus = "ready" | "generating" | "failed" | "missing";
