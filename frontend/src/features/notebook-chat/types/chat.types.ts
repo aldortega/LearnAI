@@ -19,5 +19,6 @@ export type ChatMessage = {
   role: ChatRole;
   content: string;
   sources: ChatSource[];
+  used_general_knowledge?: boolean;
   created_at: string;
 };

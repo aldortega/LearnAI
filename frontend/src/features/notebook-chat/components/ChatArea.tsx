@@ -217,6 +217,7 @@ export function ChatArea({
                           <MarkdownWithCitations
                             content={message.content}
                             sources={message.sources}
+                            generalKnowledge={message.used_general_knowledge}
                           />
                         </div>
                       ) : (

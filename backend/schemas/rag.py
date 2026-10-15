@@ -49,4 +49,5 @@ class ChatMessageOut(BaseModel):
     role: Literal["user", "assistant"]
     content: str
     sources: list[ChatMessageSource] = Field(default_factory=list)
+    used_general_knowledge: bool = False
     created_at: datetime

@@ -16,6 +16,7 @@ from ...schemas.rag import (
 )
 from ..auth import get_current_user
 from .service import (
+    GeneralMarkerFilter,
     build_source_summaries,
     conversation_to_out,
     ensure_conversation,
@@ -25,6 +26,7 @@ from .service import (
     record_rag_query,
     retrieve_context,
     run_rag_query,
+    split_general_marker,
     stream_answer,
 )
 
@@ -121,9 +123,10 @@ async def create_conversation_message(
     }
     await db.rag_messages.insert_one(user_message_doc)
 
-    answer_text, sources, _, _, _ = await run_rag_query(
-        question, notebook_object_id, user
+    raw_answer, sources, _, _, _ = await run_rag_query(
+        question, notebook_object_id, user, flag_general=True
     )
+    answer_text, used_general_knowledge = split_general_marker(raw_answer)
     source_summaries = build_source_summaries(sources)
     assistant_message_doc = {
         "owner_id": user["_id"],
@@ -132,6 +135,7 @@ async def create_conversation_message(
         "role": "assistant",
         "content": answer_text,
         "sources": source_summaries,
+        "used_general_knowledge": used_general_knowledge,
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.rag_messages.insert_one(assistant_message_doc)
@@ -192,7 +196,10 @@ async def stream_conversation_message(
             return
 
         if not context_lines:
-            answer_text = await generate_answer(question, context_lines)
+            raw_answer = await generate_answer(
+                question, context_lines, flag_general=True
+            )
+            answer_text, used_general_knowledge = split_general_marker(raw_answer)
             await record_rag_query(
                 start,
                 question,
@@ -211,6 +218,7 @@ async def stream_conversation_message(
                 "role": "assistant",
                 "content": answer_text,
                 "sources": source_summaries,
+                "used_general_knowledge": used_general_knowledge,
                 "created_at": now,
             }
             result = await db.rag_messages.insert_one(assistant_message_doc)
@@ -225,12 +233,19 @@ async def stream_conversation_message(
             return
 
         answer_parts: list[str] = []
+        marker_filter = GeneralMarkerFilter()
         try:
             async for chunk in stream_answer(question, context_lines):
-                if chunk:
-                    answer_parts.append(chunk)
-                    payload_chunk = json.dumps({"content": chunk})
+                visible = marker_filter.feed(chunk) if chunk else ""
+                if visible:
+                    answer_parts.append(visible)
+                    payload_chunk = json.dumps({"content": visible})
                     yield f"event: chunk\ndata: {payload_chunk}\n\n"
+            leftover = marker_filter.flush()
+            if leftover:
+                answer_parts.append(leftover)
+                payload_chunk = json.dumps({"content": leftover})
+                yield f"event: chunk\ndata: {payload_chunk}\n\n"
         except Exception:
             error_payload = json.dumps({"message": "No se pudo generar respuesta"})
             yield f"event: error\ndata: {error_payload}\n\n"
@@ -258,6 +273,7 @@ async def stream_conversation_message(
             "role": "assistant",
             "content": answer_text,
             "sources": source_summaries,
+            "used_general_knowledge": marker_filter.used_general_knowledge,
             "created_at": datetime.now(timezone.utc),
         }
         result = await db.rag_messages.insert_one(assistant_message_doc)

@@ -8,16 +8,25 @@ import {
   parseCitation,
 } from "../lib/citations";
 import { CitationChip } from "./CitationChip";
+import { GeneralKnowledgeChip } from "./GeneralKnowledgeChip";
 
 type Props = {
   content: string;
   sources: CitableSource[];
+  generalKnowledge?: boolean;
 };
 
-export function MarkdownWithCitations({ content, sources }: Props) {
+const GENERAL_KNOWLEDGE_HREF = "#general-knowledge";
+
+export function MarkdownWithCitations({
+  content,
+  sources,
+  generalKnowledge = false,
+}: Props) {
   const components = useMemo(
     () => ({
       a: ({ href, children, ...rest }: ComponentProps<"a">) => {
+        if (href === GENERAL_KNOWLEDGE_HREF) return <GeneralKnowledgeChip />;
         const citation = parseCitation(href);
         if (citation === null) {
           return (
@@ -37,7 +46,9 @@ export function MarkdownWithCitations({ content, sources }: Props) {
     [sources],
   );
 
-  return (
-    <Streamdown components={components}>{linkifyCitations(content)}</Streamdown>
-  );
+  const markdown = generalKnowledge
+    ? `${linkifyCitations(content).trimEnd()} [!](${GENERAL_KNOWLEDGE_HREF})`
+    : linkifyCitations(content);
+
+  return <Streamdown components={components}>{markdown}</Streamdown>;
 }
