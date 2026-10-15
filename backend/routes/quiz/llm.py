@@ -187,6 +187,53 @@ def build_questions_prompt(
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
 
 
+def build_targeted_questions_prompt(
+    title: str,
+    unit_title: str,
+    level_title: str,
+    level_type: str,
+    targets: list[dict],
+    difficulty_label: str,
+    avoid_questions: list[str] | None = None,
+) -> tuple[SystemMessage, HumanMessage]:
+    system_prompt = (
+        "Eres un docente experto. Responde solo con JSON válido en español. "
+        "No uses markdown ni texto adicional. Sigue exactamente este esquema:\n"
+        f"{QUESTIONS_SCHEMA}\n"
+        "Cada pregunta evalúa exactamente un objetivo asignado, en el mismo orden. "
+        "Basa la pregunta y su respuesta correcta en el contexto de ese objetivo. "
+        "Si el contexto es insuficiente, usa conocimiento general, pero solo sobre "
+        "el concepto del objetivo y sin salir de la unidad. "
+        "Los tres distractores deben ser plausibles pero claramente incorrectos."
+    )
+    targets_text = "\n\n".join(
+        f"Objetivo {index}\n"
+        f"Concepto: {target['concept']}\n"
+        f"Enfoque: {target['focus']}\n"
+        f"Contexto:\n{target.get('context') or '(sin información relevante)'}"
+        for index, target in enumerate(targets, start=1)
+    )
+    avoid_text = ""
+    if avoid_questions:
+        avoid_lines = "\n".join(f"- {question}" for question in avoid_questions)
+        avoid_text = (
+            "\n\nPreguntas ya existentes que no debes repetir ni parafrasear:\n"
+            f"{avoid_lines}"
+        )
+    user_prompt = (
+        f"Tema general (usa exactamente este tema): {title}\n"
+        f"Unidad: {unit_title}\n"
+        f"Nivel: {level_title} ({level_type})\n"
+        f"Dificultad: {difficulty_label}.\n\n"
+        f"{targets_text}\n\n"
+        f"Genera exactamente {len(targets)} preguntas de opción múltiple con 4 opciones "
+        "(A, B, C, D), una por objetivo y en el mismo orden. "
+        "Incluye una pista corta y explicaciones por opción."
+        f"{avoid_text}"
+    )
+    return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)
+
+
 def normalize_units(
     payload: dict, units_per_roadmap: int, lessons_per_unit: int
 ) -> list[dict]:
@@ -338,24 +385,40 @@ async def generate_questions(
     context_text: str,
     question_count: int,
     difficulty_label: str,
+    targets: list[dict] | None = None,
+    avoid_questions: list[str] | None = None,
 ) -> list[dict]:
     llm = create_llm()
     structured_llm = llm.with_structured_output(
         schema=QuizPayloadLLM.model_json_schema(), method="json_schema"
     )
-    normalized_context = context_text.strip() if isinstance(context_text, str) else ""
-    if not normalized_context:
-        normalized_context = "(sin información relevante)"
-    system_message, user_message = build_questions_prompt(
-        title,
-        unit_title,
-        level_title,
-        level_type,
-        normalized_context,
-        question_count,
-        difficulty_label,
-        False,
-    )
+    if targets:
+        question_count = len(targets)
+        system_message, user_message = build_targeted_questions_prompt(
+            title,
+            unit_title,
+            level_title,
+            level_type,
+            targets,
+            difficulty_label,
+            avoid_questions,
+        )
+    else:
+        normalized_context = (
+            context_text.strip() if isinstance(context_text, str) else ""
+        )
+        if not normalized_context:
+            normalized_context = "(sin información relevante)"
+        system_message, user_message = build_questions_prompt(
+            title,
+            unit_title,
+            level_title,
+            level_type,
+            normalized_context,
+            question_count,
+            difficulty_label,
+            False,
+        )
 
     try:
         payload = await asyncio.to_thread(
