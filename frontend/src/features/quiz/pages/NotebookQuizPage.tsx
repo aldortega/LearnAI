@@ -13,6 +13,7 @@ import { RoadmapView } from "../components/RoadmapView";
 import { QuizShell } from "../components/QuizShell";
 import { useDeleteQuizRoadmap } from "../hooks/useDeleteQuizRoadmap";
 import { useGenerateQuizRoadmap } from "../hooks/useGenerateQuizRoadmap";
+import { useLevelEntry } from "../hooks/useLevelEntry";
 import { useQuizRoadmap } from "../hooks/useQuizRoadmap";
 import { useResetQuizAttempts } from "../hooks/useResetQuizAttempts";
 import type { QuizGenerateRequest } from "../types/quiz.types";
@@ -245,6 +246,25 @@ export function NotebookQuizPage() {
 
   const [retryingLevelId, setRetryingLevelId] = useState<string | null>(null);
 
+  const handleEnterLevel = useCallback(
+    (selectedId: string) => {
+      if (!notebookId) return;
+      navigate(`/notebook/${notebookId}/quiz?level=${selectedId}`);
+    },
+    [navigate, notebookId],
+  );
+
+  const {
+    preparingLevelId,
+    error: levelEntryError,
+    selectLevel,
+  } = useLevelEntry({
+    notebookId,
+    roadmap,
+    reloadRoadmap,
+    onEnter: handleEnterLevel,
+  });
+
   const handleRetryLevel = useCallback(
     async (levelId: string) => {
       if (!notebookId) return;
@@ -289,6 +309,13 @@ export function NotebookQuizPage() {
 
   const levelId = searchParams.get("level");
   const isInLevel = Boolean(roadmap && levelId);
+
+  const previousLevelIdRef = useRef(levelId);
+  useEffect(() => {
+    if (previousLevelIdRef.current === levelId) return;
+    previousLevelIdRef.current = levelId;
+    void reloadRoadmap();
+  }, [levelId, reloadRoadmap]);
   const selectedLevelTitle = useMemo(() => {
     if (!roadmap || !levelId) return null;
 
@@ -390,15 +417,18 @@ export function NotebookQuizPage() {
         ) : roadmap ? (
           <div className="h-full overflow-y-auto p-6">
             <div className="mx-auto max-w-5xl">
+            {levelEntryError ? (
+              <p role="alert" className="mb-4 text-sm text-error">
+                {levelEntryError}
+              </p>
+            ) : null}
             <RoadmapView
               roadmap={roadmap}
               selectedLevelId={null}
-              onSelectLevel={(selectedId) => {
-                if (!notebookId) return;
-                navigate(`/notebook/${notebookId}/quiz?level=${selectedId}`);
-              }}
+              onSelectLevel={selectLevel}
               onRetryLevel={handleRetryLevel}
               retryingLevelId={retryingLevelId}
+              preparingLevelId={preparingLevelId}
             />
             </div>
           </div>

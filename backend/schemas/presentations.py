@@ -7,6 +7,14 @@ from pydantic import BaseModel, Field
 PresentationDetailLevel = Literal["concise", "detailed"]
 PresentationGenerationMode = Literal["text", "image"]
 PresentationSlideFormat = Literal["markdown", "image"]
+PresentationGenerationStage = Literal[
+    "planning",
+    "researching",
+    "writing",
+    "reviewing",
+    "illustrating",
+    "assembling",
+]
 
 
 class PresentationGenerateRequest(BaseModel):
@@ -73,6 +81,8 @@ class PresentationGenerationJobOut(BaseModel):
     status: Literal["queued", "processing", "done", "failed"]
     error: Optional[str] = None
     presentation_id: Optional[str] = None
+    stage: Optional[PresentationGenerationStage] = None
+    progress: Optional[int] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
 

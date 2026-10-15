@@ -1,4 +1,4 @@
-﻿import { Lock, ShieldCheck, Unlock } from "lucide-react";
+﻿import { Loader2, Lock, ShieldCheck, Unlock } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
 import type {
@@ -13,6 +13,7 @@ type Props = {
   onSelectLevel: (levelId: string) => void;
   onRetryLevel?: (levelId: string) => void;
   retryingLevelId?: string | null;
+  preparingLevelId?: string | null;
 };
 
 function getLevelIcon(level: RoadmapLevelOut) {
@@ -40,6 +41,7 @@ export function RoadmapView({
   onSelectLevel,
   onRetryLevel,
   retryingLevelId,
+  preparingLevelId,
 }: Props) {
   return (
     <div className="space-y-6">
@@ -66,7 +68,10 @@ export function RoadmapView({
               .sort((a, b) => a.order - b.order)
               .map((level) => {
                 const isSelected = selectedLevelId === level.id;
-                const questionsStatus = level.questions_status ?? "idle";
+                const isPreparing = preparingLevelId === level.id;
+                const questionsStatus = isPreparing
+                  ? "generating"
+                  : (level.questions_status ?? "idle");
                 const isLocked = level.status === "locked";
                 const bestScore =
                   typeof level.best_score === "number" ? level.best_score : null;
@@ -93,11 +98,13 @@ export function RoadmapView({
                   <button
                     key={level.id}
                     type="button"
-                    disabled={isLocked}
+                    disabled={isLocked || isPreparing}
+                    aria-busy={isPreparing}
                     onClick={() => onSelectLevel(level.id)}
                     className={cn(
                       "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                      isPreparing && "cursor-wait opacity-80",
                       isLocked
                         ? "cursor-not-allowed border-border bg-muted text-muted-foreground"
                         : "border-border bg-surface text-foreground hover:bg-muted",
@@ -184,7 +191,7 @@ export function RoadmapView({
                       ) : (
                         <span
                           className={cn(
-                            "rounded-full px-2.5 py-1 text-xs font-semibold",
+                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
                             isLocked
                               ? "bg-muted-hover text-muted-foreground"
                               : level.status === "passed"
@@ -192,6 +199,12 @@ export function RoadmapView({
                                 : "bg-warning/15 text-warning",
                           )}
                         >
+                          {questionsStatus === "generating" && !isLocked ? (
+                            <Loader2
+                              className="h-3 w-3 animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : null}
                           {availabilityLabel}
                         </span>
                       )}

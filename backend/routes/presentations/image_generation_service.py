@@ -1,140 +1,15 @@
 import asyncio
 import base64
 from io import BytesIO
-from datetime import datetime, timezone
 
-from bson import ObjectId
 from fastapi import HTTPException, status
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
 from supabase import create_client
 
 from ...config import settings
 from ...gemini import get_gemini_primary_api_key
-from ...schemas.presentations import (
-    PresentationDetailLevel,
-    PresentationSlideOut,
-    PresentationSourceRef,
-)
-from ..rag import create_llm, retrieve_context
-from .constants import MAX_SLIDES, PresentationImagePayloadLLM
-from .normalization import (
-    compact_context,
-    coerce_text,
-    normalize_slide_subtitle,
-    normalize_slide_title,
-    source_to_ref,
-)
-from .prompts import build_presentation_image_outline_prompt
-
-
-class PresentationImageGenerationResult(BaseModel):
-    title: str
-    summary: str
-    slides: list[PresentationSlideOut]
-    sources: list[PresentationSourceRef]
-
-
-async def generate_image_presentation_payload(
-    notebook_title: str,
-    topic: str,
-    detail_level: PresentationDetailLevel,
-    notebook_object_id: ObjectId,
-    owner_id: ObjectId,
-    user: dict,
-) -> PresentationImageGenerationResult:
-    context_lines, sources, _, _ = await retrieve_context(
-        f"Informacion para presentacion visual sobre {topic}",
-        notebook_object_id,
-        user,
-    )
-    context_text = compact_context(context_lines)
-    system_message, user_message = build_presentation_image_outline_prompt(
-        notebook_title=notebook_title,
-        topic=topic,
-        detail_level=detail_level,
-        context_text=context_text,
-    )
-
-    llm = create_llm()
-    structured_llm = llm.with_structured_output(
-        schema=PresentationImagePayloadLLM.model_json_schema(),
-        method="json_schema",
-    )
-    payload = await asyncio.to_thread(
-        structured_llm.invoke, [system_message, user_message]
-    )
-    payload_data = (
-        payload.model_dump()
-        if isinstance(payload, BaseModel)
-        else payload
-        if isinstance(payload, dict)
-        else PresentationImagePayloadLLM.model_validate(payload).model_dump()
-    )
-
-    title = coerce_text(payload_data.get("title")).strip()
-    summary = coerce_text(payload_data.get("summary")).strip()
-    raw_slides = payload_data.get("slides")
-
-    if not title or not summary or not isinstance(raw_slides, list):
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="No se pudo generar la presentacion visual",
-        )
-
-    bucket = _get_public_bucket_or_raise()
-    public_base_url = _build_public_bucket_base_url(bucket)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-
-    slides: list[PresentationSlideOut] = []
-    for index, raw_slide in enumerate(raw_slides, start=1):
-        if not isinstance(raw_slide, dict):
-            continue
-        slide_title = normalize_slide_title(coerce_text(raw_slide.get("title")))
-        slide_subtitle = normalize_slide_subtitle(
-            coerce_text(raw_slide.get("subtitle"))
-        )
-        image_prompt = coerce_text(raw_slide.get("image_prompt")).strip()
-        if not slide_title or not image_prompt:
-            continue
-
-        image_bytes = await generate_slide_image_bytes(
-            slide_title=slide_title,
-            slide_subtitle=slide_subtitle or None,
-            image_prompt=image_prompt,
-            topic=topic,
-        )
-        image_path = f"presentations/{owner_id}/{notebook_object_id}/{timestamp}/slide-{index}.webp"
-        await asyncio.to_thread(upload_public_image, bucket, image_path, image_bytes)
-
-        slides.append(
-            PresentationSlideOut(
-                index=index,
-                format="image",
-                title=slide_title,
-                subtitle=slide_subtitle or None,
-                content_markdown=None,
-                image_path=image_path,
-                image_url=f"{public_base_url}/{image_path}",
-                image_prompt=image_prompt,
-            )
-        )
-        if len(slides) >= MAX_SLIDES:
-            break
-
-    if not slides:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="No se pudieron generar imagenes para la presentacion",
-        )
-
-    return PresentationImageGenerationResult(
-        title=title,
-        summary=summary,
-        slides=slides,
-        sources=[source_to_ref(source) for source in sources],
-    )
+from .normalization import coerce_text
 
 
 async def generate_slide_image_bytes(
@@ -142,6 +17,9 @@ async def generate_slide_image_bytes(
     slide_subtitle: str | None,
     image_prompt: str,
     topic: str,
+    style_guide: str,
+    labels: list[str],
+    reference_image: bytes | None = None,
 ) -> bytes:
     primary_api_key = get_gemini_primary_api_key()
     if not primary_api_key:
@@ -155,11 +33,14 @@ async def generate_slide_image_bytes(
         slide_subtitle=slide_subtitle,
         image_prompt=image_prompt,
         topic=topic,
+        style_guide=style_guide,
+        labels=labels,
+        has_reference=reference_image is not None,
     )
 
     try:
         return await asyncio.to_thread(
-            _call_image_generation_sdk, primary_api_key, prompt
+            _call_image_generation_sdk, primary_api_key, prompt, reference_image
         )
     except Exception as exc:
         raise HTTPException(
@@ -191,26 +72,59 @@ def upload_public_image(bucket: str, image_path: str, image_bytes: bytes) -> Non
         )
 
 
+def delete_public_images(bucket: str, image_paths: list[str]) -> None:
+    if not image_paths:
+        return
+    supabase_client = create_client(
+        settings.supabase_url,
+        settings.supabase_service_role_key,
+    )
+    supabase_client.storage.from_(bucket).remove(image_paths)
+
+
 def _build_slide_image_prompt(
     slide_title: str,
     slide_subtitle: str | None,
     image_prompt: str,
     topic: str,
+    style_guide: str,
+    labels: list[str],
+    has_reference: bool,
 ) -> str:
     subtitle_line = f"Contexto secundario: {slide_subtitle}\n" if slide_subtitle else ""
+    labels_block = (
+        "Textos que deben aparecer escritos en la imagen, exactamente asi y sin "
+        "agregar otros textos:\n"
+        + "\n".join(f"- {label}" for label in labels)
+        + "\n"
+        if labels
+        else "No escribas texto en la imagen.\n"
+    )
+    reference_line = (
+        "Se adjunta la imagen de la primera slide como referencia de estilo: "
+        "mantene exactamente la misma paleta, tipografia y tratamiento grafico, "
+        "pero con una escena distinta.\n"
+        if has_reference
+        else ""
+    )
     return (
         "Genera una imagen horizontal 16:9 (1920x1080) para una diapositiva visual. "
         "Composicion limpia, profesional y academica "
         "No dejes bordes negros ni marcos.\n\n"
+        f"Estilo visual global (obligatorio e identico en todas las slides): {style_guide}\n"
+        f"{reference_line}\n"
         f"Tema general: {topic}\n"
         f"Concepto clave de la escena: {slide_title}\n"
         f"{subtitle_line}"
         f"Instruccion visual: {image_prompt}\n"
+        f"{labels_block}"
         "Resultado esperado: una imagen con explicacion visual, referida al tema.\n"
     )
 
 
-def _call_image_generation_sdk(api_key: str, prompt: str) -> bytes:
+def _call_image_generation_sdk(
+    api_key: str, prompt: str, reference_image: bytes | None = None
+) -> bytes:
     client = genai.Client(api_key=api_key)
     last_error: Exception | None = None
 
@@ -221,6 +135,7 @@ def _call_image_generation_sdk(api_key: str, prompt: str) -> bytes:
                 model_name=model_name,
                 prompt=prompt,
                 use_image_config=True,
+                reference_image=reference_image,
             )
             return _extract_image_bytes_from_response(response, model_name)
         except Exception as exc:
@@ -231,6 +146,7 @@ def _call_image_generation_sdk(api_key: str, prompt: str) -> bytes:
                         model_name=model_name,
                         prompt=prompt,
                         use_image_config=False,
+                        reference_image=reference_image,
                     )
                     return _extract_image_bytes_from_response(response, model_name)
                 except Exception as retry_exc:
@@ -288,7 +204,13 @@ def _generate_image_response(
     model_name: str,
     prompt: str,
     use_image_config: bool,
+    reference_image: bytes | None = None,
 ):
+    contents: list[object] = [prompt]
+    if reference_image:
+        contents.append(
+            types.Part.from_bytes(data=reference_image, mime_type="image/webp")
+        )
     config = types.GenerateContentConfig(response_modalities=["IMAGE"])
     if use_image_config:
         config = types.GenerateContentConfig(
@@ -298,7 +220,7 @@ def _generate_image_response(
 
     return client.models.generate_content(
         model=model_name,
-        contents=prompt,
+        contents=contents,
         config=config,
     )
 
@@ -339,7 +261,7 @@ def _is_unsupported_image_config_error(exc: Exception) -> bool:
     return "image_config" in message or "output_mime_type" in message
 
 
-def _build_public_bucket_base_url(bucket: str) -> str:
+def build_public_bucket_base_url(bucket: str) -> str:
     if not settings.supabase_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -348,7 +270,7 @@ def _build_public_bucket_base_url(bucket: str) -> str:
     return f"{settings.supabase_url.rstrip('/')}/storage/v1/object/public/{bucket}"
 
 
-def _get_public_bucket_or_raise() -> str:
+def get_public_bucket_or_raise() -> str:
     bucket = coerce_text(settings.supabase_storage_bucket).strip()
     if not bucket:
         raise HTTPException(

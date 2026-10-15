@@ -161,10 +161,22 @@ export function NotebookAudioPage() {
     setViewMode(podcasts.length === 0 ? "create" : "history");
   }, [notebookId, isHistoryLoading, podcasts.length]);
 
-  const handleSelectSuggestion = useCallback((suggestion: AudioSuggestion) => {
-    setTopic(suggestion.default_topic);
-    setSelectedSuggestionId(suggestion.id);
-  }, []);
+  const handleGenerateSuggestion = useCallback(
+    async (suggestion: AudioSuggestion) => {
+      if (!notebookId || !canGenerate) return;
+      clearGenerateError();
+      setViewMode("history");
+      const result = await generate({
+        format_type: suggestion.format_type,
+        duration: suggestion.duration,
+        topic: suggestion.default_topic,
+        suggestion_id: suggestion.id,
+      });
+      if (!result) return;
+      await reloadHistory();
+    },
+    [notebookId, canGenerate, clearGenerateError, generate, reloadHistory],
+  );
 
   const handleRefreshSuggestions = useCallback(async () => {
     if (!notebookId || isRefreshingSuggestions || isGeneratingSuggestions) return;
@@ -350,7 +362,7 @@ export function NotebookAudioPage() {
                   setTopic(value);
                   setSelectedSuggestionId(null);
                 }}
-                onSelectSuggestion={handleSelectSuggestion}
+                onGenerateSuggestion={handleGenerateSuggestion}
                 onRefreshSuggestions={handleRefreshSuggestions}
                 onGenerate={handleGenerate}
               />

@@ -11,13 +11,21 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import db
 from ...schemas.quiz import RoadmapOut
+from ..agents import gather_limited
 from ..notebook_access import resolve_notebook_access
 from .constants import (
+    MAX_DUPLICATE_RETRIES,
+    MAX_PARALLEL_AGENTS,
     PASSING_EXAM_SCORE,
     PASSING_LESSON_SCORE,
     QUESTION_GENERATION_POLL_SECONDS,
     QUESTION_GENERATION_WAIT_SECONDS,
     QuizGenerationConfig,
+)
+from .coverage import (
+    fetch_targets_context,
+    find_duplicate_indices,
+    plan_unit_coverage,
 )
 from .llm import (
     compact_context,
@@ -73,6 +81,96 @@ async def wait_for_questions(
     return []
 
 
+async def replace_duplicate_questions(
+    notebook: dict,
+    user: dict,
+    unit: dict,
+    level: dict,
+    difficulty_label: str,
+    targets: list[dict],
+    questions: list[dict],
+    db_ref: AsyncIOMotorDatabase,
+) -> list[dict]:
+    existing_texts = [
+        doc["question"]
+        async for doc in db_ref.quiz_questions.find(
+            {"owner_id": user["_id"], "notebook_id": notebook["_id"]},
+            {"question": 1},
+        )
+    ]
+    for _ in range(MAX_DUPLICATE_RETRIES):
+        duplicates = await find_duplicate_indices(
+            [item["question"] for item in questions], existing_texts
+        )
+        if not duplicates:
+            return questions
+        logger.info(
+            "Preguntas duplicadas, regenerando",
+            extra={"level_id": level["id"], "count": len(duplicates)},
+        )
+        try:
+            replacements = await generate_questions(
+                notebook["title"],
+                unit["title"],
+                level["title"],
+                level["type"],
+                "",
+                len(duplicates),
+                difficulty_label,
+                targets=[targets[index] for index in duplicates],
+                avoid_questions=existing_texts
+                + [questions[index]["question"] for index in duplicates],
+            )
+        except HTTPException:
+            logger.warning(
+                "No se pudieron regenerar duplicadas", extra={"level_id": level["id"]}
+            )
+            return questions
+        for index, replacement in zip(duplicates, replacements):
+            questions[index] = replacement
+    return questions
+
+
+async def plan_roadmap_coverage(
+    notebook: dict,
+    user: dict,
+    units_payload: list[dict],
+    length: str,
+    difficulty: str,
+) -> None:
+    difficulty_label = resolve_difficulty_label(difficulty)
+    results = await gather_limited(
+        [
+            plan_unit_coverage(
+                notebook["title"],
+                notebook["_id"],
+                user,
+                unit,
+                [other for other in units_payload if other["id"] != unit["id"]],
+                unit["levels"],
+                {
+                    level["id"]: resolve_question_count(length, level["type"])
+                    for level in unit["levels"]
+                },
+                difficulty_label,
+            )
+            for unit in units_payload
+        ],
+        MAX_PARALLEL_AGENTS,
+    )
+    for unit, result in zip(units_payload, results):
+        if isinstance(result, BaseException):
+            logger.warning(
+                "Fallo el plan de cobertura de la unidad",
+                extra={"unit_id": unit["id"], "error": str(result)},
+            )
+            continue
+        for level in unit["levels"]:
+            targets = result.get(level["id"])
+            if targets:
+                level["targets"] = targets
+
+
 async def generate_questions_for_level(
     notebook: dict,
     user: dict,
@@ -94,6 +192,10 @@ async def generate_questions_for_level(
     difficulty_label = resolve_difficulty_label(difficulty)
     question_count = resolve_question_count(length, level["type"])
 
+    targets = level.get("targets")
+    if targets:
+        targets = await fetch_targets_context(targets, notebook["_id"], user)
+
     questions = await generate_questions(
         notebook["title"],
         unit["title"],
@@ -102,7 +204,19 @@ async def generate_questions_for_level(
         context_text,
         question_count,
         difficulty_label,
+        targets=targets,
     )
+    if targets:
+        questions = await replace_duplicate_questions(
+            notebook,
+            user,
+            unit,
+            level,
+            difficulty_label,
+            targets,
+            questions,
+            db_ref,
+        )
     now = datetime.now(timezone.utc)
     await db_ref.quiz_llm_payloads.insert_one(
         {
@@ -363,6 +477,8 @@ async def generate_quiz_for_notebook(
                 "levels": lesson_levels,
             }
         )
+
+    await plan_roadmap_coverage(notebook, user, units_payload, length, difficulty)
 
     now = datetime.now(timezone.utc)
     roadmap_doc = {

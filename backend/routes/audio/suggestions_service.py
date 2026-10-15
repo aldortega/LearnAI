@@ -9,9 +9,15 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
 from ...db import db
-from ...schemas.audio import AudioFormatTemplateOut, AudioSuggestionOut
+from ...schemas.audio import (
+    AudioDuration,
+    AudioFormatTemplateOut,
+    AudioFormatType,
+    AudioSuggestionOut,
+)
 from ..rag import create_llm, retrieve_context
 from .constants import (
+    AUDIO_DURATION_CONFIGS,
     AUDIO_FORMAT_CONFIGS,
     AudioSuggestionsPayloadLLM,
     SUGGESTION_COUNT,
@@ -33,27 +39,45 @@ def build_format_templates() -> list[AudioFormatTemplateOut]:
     ]
 
 
+def coerce_format_type(value: Any) -> AudioFormatType:
+    text = coerce_text(value).strip().lower()
+    return text if text in AUDIO_FORMAT_CONFIGS else "deep_dive"  # type: ignore[return-value]
+
+
+def coerce_duration(value: Any) -> AudioDuration:
+    text = coerce_text(value).strip().lower()
+    return text if text in AUDIO_DURATION_CONFIGS else "default"  # type: ignore[return-value]
+
+
 def build_fallback_audio_suggestions(notebook_title: str) -> list[AudioSuggestionOut]:
     fallback_items = [
         {
             "title": "Recorrido por las ideas clave",
             "description": "Un panorama general de los conceptos mas importantes de tus fuentes.",
             "default_topic": f"Ideas clave y conexiones principales de {notebook_title}",
+            "format_type": "deep_dive",
+            "duration": "default",
         },
         {
             "title": "Aplicaciones practicas",
             "description": "Ejemplos concretos y casos de uso derivados del material.",
             "default_topic": f"Aplicaciones practicas y ejemplos reales sobre {notebook_title}",
+            "format_type": "brief",
+            "duration": "short",
         },
         {
             "title": "Errores comunes y como evitarlos",
             "description": "Identifica confusiones frecuentes y entrega recomendaciones claras.",
             "default_topic": f"Errores frecuentes al aprender {notebook_title} y como prevenirlos",
+            "format_type": "critique",
+            "duration": "default",
         },
         {
             "title": "Conexiones entre temas",
             "description": "Hilo conductor que relaciona los distintos temas presentes en tus fuentes.",
             "default_topic": f"Conexiones y relaciones entre los temas de {notebook_title}",
+            "format_type": "debate",
+            "duration": "default",
         },
     ]
     return [
@@ -62,6 +86,8 @@ def build_fallback_audio_suggestions(notebook_title: str) -> list[AudioSuggestio
             title=item["title"],
             description=item["description"],
             default_topic=item["default_topic"],
+            format_type=coerce_format_type(item["format_type"]),
+            duration=coerce_duration(item["duration"]),
         )
         for index, item in enumerate(fallback_items, start=1)
     ]
@@ -87,6 +113,8 @@ def ensure_suggestion_count(
                 title=title[:80],
                 description=description[:180],
                 default_topic=default_topic[:500],
+                format_type=suggestion.format_type,
+                duration=suggestion.duration,
             )
         )
         if len(normalized) >= SUGGESTION_COUNT:
@@ -105,6 +133,8 @@ def ensure_suggestion_count(
                     title=suggestion.title,
                     description=suggestion.description,
                     default_topic=suggestion.default_topic,
+                    format_type=suggestion.format_type,
+                    duration=suggestion.duration,
                 )
             )
             if len(normalized) >= SUGGESTION_COUNT:
@@ -116,6 +146,8 @@ def ensure_suggestion_count(
             title=suggestion.title,
             description=suggestion.description,
             default_topic=suggestion.default_topic,
+            format_type=suggestion.format_type,
+            duration=suggestion.duration,
         )
         for index, suggestion in enumerate(normalized[:SUGGESTION_COUNT], start=1)
     ]
@@ -143,6 +175,8 @@ def parse_cached_audio_suggestions(
                 title=title[:80],
                 description=description[:180],
                 default_topic=default_topic[:500],
+                format_type=coerce_format_type(suggestion.get("format_type")),
+                duration=coerce_duration(suggestion.get("duration")),
             )
         )
 
@@ -276,6 +310,8 @@ async def generate_audio_suggestions(
                 title=title[:80],
                 description=description[:180],
                 default_topic=default_topic[:500],
+                format_type=coerce_format_type(suggestion.get("format_type")),
+                duration=coerce_duration(suggestion.get("duration")),
             )
         )
         if len(normalized) >= SUGGESTION_COUNT:

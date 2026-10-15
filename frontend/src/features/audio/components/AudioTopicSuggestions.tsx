@@ -1,7 +1,24 @@
 import { RefreshCw, Sparkles } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
-import type { AudioSuggestion } from "../types/audio.types";
+import type {
+  AudioDuration,
+  AudioFormatType,
+  AudioSuggestion,
+} from "../types/audio.types";
+
+const FORMAT_LABELS: Record<AudioFormatType, string> = {
+  deep_dive: "Analisis en profundidad",
+  brief: "Breve resumen",
+  critique: "Critica",
+  debate: "Debate",
+};
+
+const DURATION_LABELS: Record<AudioDuration, string> = {
+  short: "Corto",
+  default: "Por defecto",
+  long: "Largo",
+};
 
 type Props = {
   suggestions: AudioSuggestion[];
@@ -9,7 +26,7 @@ type Props = {
   isLoading: boolean;
   isRefreshing: boolean;
   isStale: boolean;
-  onSelectSuggestion: (suggestion: AudioSuggestion) => void;
+  onGenerateSuggestion: (suggestion: AudioSuggestion) => void;
   onRefresh: () => void;
 };
 
@@ -37,7 +54,7 @@ export function AudioTopicSuggestions({
   isLoading,
   isRefreshing,
   isStale,
-  onSelectSuggestion,
+  onGenerateSuggestion,
   onRefresh,
 }: Props) {
   const visible = suggestions.slice(0, 4);
@@ -72,7 +89,7 @@ export function AudioTopicSuggestions({
               <button
                 key={suggestion.id}
                 type="button"
-                onClick={() => onSelectSuggestion(suggestion)}
+                onClick={() => onGenerateSuggestion(suggestion)}
                 disabled={disabled}
                 className={cn(
                   "flex h-full flex-col items-start gap-1.5 rounded-2xl border border-border bg-surface p-4 text-left shadow-sm transition",
@@ -85,6 +102,10 @@ export function AudioTopicSuggestions({
                 </p>
                 <p className="line-clamp-3 text-xs leading-5 text-muted-foreground">
                   {suggestion.description}
+                </p>
+                <p className="text-xs font-medium text-foreground">
+                  {FORMAT_LABELS[suggestion.format_type]} ·{" "}
+                  {DURATION_LABELS[suggestion.duration]}
                 </p>
               </button>
             ))}

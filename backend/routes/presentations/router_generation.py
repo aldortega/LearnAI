@@ -26,6 +26,8 @@ def map_presentation_generation_job(job_doc: dict) -> PresentationGenerationJobO
         presentation_id=str(job_doc["presentation_id"])
         if job_doc.get("presentation_id")
         else None,
+        stage=job_doc.get("stage"),
+        progress=job_doc.get("progress"),
         started_at=job_doc.get("started_at"),
         finished_at=job_doc.get("finished_at"),
     )

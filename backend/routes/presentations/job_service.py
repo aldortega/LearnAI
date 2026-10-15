@@ -8,9 +8,13 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from ...config import settings
 from ...db import db
-from ...schemas.presentations import PresentationDetailLevel
+from ...schemas.presentations import (
+    PresentationDetailLevel,
+    PresentationGenerationStage,
+)
+from .constants import PRESENTATION_STAGE_PROGRESS
 from .generation_service import generate_presentation_payload
-from .image_generation_service import generate_image_presentation_payload
+from .visual_generation_service import generate_image_presentation_payload
 from .normalization import coerce_text
 from .repository import compute_sources_fingerprint
 
@@ -25,6 +29,18 @@ async def mark_presentation_job_processing(
     await db_ref.presentation_generation_jobs.update_one(
         {"job_id": job_id},
         {"$set": {"status": "processing", "started_at": now, "error": None}},
+    )
+
+
+async def set_presentation_job_stage(
+    job_id: str,
+    stage: PresentationGenerationStage,
+    db_client: AsyncIOMotorDatabase | None = None,
+) -> None:
+    db_ref = db if db_client is None else db_client
+    await db_ref.presentation_generation_jobs.update_one(
+        {"job_id": job_id},
+        {"$set": {"stage": stage, "progress": PRESENTATION_STAGE_PROGRESS[stage]}},
     )
 
 
@@ -54,6 +70,8 @@ async def mark_presentation_job_done(
             "$set": {
                 "status": "done",
                 "presentation_id": presentation_id,
+                "stage": None,
+                "progress": 100,
                 "finished_at": now,
             }
         },
@@ -157,6 +175,9 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
             )
             return
 
+        async def on_stage(stage: PresentationGenerationStage) -> None:
+            await set_presentation_job_stage(job_id, stage, db_client=worker_db)
+
         try:
             if generation_mode == "image":
                 image_result = await generate_image_presentation_payload(
@@ -169,6 +190,7 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                         "_id": owner_object_id,
                         "_source_owner_id": notebook["owner_id"],
                     },
+                    on_stage=on_stage,
                 )
                 title = image_result.title
                 summary = image_result.summary
@@ -184,6 +206,7 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                         "_id": owner_object_id,
                         "_source_owner_id": notebook["owner_id"],
                     },
+                    on_stage=on_stage,
                 )
             now = datetime.now(timezone.utc)
             presentation_doc = {

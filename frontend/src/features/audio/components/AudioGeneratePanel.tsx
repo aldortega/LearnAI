@@ -30,7 +30,7 @@ type Props = {
   onSelectFormat: (format: AudioFormatType) => void;
   onSelectDuration: (duration: AudioDuration) => void;
   onTopicChange: (value: string) => void;
-  onSelectSuggestion: (suggestion: AudioSuggestion) => void;
+  onGenerateSuggestion: (suggestion: AudioSuggestion) => void;
   onRefreshSuggestions: () => void;
   onGenerate: () => void;
 };
@@ -53,7 +53,7 @@ export function AudioGeneratePanel({
   onSelectFormat,
   onSelectDuration,
   onTopicChange,
-  onSelectSuggestion,
+  onGenerateSuggestion,
   onRefreshSuggestions,
   onGenerate,
 }: Props) {
@@ -84,7 +84,7 @@ export function AudioGeneratePanel({
         isLoading={isSuggestionsLoading}
         isRefreshing={isRefreshingSuggestions}
         isStale={isSuggestionsStale}
-        onSelectSuggestion={onSelectSuggestion}
+        onGenerateSuggestion={onGenerateSuggestion}
         onRefresh={onRefreshSuggestions}
       />
       {suggestionsError ? (

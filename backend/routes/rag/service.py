@@ -30,6 +30,8 @@ GENERAL_KNOWLEDGE_NOTICE = (
     "respondo con conocimiento general."
 )
 
+GENERAL_KNOWLEDGE_MARKER = "[[conocimiento-general]]"
+
 CITATION_INSTRUCTION = (
     " Los fragmentos del contexto estan numerados como [1], [2], etc. "
     "Cuando una afirmacion provenga de un fragmento, cita su numero entre "
@@ -61,6 +63,7 @@ def message_to_out(message: dict) -> ChatMessageOut:
         role=message["role"],
         content=message["content"],
         sources=sources,
+        used_general_knowledge=bool(message.get("used_general_knowledge", False)),
         created_at=message["created_at"],
     )
 
@@ -84,12 +87,19 @@ def build_prompt_messages(
     question: str,
     include_notice: bool = True,
     cite: bool = False,
+    general_marker: bool = False,
 ) -> tuple[SystemMessage, HumanMessage]:
     system_prompt = (
         "Eres un asistente de estudio. Usa el contexto como fuente principal. "
         "Si el contexto es insuficiente para responder, complementa con conocimiento general. "
     )
-    if include_notice:
+    if include_notice and general_marker:
+        system_prompt += (
+            "Cuando uses conocimiento general, inicia la respuesta exactamente con "
+            f'"{GENERAL_KNOWLEDGE_MARKER}" seguido de un salto de linea y continua normalmente. '
+            "Si el contexto esta vacio, responde solo con conocimiento general e inicia con esa marca."
+        )
+    elif include_notice:
         system_prompt += (
             f'Cuando uses conocimiento general, inicia la respuesta con: "{GENERAL_KNOWLEDGE_NOTICE}". '
             "Si el contexto esta vacio, responde solo con conocimiento general y usa el aviso."
@@ -285,6 +295,40 @@ def ensure_general_notice(answer_text: str) -> str:
     return f"{GENERAL_KNOWLEDGE_NOTICE}\n\n{trimmed}"
 
 
+def split_general_marker(answer_text: str) -> tuple[str, bool]:
+    trimmed = answer_text.lstrip()
+    if not trimmed.startswith(GENERAL_KNOWLEDGE_MARKER):
+        return answer_text, False
+    return trimmed[len(GENERAL_KNOWLEDGE_MARKER) :].lstrip(), True
+
+
+class GeneralMarkerFilter:
+    def __init__(self) -> None:
+        self.used_general_knowledge = False
+        self._buffer = ""
+        self._decided = False
+
+    def feed(self, chunk: str) -> str:
+        if self._decided:
+            return chunk
+        self._buffer += chunk
+        candidate = self._buffer.lstrip()
+        if candidate.startswith(GENERAL_KNOWLEDGE_MARKER):
+            self._decided = True
+            self.used_general_knowledge = True
+            self._buffer = ""
+            return candidate[len(GENERAL_KNOWLEDGE_MARKER) :].lstrip()
+        if GENERAL_KNOWLEDGE_MARKER.startswith(candidate):
+            return ""
+        self._decided = True
+        remaining, self._buffer = self._buffer, ""
+        return remaining
+
+    def flush(self) -> str:
+        remaining, self._buffer = self._buffer, ""
+        return remaining
+
+
 def create_llm() -> GeminiChatWithFallback:
     return create_chat_model_with_fallback(
         model_name=settings.gemini_chat_model,
@@ -427,23 +471,32 @@ async def retrieve_context(
 
 
 async def generate_answer(
-    question: str, context_lines: list[str], cite: bool = False
+    question: str,
+    context_lines: list[str],
+    cite: bool = False,
+    flag_general: bool = False,
 ) -> str:
     include_notice = bool(context_lines)
     system_message, user_message = build_prompt_messages(
-        context_lines, question, include_notice=include_notice, cite=cite
+        context_lines,
+        question,
+        include_notice=include_notice,
+        cite=cite,
+        general_marker=flag_general,
     )
     llm = create_llm()
     answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
     answer_text = coerce_text(getattr(answer, "content", answer))
     if not context_lines:
+        if flag_general:
+            return f"{GENERAL_KNOWLEDGE_MARKER}\n\n{answer_text.strip()}"
         return ensure_general_notice(answer_text)
     return answer_text
 
 
 async def stream_answer(question: str, context_lines: list[str]):
     system_message, user_message = build_prompt_messages(
-        context_lines, question, cite=True
+        context_lines, question, cite=True, general_marker=True
     )
     llm = create_llm()
 
@@ -518,12 +571,15 @@ async def run_rag_query(
     notebook_object_id: ObjectId,
     user: dict,
     top_k: int | None = None,
+    flag_general: bool = False,
 ) -> tuple[str, list[RagSource], list[str], int, int]:
     start = time.perf_counter()
     context_lines, sources, document_ids, selected_top_k = await retrieve_context(
         question, notebook_object_id, user, top_k, grade=True
     )
-    answer_text = await generate_answer(question, context_lines, cite=True)
+    answer_text = await generate_answer(
+        question, context_lines, cite=True, flag_general=flag_general
+    )
     latency_ms = await record_rag_query(
         start, question, notebook_object_id, user, document_ids, selected_top_k, sources
     )
