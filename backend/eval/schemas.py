@@ -2,6 +2,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from ..config import LLMProvider
 from ..schemas.rag import RagSource
 
 QuestionType = Literal["single_hop", "multi_hop", "out_of_scope"]
@@ -28,4 +29,8 @@ class EvalRecord(BaseModel):
     used_general_knowledge: bool
     sources: list[RagSource] = Field(default_factory=list)
     latency_ms: int
+    provider: LLMProvider
+    chat_model: str
+    embedding_model: str
+    temperature_omitted: bool
     error: Optional[str] = None
