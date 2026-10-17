@@ -333,7 +333,7 @@ async def _generate_single_call_script(
         context_text=context_text,
     )
 
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=AudioScriptPayloadLLM.model_json_schema(),
         method="json_schema",

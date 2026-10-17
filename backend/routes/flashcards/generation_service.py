@@ -65,7 +65,7 @@ async def generate_flashcards_payload(
         context_text=context_text,
     )
 
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=FlashcardsPayloadLLM.model_json_schema(),
         method="json_schema",

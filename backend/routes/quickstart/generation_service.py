@@ -53,7 +53,7 @@ async def generate_quickstart_topics(
     system_message, user_message = build_quickstart_prompt(
         title, context_text, has_context=bool(context_lines)
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=QuickstartPayloadLLM.model_json_schema(), method="json_schema"
     )
@@ -107,7 +107,7 @@ async def generate_topic_expansion(
         context_text,
         has_context=bool(context_lines),
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=QuickstartExpansionLLM.model_json_schema(), method="json_schema"
     )
@@ -161,7 +161,7 @@ async def generate_topic_item_detail(
         context_text,
         has_context=bool(context_lines),
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=QuickstartTopicDetailLLM.model_json_schema(), method="json_schema"
     )
@@ -195,7 +195,7 @@ async def generate_quickstart_suggestions(
     system_message, user_message = build_suggestions_prompt(
         notebook_title, existing_titles, context_text
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=QuickstartSuggestionsLLM.model_json_schema(), method="json_schema"
     )
@@ -225,7 +225,7 @@ async def generate_single_quickstart_topic(
     system_message, user_message = build_single_topic_prompt(
         notebook_title, requested_title, existing_titles, context_text
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=QuickstartSingleTopicLLM.model_json_schema(), method="json_schema"
     )

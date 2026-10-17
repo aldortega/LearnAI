@@ -64,7 +64,7 @@ async def generate_mindmap_tree(
     )
     context_text = compact_context(context_lines, max_chars=5500)
     system_message, user_message = build_mindmap_tree_prompt(topic, context_text)
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=MindmapTreePayloadLLM.model_json_schema(),
         method="json_schema",
@@ -139,7 +139,7 @@ async def generate_node_detail(
         lineage_titles=lineage_titles,
         children_titles=children_titles,
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=MindmapNodeDetailLLM.model_json_schema(),
         method="json_schema",

@@ -5,6 +5,7 @@ from typing import TypeVar
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel
 
+from ...config import LLMProvider
 from ..rag import create_llm
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -12,9 +13,9 @@ ResultT = TypeVar("ResultT")
 
 
 async def invoke_structured(
-    schema: type[ModelT], messages: list[BaseMessage]
+    schema: type[ModelT], messages: list[BaseMessage], provider: LLMProvider
 ) -> ModelT:
-    structured_llm = create_llm().with_structured_output(
+    structured_llm = create_llm(provider).with_structured_output(
         schema=schema.model_json_schema(),
         method="json_schema",
     )

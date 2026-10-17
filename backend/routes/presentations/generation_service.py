@@ -266,6 +266,7 @@ async def regenerate_presentation_slide_payload(
         notebook_object_id,
         user,
         grade=True,
+        provider="gemini",
     )
     context_text = compact_context(context_lines)
     system_message, user_message = build_regenerate_slide_prompt(
@@ -280,7 +281,7 @@ async def regenerate_presentation_slide_payload(
         context_text=context_text,
     )
 
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema={
             "type": "object",
