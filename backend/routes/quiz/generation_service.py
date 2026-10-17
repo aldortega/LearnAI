@@ -9,6 +9,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from ...config import LLMProvider
 from ...db import db
 from ...schemas.quiz import RoadmapOut
 from ..agents import gather_limited
@@ -90,6 +91,7 @@ async def replace_duplicate_questions(
     targets: list[dict],
     questions: list[dict],
     db_ref: AsyncIOMotorDatabase,
+    provider: LLMProvider,
 ) -> list[dict]:
     existing_texts = [
         doc["question"]
@@ -117,6 +119,7 @@ async def replace_duplicate_questions(
                 "",
                 len(duplicates),
                 difficulty_label,
+                provider,
                 targets=[targets[index] for index in duplicates],
                 avoid_questions=existing_texts
                 + [questions[index]["question"] for index in duplicates],
@@ -137,6 +140,7 @@ async def plan_roadmap_coverage(
     units_payload: list[dict],
     length: str,
     difficulty: str,
+    provider: LLMProvider,
 ) -> None:
     difficulty_label = resolve_difficulty_label(difficulty)
     results = await gather_limited(
@@ -153,6 +157,7 @@ async def plan_roadmap_coverage(
                     for level in unit["levels"]
                 },
                 difficulty_label,
+                provider,
             )
             for unit in units_payload
         ],
@@ -177,6 +182,7 @@ async def generate_questions_for_level(
     roadmap: dict,
     unit: dict,
     level: dict,
+    provider: LLMProvider,
     db_client: AsyncIOMotorDatabase | None = None,
 ) -> None:
     db_ref = db if db_client is None else db_client
@@ -204,6 +210,7 @@ async def generate_questions_for_level(
         context_text,
         question_count,
         difficulty_label,
+        provider,
         targets=targets,
     )
     if targets:
@@ -216,6 +223,7 @@ async def generate_questions_for_level(
             targets,
             questions,
             db_ref,
+            provider,
         )
     now = datetime.now(timezone.utc)
     await db_ref.quiz_llm_payloads.insert_one(
@@ -254,6 +262,7 @@ async def generate_questions_for_roadmap(
     notebook: dict,
     user: dict,
     roadmap: dict,
+    provider: LLMProvider,
     db_client: AsyncIOMotorDatabase | None = None,
 ) -> None:
     db_ref = db if db_client is None else db_client
@@ -330,7 +339,7 @@ async def generate_questions_for_roadmap(
 
             try:
                 await generate_questions_for_level(
-                    notebook, user, roadmap, unit, level, db_client=db_ref
+                    notebook, user, roadmap, unit, level, provider, db_client=db_ref
                 )
                 await db_ref.quiz_level_progress.update_one(
                     {
@@ -405,6 +414,7 @@ async def generate_quiz_for_notebook(
     config: QuizGenerationConfig,
     length: str,
     difficulty: str,
+    provider: LLMProvider,
     db_client: AsyncIOMotorDatabase | None = None,
 ) -> RoadmapOut:
     db_ref = db if db_client is None else db_client
@@ -430,7 +440,9 @@ async def generate_quiz_for_notebook(
         notebook["title"], notebook_object_id, user
     )
     context_text = compact_context(context_lines)
-    units_data = await generate_roadmap_data(notebook["title"], context_lines, config)
+    units_data = await generate_roadmap_data(
+        notebook["title"], context_lines, config, provider
+    )
     now = datetime.now(timezone.utc)
     await db_ref.quiz_llm_payloads.insert_one(
         {
@@ -478,7 +490,8 @@ async def generate_quiz_for_notebook(
             }
         )
 
-    await plan_roadmap_coverage(notebook, user, units_payload, length, difficulty)
+    await plan_roadmap_coverage(notebook, user, units_payload, length, difficulty, provider
+    )
 
     now = datetime.now(timezone.utc)
     roadmap_doc = {
