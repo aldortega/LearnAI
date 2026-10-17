@@ -89,8 +89,18 @@ def _make_strict(node: Any, is_name_map: bool = False) -> Any:
     return cleaned
 
 
+def _inline_root_ref(schema: dict[str, Any]) -> dict[str, Any]:
+    ref = schema.get("$ref")
+    if not isinstance(ref, str) or not ref.startswith("#/$defs/"):
+        return schema
+    target = schema.get("$defs", {}).get(ref.removeprefix("#/$defs/"))
+    if not isinstance(target, dict):
+        return schema
+    return {**target, "$defs": schema["$defs"]}
+
+
 def to_strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
-    strict_schema = _make_strict(copy.deepcopy(schema))
+    strict_schema = _make_strict(_inline_root_ref(copy.deepcopy(schema)))
     for definition in strict_schema.get("$defs", {}).values():
         if definition.get("type") == "object" and "properties" not in definition:
             raise ValueError("Schema incompatible con modo strict de OpenAI")

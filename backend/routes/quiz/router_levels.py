@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured
 from ...rq_queue import quiz_queue
 from ...schemas.quiz import (
     QuizAttemptOut,
@@ -142,6 +144,8 @@ async def generate_level_questions(
     if questions_status == "ready":
         return QuizQuestionsGenerationOut(status="ready")
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     await db.quiz_level_progress.update_one(
         {
             "owner_id": user["_id"],
@@ -161,6 +165,7 @@ async def generate_level_questions(
         str(notebook["_id"]),
         str(user["_id"]),
         level_id,
+        provider,
     )
     return QuizQuestionsGenerationOut(status="generating")
 
