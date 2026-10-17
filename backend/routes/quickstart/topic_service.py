@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from ...config import LLMProvider
 from ...db import db
 from ...schemas.quickstart import (
     QuickstartExpansionOut,
@@ -64,6 +65,7 @@ async def get_or_create_topic_expansion(
     topic_id: str,
     topic: dict,
     fingerprint: str,
+    provider: LLMProvider,
 ) -> QuickstartExpansionOut:
     expansion_filter = {
         "owner_id": user["_id"],
@@ -76,7 +78,7 @@ async def get_or_create_topic_expansion(
         return expansion_to_out(topic_id, cached)
 
     expansion, sources = await generate_topic_expansion(
-        notebook["title"], topic, notebook["_id"], user
+        notebook["title"], topic, notebook["_id"], user, provider
     )
     sources_out = sources_to_refs(sources)
     now = datetime.now(timezone.utc)

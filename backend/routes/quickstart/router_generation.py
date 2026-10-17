@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import quickstart_queue
 from ...schemas.quickstart import (
     QuickstartGenerationJobOut,
@@ -156,7 +158,11 @@ async def get_quickstart_suggestions(
         )
 
     suggestions = await generate_quickstart_suggestions(
-        notebook["title"], existing_titles, notebook["_id"], user
+        notebook["title"],
+        existing_titles,
+        notebook["_id"],
+        user,
+        settings.llm_provider,
     )
     now = datetime.now(timezone.utc)
     await db.quickstart_suggestions.update_one(
@@ -202,10 +208,13 @@ async def generate_quickstart(
             detail="Necesitás al menos una fuente lista para generar el inicio rapido",
         )
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     job = quickstart_queue.enqueue(
         process_quickstart_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        provider,
     )
     now = datetime.now(timezone.utc)
     await db.quickstart_generation_jobs.insert_one(
@@ -214,6 +223,8 @@ async def generate_quickstart(
             "owner_id": user["_id"],
             "notebook_id": notebook["_id"],
             "status": "queued",
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "error": None,
             "created_at": now,
             "started_at": None,
