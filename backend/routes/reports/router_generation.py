@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import reports_queue
 from ...schemas.reports import (
     ReportConfigOut,
@@ -139,11 +141,14 @@ async def generate_report_suggestions(
     if active_job_doc:
         return map_report_suggestions_job(active_job_doc)
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     job = reports_queue.enqueue(
         process_report_suggestions_generation,
         str(notebook["_id"]),
         str(user["_id"]),
         sources_fingerprint,
+        provider,
     )
     now = datetime.now(timezone.utc)
     await db.report_suggestion_generation_jobs.insert_one(
@@ -152,6 +157,8 @@ async def generate_report_suggestions(
             "owner_id": user["_id"],
             "notebook_id": notebook["_id"],
             "status": "queued",
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "error": None,
             "sources_fingerprint": sources_fingerprint,
             "created_at": now,
@@ -264,10 +271,13 @@ async def generate_report(
     if active_job_doc:
         return map_report_generation_job(active_job_doc)
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     job = reports_queue.enqueue(
         process_report_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        provider,
     )
     now = datetime.now(timezone.utc)
     await db.report_generation_jobs.insert_one(
@@ -276,6 +286,8 @@ async def generate_report(
             "owner_id": user["_id"],
             "notebook_id": notebook["_id"],
             "status": "queued",
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "error": None,
             "report_id": None,
             "format_type": format_type,

@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from ...schemas.reports import ReportGenerationStage
 from .constants import REPORT_STAGE_PROGRESS, REPORT_TEMPLATE_CONFIGS
@@ -94,8 +94,10 @@ def resolve_report_suggestions_error_message(exc: Exception) -> str:
     return "No se pudieron generar sugerencias de reportes"
 
 
-def process_report_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_report_generation(notebook_id, owner_id))
+def process_report_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
+    asyncio.run(_process_report_generation(notebook_id, owner_id, provider))
 
 
 async def mark_report_suggestions_job_processing(
@@ -135,16 +137,18 @@ async def mark_report_suggestions_job_done(
 
 
 def process_report_suggestions_generation(
-    notebook_id: str, owner_id: str, fingerprint_at_enqueue: str
+    notebook_id: str, owner_id: str, fingerprint_at_enqueue: str, provider: LLMProvider
 ) -> None:
     asyncio.run(
         _process_report_suggestions_generation(
-            notebook_id, owner_id, fingerprint_at_enqueue
+            notebook_id, owner_id, fingerprint_at_enqueue, provider
         )
     )
 
 
-async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
+async def _process_report_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
     from rq import get_current_job
 
     job = get_current_job()
@@ -238,6 +242,7 @@ async def _process_report_generation(notebook_id: str, owner_id: str) -> None:
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider=provider,
                 on_stage=on_stage,
             )
             if not report_title or not report_description:
@@ -272,6 +277,7 @@ async def _process_report_suggestions_generation(
     notebook_id: str,
     owner_id: str,
     fingerprint_at_enqueue: str,
+    provider: LLMProvider,
 ) -> None:
     from rq import get_current_job
 
@@ -347,6 +353,7 @@ async def _process_report_suggestions_generation(
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider=provider,
             )
             if not suggestions:
                 raise ValueError("No se pudieron generar sugerencias de reportes")

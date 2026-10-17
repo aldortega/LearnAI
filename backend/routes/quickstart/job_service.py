@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from .generation_service import generate_quickstart_topics
 from .repository import compute_sources_fingerprint
@@ -56,13 +56,16 @@ def resolve_quickstart_error_message(exc: Exception) -> str:
     return "No se pudo generar el inicio rapido"
 
 
-def process_quickstart_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_quickstart_generation(notebook_id, owner_id))
+def process_quickstart_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
+    asyncio.run(_process_quickstart_generation(notebook_id, owner_id, provider))
 
 
 async def _process_quickstart_generation(
     notebook_id: str,
     owner_id: str,
+    provider: LLMProvider,
 ) -> None:
     from rq import get_current_job
 
@@ -118,6 +121,7 @@ async def _process_quickstart_generation(
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider,
             )
             sources_out = sources_to_refs(sources)
             now = datetime.now(timezone.utc)

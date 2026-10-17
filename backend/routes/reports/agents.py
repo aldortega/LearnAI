@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from bson import ObjectId
 
+from ...config import LLMProvider
 from ...schemas.rag import RagSource
 from ...schemas.reports import ReportFormatType
 from ..agents import invoke_structured
@@ -38,11 +39,12 @@ async def plan_report(
     format_type: ReportFormatType,
     prompt: str,
     overview_context: str,
+    provider: LLMProvider,
 ) -> ReportOutlineLLM:
     system_message, user_message = build_outline_prompt(
         notebook_title, format_type, prompt, overview_context
     )
-    outline = await invoke_structured(ReportOutlineLLM, [system_message, user_message], "gemini")
+    outline = await invoke_structured(ReportOutlineLLM, [system_message, user_message], provider)
     outline.sections = outline.sections[:MAX_REPORT_SECTIONS]
     return outline
 
@@ -51,13 +53,14 @@ async def research_section(
     section: ReportSection,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> None:
     context_lines, sources, _, _ = await retrieve_context(
         section.research_query,
         notebook_object_id,
         user,
         grade=True,
-        provider="gemini",
+        provider=provider,
     )
     section.notes = compact_context(context_lines, max_chars=SECTION_CONTEXT_CHARS)
     section.sources = sources
@@ -70,6 +73,7 @@ async def write_section(
     report_title: str,
     sections: list[ReportSection],
     section_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> str:
     section = sections[section_index - 1]
@@ -85,7 +89,7 @@ async def write_section(
         previous_content=section.content if issues else None,
         issues=issues,
     )
-    draft = await invoke_structured(ReportSectionDraftLLM, [system_message, user_message], "gemini")
+    draft = await invoke_structured(ReportSectionDraftLLM, [system_message, user_message], provider)
     return draft.content.strip()
 
 
@@ -93,6 +97,7 @@ async def review_report(
     notebook_title: str,
     prompt: str,
     sections: list[ReportSection],
+    provider: LLMProvider,
 ) -> dict[int, list[str]]:
     sections_text = "\n\n".join(
         f"### Seccion {index}: {section.heading}\n"
@@ -103,7 +108,7 @@ async def review_report(
     system_message, user_message = build_review_prompt(
         notebook_title, prompt, sections_text
     )
-    review = await invoke_structured(ReportReviewLLM, [system_message, user_message], "gemini")
+    review = await invoke_structured(ReportReviewLLM, [system_message, user_message], provider)
 
     issues_by_section: dict[int, list[str]] = {}
     for finding in review.findings:
@@ -121,6 +126,7 @@ async def summarize_report(
     draft_title: str,
     draft_description: str,
     body_text: str,
+    provider: LLMProvider,
 ) -> ReportSummaryLLM:
     system_message, user_message = build_summary_prompt(
         notebook_title=notebook_title,
@@ -130,4 +136,4 @@ async def summarize_report(
         draft_description=draft_description,
         body_text=body_text,
     )
-    return await invoke_structured(ReportSummaryLLM, [system_message, user_message], "gemini")
+    return await invoke_structured(ReportSummaryLLM, [system_message, user_message], provider)
