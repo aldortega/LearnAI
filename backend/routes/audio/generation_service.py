@@ -5,6 +5,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
+from ...config import LLMProvider
 from ...schemas.audio import (
     AudioDuration,
     AudioFormatType,
@@ -133,6 +134,7 @@ async def _write_with_retry(
     outline: PodcastOutlineLLM,
     blocks: list[BlockDraft],
     block_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> PodcastBlockLLM:
     last_exc: Exception | None = None
@@ -145,6 +147,7 @@ async def _write_with_retry(
                 outline,
                 blocks,
                 block_index,
+                provider,
                 issues,
             )
         except HTTPException:
@@ -177,6 +180,7 @@ async def _rewrite_flagged_blocks(
     outline: PodcastOutlineLLM,
     blocks: list[BlockDraft],
     issues_by_block: dict[int, list[str]],
+    provider: LLMProvider,
 ) -> None:
     block_indices = list(issues_by_block)
     results = await gather_limited(
@@ -188,6 +192,7 @@ async def _rewrite_flagged_blocks(
                 outline,
                 blocks,
                 block_index,
+                provider,
                 issues_by_block[block_index],
             )
             for block_index in block_indices
@@ -212,13 +217,26 @@ async def generate_audio_script(
     topic: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> AudioScriptGenerationResult:
     if int(AUDIO_DURATION_CONFIGS[duration]["blocks"]) <= 1:
         return await _generate_single_call_script(
-            notebook_title, format_type, duration, topic, notebook_object_id, user
+            notebook_title,
+            format_type,
+            duration,
+            topic,
+            notebook_object_id,
+            user,
+            provider,
         )
     return await _generate_multi_agent_script(
-        notebook_title, format_type, duration, topic, notebook_object_id, user
+        notebook_title,
+        format_type,
+        duration,
+        topic,
+        notebook_object_id,
+        user,
+        provider,
     )
 
 
@@ -229,6 +247,7 @@ async def _generate_multi_agent_script(
     topic: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> AudioScriptGenerationResult:
     topic = topic.strip()
     overview_lines, overview_sources, _, _ = await retrieve_context(
@@ -242,6 +261,7 @@ async def _generate_multi_agent_script(
         duration,
         topic,
         compact_context(overview_lines, max_chars=OVERVIEW_CONTEXT_CHARS),
+        provider,
     )
     title = normalize_title(outline.title)[:MAX_PODCAST_TITLE_CHARS]
     description = normalize_prompt(outline.description)[:MAX_PODCAST_DESCRIPTION_CHARS]
@@ -256,12 +276,12 @@ async def _generate_multi_agent_script(
     if not title or not description or not blocks:
         raise _generation_error()
 
-    await research_blocks(blocks, notebook_object_id, user)
+    await research_blocks(blocks, notebook_object_id, user, provider)
 
     draft_results = await gather_limited(
         [
             _write_with_retry(
-                notebook_title, format_type, duration, outline, blocks, index
+                notebook_title, format_type, duration, outline, blocks, index, provider
             )
             for index in range(1, len(blocks) + 1)
         ],
@@ -278,7 +298,7 @@ async def _generate_multi_agent_script(
     for _ in range(MAX_REVIEW_ROUNDS):
         try:
             issues_by_block = await review_script(
-                notebook_title, format_type, topic, blocks
+                notebook_title, format_type, topic, blocks, provider
             )
         except Exception as exc:
             logger.warning("Fallo la revision del guion", extra={"error": str(exc)})
@@ -286,7 +306,13 @@ async def _generate_multi_agent_script(
         if not issues_by_block:
             break
         await _rewrite_flagged_blocks(
-            notebook_title, format_type, duration, outline, blocks, issues_by_block
+            notebook_title,
+            format_type,
+            duration,
+            outline,
+            blocks,
+            issues_by_block,
+            provider,
         )
 
     segments = _normalize_segments(
@@ -317,6 +343,7 @@ async def _generate_single_call_script(
     topic: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> AudioScriptGenerationResult:
     query = topic.strip() or notebook_title
     context_lines, sources, _, _ = await retrieve_context(
@@ -333,7 +360,7 @@ async def _generate_single_call_script(
         context_text=context_text,
     )
 
-    llm = create_llm("gemini")
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=AudioScriptPayloadLLM.model_json_schema(),
         method="json_schema",

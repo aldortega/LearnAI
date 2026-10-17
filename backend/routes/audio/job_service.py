@@ -7,7 +7,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from ...schemas.audio import AudioDuration, AudioFormatType
 from .constants import AUDIO_DURATION_CONFIGS, AUDIO_FORMAT_CONFIGS
@@ -107,21 +107,28 @@ def _resolve_error_message(exc: Exception, default: str) -> str:
     return default
 
 
-def process_audio_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_audio_generation(notebook_id, owner_id))
+def process_audio_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
+    asyncio.run(_process_audio_generation(notebook_id, owner_id, provider))
 
 
 def process_audio_suggestions_generation(
-    notebook_id: str, owner_id: str, fingerprint_at_enqueue: str
+    notebook_id: str,
+    owner_id: str,
+    fingerprint_at_enqueue: str,
+    provider: LLMProvider,
 ) -> None:
     asyncio.run(
         _process_audio_suggestions_generation(
-            notebook_id, owner_id, fingerprint_at_enqueue
+            notebook_id, owner_id, fingerprint_at_enqueue, provider
         )
     )
 
 
-async def _process_audio_generation(notebook_id: str, owner_id: str) -> None:
+async def _process_audio_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
     from rq import get_current_job
 
     job = get_current_job()
@@ -205,6 +212,7 @@ async def _process_audio_generation(notebook_id: str, owner_id: str) -> None:
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider=provider,
             )
 
             audio_bytes, duration_seconds = await synthesize_script(
@@ -255,6 +263,7 @@ async def _process_audio_suggestions_generation(
     notebook_id: str,
     owner_id: str,
     fingerprint_at_enqueue: str,
+    provider: LLMProvider,
 ) -> None:
     from rq import get_current_job
 
@@ -328,6 +337,7 @@ async def _process_audio_suggestions_generation(
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider=provider,
             )
             if not suggestions:
                 raise ValueError("No se pudieron generar sugerencias de audio")

@@ -8,6 +8,7 @@ from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
+from ...config import LLMProvider
 from ...db import db
 from ...schemas.audio import (
     AudioDuration,
@@ -261,6 +262,7 @@ async def generate_audio_suggestions(
     notebook_title: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> list[AudioSuggestionOut]:
     context_lines, _, _, _ = await retrieve_context(
         f"Temas atractivos para un podcast sobre {notebook_title}",
@@ -270,7 +272,7 @@ async def generate_audio_suggestions(
     context_text = compact_context(context_lines)
     system_message, user_message = build_suggestions_prompt(notebook_title, context_text)
 
-    llm = create_llm("gemini")
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=AudioSuggestionsPayloadLLM.model_json_schema(),
         method="json_schema",
