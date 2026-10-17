@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
 from ...schemas.flashcards import FlashcardExplainOut, FlashcardExplainRequest
 from ..auth import get_current_user
@@ -142,6 +143,7 @@ async def explain_flashcard(
         definition=definition,
         notebook_object_id=notebook["_id"],
         user=user,
+        provider=settings.llm_provider,
     )
     now = datetime.now(timezone.utc)
     await db.flashcard_explanations.update_one(
