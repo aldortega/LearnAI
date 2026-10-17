@@ -15,6 +15,7 @@ from ...config import LLMProvider, settings
 from ...db import db
 from ...gemini import embed_query_with_fallback, has_gemini_api_keys
 from ...llm import (
+    GEMINI_EMBEDDINGS_NOT_CONFIGURED_DETAIL,
     RAG_TEMPERATURE,
     ChatModel,
     create_chat_model,
@@ -382,7 +383,8 @@ async def retrieve_context(
 ) -> tuple[list[str], list[RagSource], list[str], int]:
     if not has_gemini_api_keys():
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Gemini no configurado"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=GEMINI_EMBEDDINGS_NOT_CONFIGURED_DETAIL,
         )
     if provider is not None:
         ensure_provider_configured(provider)

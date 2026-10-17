@@ -14,6 +14,8 @@ from .config import settings
 OPENAI_NOT_CONFIGURED_DETAIL = "OpenAI no configurado"
 TEMPERATURE_UNSUPPORTED_PREFIXES = ("o1", "o3", "o4", "gpt-5")
 TEMPERATURE_SUPPORTED_PREFIXES = ("gpt-5-chat",)
+OPENAI_REQUEST_TIMEOUT_SECONDS = 120.0
+OPENAI_MAX_RETRIES = 2
 STRIPPED_SCHEMA_KEYS = ("default", "minLength", "maxLength")
 
 
@@ -123,6 +125,8 @@ class OpenAIChat:
         model_kwargs: dict[str, Any] = {
             "model": model_name,
             "api_key": SecretStr((settings.openai_api_key or "").strip()),
+            "timeout": OPENAI_REQUEST_TIMEOUT_SECONDS,
+            "max_retries": OPENAI_MAX_RETRIES,
         }
         if not self.temperature_omitted:
             model_kwargs["temperature"] = temperature

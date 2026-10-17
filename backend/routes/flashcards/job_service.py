@@ -64,7 +64,7 @@ def resolve_flashcards_error_message(exc: Exception) -> str:
 def process_flashcards_generation(
     notebook_id: str,
     owner_id: str,
-    provider: LLMProvider = "gemini",
+    provider: LLMProvider,
 ) -> None:
     asyncio.run(_process_flashcards_generation(notebook_id, owner_id, provider))
 
