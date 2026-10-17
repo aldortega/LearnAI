@@ -4,7 +4,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import quiz_queue
 from ...schemas.quiz import QuizGenerateRequest, QuizGenerationJobOut, RoadmapOut
 from ..auth import get_current_user
@@ -41,12 +43,15 @@ async def generate_roadmap(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     job = quiz_queue.enqueue(
         process_quiz_generation,
         str(notebook["_id"]),
         str(user["_id"]),
         payload.length,
         payload.difficulty,
+        provider,
     )
     now = datetime.now(timezone.utc)
     await db.quiz_generation_jobs.insert_one(
@@ -57,6 +62,8 @@ async def generate_roadmap(
             "status": "queued",
             "length": payload.length,
             "difficulty": payload.difficulty,
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "error": None,
             "created_at": now,
             "started_at": None,

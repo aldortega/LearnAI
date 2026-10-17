@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import flashcards_queue
 from ...schemas.flashcards import (
     FlashcardsGenerateRequest,
@@ -154,11 +156,14 @@ async def generate_flashcards(
             detail="Necesitás al menos una fuente lista para generar flashcards",
         )
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     generate_payload = payload or FlashcardsGenerateRequest()
     job = flashcards_queue.enqueue(
         process_flashcards_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        provider,
     )
     now = datetime.now(timezone.utc)
     await db.flashcard_generation_jobs.insert_one(
@@ -168,6 +173,8 @@ async def generate_flashcards(
             "notebook_id": notebook["_id"],
             "status": "queued",
             "error": None,
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "card_count": generate_payload.card_count,
             "difficulty": generate_payload.difficulty,
             "topic_prompt": normalize_topic_prompt(generate_payload.topic_prompt),
