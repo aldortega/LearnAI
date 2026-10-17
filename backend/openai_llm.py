@@ -14,7 +14,7 @@ from .config import settings
 OPENAI_NOT_CONFIGURED_DETAIL = "OpenAI no configurado"
 TEMPERATURE_UNSUPPORTED_PREFIXES = ("o1", "o3", "o4", "gpt-5")
 TEMPERATURE_SUPPORTED_PREFIXES = ("gpt-5-chat",)
-STRIPPED_SCHEMA_KEYS = ("default",)
+STRIPPED_SCHEMA_KEYS = ("default", "minLength", "maxLength")
 
 
 def has_openai_api_key() -> bool:
