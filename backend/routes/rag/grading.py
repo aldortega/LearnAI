@@ -39,11 +39,14 @@ def build_grader_messages(
 
 
 async def grade_candidates(
-    question: str, candidates: list[dict], provider: LLMProvider
+    question: str,
+    candidates: list[dict],
+    provider: LLMProvider,
+    model_name: str | None = None,
 ) -> list[dict]:
     if not candidates:
         return []
-    grader = create_chat_model(provider, GRADING_TEMPERATURE).with_structured_output(
+    grader = create_chat_model(provider, GRADING_TEMPERATURE, model_name).with_structured_output(
         schema=ChunkGrades.model_json_schema(),
         method="json_schema",
     )
