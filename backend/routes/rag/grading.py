@@ -3,8 +3,8 @@ import asyncio
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from ...config import settings
-from ...gemini import create_chat_model_with_fallback
+from ...config import LLMProvider
+from ...llm import GRADING_TEMPERATURE, create_chat_model
 
 GRADER_SYSTEM_PROMPT = (
     "Sos un evaluador de relevancia para un sistema RAG educativo. "
@@ -38,13 +38,12 @@ def build_grader_messages(
     return [SystemMessage(content=GRADER_SYSTEM_PROMPT), HumanMessage(content=user_prompt)]
 
 
-async def grade_candidates(question: str, candidates: list[dict]) -> list[dict]:
+async def grade_candidates(
+    question: str, candidates: list[dict], provider: LLMProvider
+) -> list[dict]:
     if not candidates:
         return []
-    grader = create_chat_model_with_fallback(
-        model_name=settings.gemini_chat_model,
-        temperature=0.0,
-    ).with_structured_output(
+    grader = create_chat_model(provider, GRADING_TEMPERATURE).with_structured_output(
         schema=ChunkGrades.model_json_schema(),
         method="json_schema",
     )

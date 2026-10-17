@@ -74,7 +74,7 @@ async def plan_presentation(
         notebook_title, topic, detail_level, overview_context
     )
     return await invoke_structured(
-        PresentationOutlineLLM, [system_message, user_message]
+        PresentationOutlineLLM, [system_message, user_message], "gemini"
     )
 
 
@@ -88,7 +88,7 @@ async def plan_visual_presentation(
         notebook_title, topic, detail_level, overview_context, visual=True
     )
     return await invoke_structured(
-        PresentationVisualOutlineLLM, [system_message, user_message]
+        PresentationVisualOutlineLLM, [system_message, user_message], "gemini"
     )
 
 
@@ -102,6 +102,7 @@ async def research_slide(
         notebook_object_id,
         user,
         grade=True,
+        provider="gemini",
     )
     slide.notes = compact_context(context_lines, max_chars=SLIDE_CONTEXT_CHARS)
     slide.sources = sources
@@ -157,7 +158,7 @@ async def write_slide(
         issues=issues,
     )
     return await invoke_structured(
-        PresentationSlideDraftLLM, [system_message, user_message]
+        PresentationSlideDraftLLM, [system_message, user_message], "gemini"
     )
 
 
@@ -185,7 +186,7 @@ async def direct_scene(
         previous_prompt=slide.image_prompt if issues else None,
         issues=issues,
     )
-    return await invoke_structured(PresentationSceneLLM, [system_message, user_message])
+    return await invoke_structured(PresentationSceneLLM, [system_message, user_message], "gemini")
 
 
 def _group_findings(
@@ -216,7 +217,7 @@ async def review_presentation(
         notebook_title, topic, detail_level, slides_text
     )
     review = await invoke_structured(
-        PresentationReviewLLM, [system_message, user_message]
+        PresentationReviewLLM, [system_message, user_message], "gemini"
     )
     return _group_findings(review, len(slides))
 
@@ -238,6 +239,6 @@ async def review_visual_presentation(
         notebook_title, topic, style_guide, scenes_text
     )
     review = await invoke_structured(
-        PresentationReviewLLM, [system_message, user_message]
+        PresentationReviewLLM, [system_message, user_message], "gemini"
     )
     return _group_findings(review, len(slides))

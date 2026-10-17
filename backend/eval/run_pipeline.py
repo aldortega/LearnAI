@@ -59,10 +59,18 @@ async def run_question(
     try:
         if config.use_retrieval:
             contexts, sources, _, _ = await retrieve_context(
-                question.question, notebook_object_id, {}, grade=True
+                question.question,
+                notebook_object_id,
+                {},
+                grade=True,
+                provider=settings.llm_provider,
             )
         answer = await generate_answer(
-            question.question, contexts, cite=True, flag_general=True
+            question.question,
+            contexts,
+            cite=True,
+            flag_general=True,
+            provider=settings.llm_provider,
         )
         response, used_general_knowledge = split_general_marker(answer)
     except Exception as exc:

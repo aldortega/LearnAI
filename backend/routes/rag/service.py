@@ -11,13 +11,14 @@ from fastapi import HTTPException, status
 from langchain_core.messages import HumanMessage, SystemMessage
 from pymongo.errors import DuplicateKeyError
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
-from ...gemini import (
-    GeminiChatWithFallback,
-    create_chat_model_with_fallback,
-    embed_query_with_fallback,
-    has_gemini_api_keys,
+from ...gemini import embed_query_with_fallback, has_gemini_api_keys
+from ...llm import (
+    RAG_TEMPERATURE,
+    ChatModel,
+    create_chat_model,
+    ensure_provider_configured,
 )
 from ...schemas.rag import ChatMessageOut, ChatMessageSource, ConversationOut, RagSource
 from ..notebook_access import resolve_notebook_access
@@ -268,10 +269,15 @@ def select_grading_pool(candidates: list[dict]) -> list[dict]:
 
 
 async def select_relevant_candidates(
-    question: str, candidates: list[dict], selected_top_k: int
+    question: str,
+    candidates: list[dict],
+    selected_top_k: int,
+    provider: LLMProvider,
 ) -> list[dict]:
     try:
-        relevant = await grade_candidates(question, select_grading_pool(candidates))
+        relevant = await grade_candidates(
+            question, select_grading_pool(candidates), provider
+        )
     except Exception:
         logger.warning("No se pudo evaluar la relevancia de fragmentos", exc_info=True)
         return select_candidates(candidates, selected_top_k)
@@ -329,11 +335,8 @@ class GeneralMarkerFilter:
         return remaining
 
 
-def create_llm() -> GeminiChatWithFallback:
-    return create_chat_model_with_fallback(
-        model_name=settings.gemini_chat_model,
-        temperature=0.2,
-    )
+def create_llm(provider: LLMProvider) -> ChatModel:
+    return create_chat_model(provider, RAG_TEMPERATURE)
 
 
 async def get_notebook_object_id(notebook_id: str, user: dict) -> ObjectId:
@@ -373,11 +376,16 @@ async def retrieve_context(
     user: dict,
     top_k: int | None = None,
     grade: bool = False,
+    provider: LLMProvider | None = None,
 ) -> tuple[list[str], list[RagSource], list[str], int]:
     if not has_gemini_api_keys():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Gemini no configurado"
         )
+    if provider is not None:
+        ensure_provider_configured(provider)
+    if grade and provider is None:
+        raise ValueError("provider es obligatorio para evaluar relevancia")
 
     selected_top_k = top_k or settings.rag_top_k
     fetch_multiplier = max(1, settings.rag_fetch_k_multiplier)
@@ -439,7 +447,7 @@ async def retrieve_context(
     ranked_candidates = rank_candidates(question, hits)
     if should_grade:
         selected_candidates = await select_relevant_candidates(
-            question, ranked_candidates, selected_top_k
+            question, ranked_candidates, selected_top_k, provider
         )
     else:
         selected_candidates = select_candidates(ranked_candidates, selected_top_k)
@@ -475,6 +483,8 @@ async def generate_answer(
     context_lines: list[str],
     cite: bool = False,
     flag_general: bool = False,
+    *,
+    provider: LLMProvider,
 ) -> str:
     include_notice = bool(context_lines)
     system_message, user_message = build_prompt_messages(
@@ -484,7 +494,7 @@ async def generate_answer(
         cite=cite,
         general_marker=flag_general,
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
     answer_text = coerce_text(getattr(answer, "content", answer))
     if not context_lines:
@@ -494,11 +504,13 @@ async def generate_answer(
     return answer_text
 
 
-async def stream_answer(question: str, context_lines: list[str]):
+async def stream_answer(
+    question: str, context_lines: list[str], provider: LLMProvider
+):
     system_message, user_message = build_prompt_messages(
         context_lines, question, cite=True, general_marker=True
     )
-    llm = create_llm()
+    llm = create_llm(provider)
 
     if hasattr(llm, "astream"):
         async for chunk in llm.astream([system_message, user_message]):
@@ -572,13 +584,19 @@ async def run_rag_query(
     user: dict,
     top_k: int | None = None,
     flag_general: bool = False,
+    *,
+    provider: LLMProvider,
 ) -> tuple[str, list[RagSource], list[str], int, int]:
     start = time.perf_counter()
     context_lines, sources, document_ids, selected_top_k = await retrieve_context(
-        question, notebook_object_id, user, top_k, grade=True
+        question, notebook_object_id, user, top_k, grade=True, provider=provider
     )
     answer_text = await generate_answer(
-        question, context_lines, cite=True, flag_general=flag_general
+        question,
+        context_lines,
+        cite=True,
+        flag_general=flag_general,
+        provider=provider,
     )
     latency_ms = await record_rag_query(
         start, question, notebook_object_id, user, document_ids, selected_top_k, sources

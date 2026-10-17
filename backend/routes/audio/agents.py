@@ -41,7 +41,7 @@ async def plan_podcast(
     system_message, user_message = build_outline_prompt(
         notebook_title, format_type, duration, topic, overview_context
     )
-    return await invoke_structured(PodcastOutlineLLM, [system_message, user_message])
+    return await invoke_structured(PodcastOutlineLLM, [system_message, user_message], "gemini")
 
 
 async def research_block(
@@ -54,6 +54,7 @@ async def research_block(
         notebook_object_id,
         user,
         grade=True,
+        provider="gemini",
     )
     block.notes = compact_context(context_lines, max_chars=BLOCK_CONTEXT_CHARS)
     block.sources = sources
@@ -114,7 +115,7 @@ async def write_block(
         ),
         issues=issues,
     )
-    return await invoke_structured(PodcastBlockLLM, [system_message, user_message])
+    return await invoke_structured(PodcastBlockLLM, [system_message, user_message], "gemini")
 
 
 async def review_script(
@@ -133,7 +134,7 @@ async def review_script(
     system_message, user_message = build_review_prompt(
         notebook_title, format_type, topic, blocks_text
     )
-    review = await invoke_structured(PodcastReviewLLM, [system_message, user_message])
+    review = await invoke_structured(PodcastReviewLLM, [system_message, user_message], "gemini")
     issues_by_block: dict[int, list[str]] = {}
     for finding in review.findings:
         if 1 <= finding.block_index <= len(blocks):

@@ -8,9 +8,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pymongo import ReturnDocument
 from supabase import create_client
 
-from ..config import settings
+from ..config import LLMProvider, settings
 from ..db import db
-from ..gemini import create_chat_model_with_fallback
+from ..llm import NOTEBOOK_TEMPERATURE, create_chat_model
 from ..schemas.notebooks import NotebookCreate, NotebookOut, NotebookUpdate
 from .auth import get_current_user
 from .notebook_access import require_notebook_owner, resolve_notebook_access
@@ -20,12 +20,9 @@ router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 DEFAULT_NOTEBOOK_EMOJI = "📓"
 
 
-def _generate_emoji(title: str) -> str:
+def _generate_emoji(title: str, provider: LLMProvider) -> str:
     try:
-        llm = create_chat_model_with_fallback(
-            model_name=settings.gemini_chat_model,
-            temperature=0.7,
-        )
+        llm = create_chat_model(provider, NOTEBOOK_TEMPERATURE)
         messages = [
             SystemMessage(
                 content=(
@@ -88,7 +85,7 @@ async def create_notebook(payload: NotebookCreate, request: Request) -> Notebook
     user = await get_current_user(request)
     now = datetime.now(timezone.utc)
     title = payload.title.strip()
-    emoji = await asyncio.to_thread(_generate_emoji, title)
+    emoji = await asyncio.to_thread(_generate_emoji, title, settings.llm_provider)
     notebook_doc = {
         "owner_id": user["_id"],
         "title": title,

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 
+from ...config import settings
 from ...db import db
 from ...schemas.rag import (
     ChatMessageCreate,
@@ -47,7 +48,11 @@ async def query_notebook(
         )
 
     answer_text, sources, _, _, _ = await run_rag_query(
-        question, notebook_object_id, user, payload.top_k
+        question,
+        notebook_object_id,
+        user,
+        payload.top_k,
+        provider=settings.llm_provider,
     )
     return RagResponse(answer=answer_text, sources=sources)
 
@@ -124,7 +129,11 @@ async def create_conversation_message(
     await db.rag_messages.insert_one(user_message_doc)
 
     raw_answer, sources, _, _, _ = await run_rag_query(
-        question, notebook_object_id, user, flag_general=True
+        question,
+        notebook_object_id,
+        user,
+        flag_general=True,
+        provider=settings.llm_provider,
     )
     answer_text, used_general_knowledge = split_general_marker(raw_answer)
     source_summaries = build_source_summaries(sources)
@@ -179,7 +188,11 @@ async def stream_conversation_message(
                 document_ids,
                 selected_top_k,
             ) = await retrieve_context(
-                question, notebook_object_id, user, grade=True
+                question,
+                notebook_object_id,
+                user,
+                grade=True,
+                provider=settings.llm_provider,
             )
         except HTTPException as exc:
             detail = (
@@ -196,9 +209,22 @@ async def stream_conversation_message(
             return
 
         if not context_lines:
-            raw_answer = await generate_answer(
-                question, context_lines, flag_general=True
-            )
+            try:
+                raw_answer = await generate_answer(
+                    question,
+                    context_lines,
+                    flag_general=True,
+                    provider=settings.llm_provider,
+                )
+            except HTTPException as exc:
+                detail = (
+                    exc.detail
+                    if isinstance(exc.detail, str)
+                    else "No se pudo generar respuesta"
+                )
+                error_payload = json.dumps({"message": detail})
+                yield f"event: error\ndata: {error_payload}\n\n"
+                return
             answer_text, used_general_knowledge = split_general_marker(raw_answer)
             await record_rag_query(
                 start,
@@ -235,7 +261,9 @@ async def stream_conversation_message(
         answer_parts: list[str] = []
         marker_filter = GeneralMarkerFilter()
         try:
-            async for chunk in stream_answer(question, context_lines):
+            async for chunk in stream_answer(
+                question, context_lines, settings.llm_provider
+            ):
                 visible = marker_filter.feed(chunk) if chunk else ""
                 if visible:
                     answer_parts.append(visible)
@@ -246,6 +274,15 @@ async def stream_conversation_message(
                 answer_parts.append(leftover)
                 payload_chunk = json.dumps({"content": leftover})
                 yield f"event: chunk\ndata: {payload_chunk}\n\n"
+        except HTTPException as exc:
+            detail = (
+                exc.detail
+                if isinstance(exc.detail, str)
+                else "No se pudo generar respuesta"
+            )
+            error_payload = json.dumps({"message": detail})
+            yield f"event: error\ndata: {error_payload}\n\n"
+            return
         except Exception:
             error_payload = json.dumps({"message": "No se pudo generar respuesta"})
             yield f"event: error\ndata: {error_payload}\n\n"

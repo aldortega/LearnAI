@@ -354,7 +354,7 @@ async def generate_roadmap_data(
     system_message, user_message = build_roadmap_prompt(
         title, context_text, config.units_per_roadmap, config.lessons_per_unit
     )
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=RoadmapPayloadLLM.model_json_schema(), method="json_schema"
     )
@@ -388,7 +388,7 @@ async def generate_questions(
     targets: list[dict] | None = None,
     avoid_questions: list[str] | None = None,
 ) -> list[dict]:
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=QuizPayloadLLM.model_json_schema(), method="json_schema"
     )

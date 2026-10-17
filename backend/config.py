@@ -4,6 +4,8 @@ from typing import Literal, Optional
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
+LLMProvider = Literal["gemini", "openai"]
+
 
 class Settings(BaseSettings):
     mongodb_uri: str = "mongodb://localhost:27017"
@@ -18,6 +20,9 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "documents"
     llama_cloud_api_key: Optional[str] = None
     llamaparse_language: str = "es"
+    llm_provider: LLMProvider = "gemini"
+    openai_api_key: Optional[str] = None
+    openai_chat_model: str = "gpt-4.1-mini"
     gemini_api_key: Optional[str] = None
     gemini_api_keys: Optional[str] = None
     gemini_rotation_mode: Literal["failover", "per_call"] = "failover"

@@ -42,7 +42,7 @@ async def plan_report(
     system_message, user_message = build_outline_prompt(
         notebook_title, format_type, prompt, overview_context
     )
-    outline = await invoke_structured(ReportOutlineLLM, [system_message, user_message])
+    outline = await invoke_structured(ReportOutlineLLM, [system_message, user_message], "gemini")
     outline.sections = outline.sections[:MAX_REPORT_SECTIONS]
     return outline
 
@@ -57,6 +57,7 @@ async def research_section(
         notebook_object_id,
         user,
         grade=True,
+        provider="gemini",
     )
     section.notes = compact_context(context_lines, max_chars=SECTION_CONTEXT_CHARS)
     section.sources = sources
@@ -84,7 +85,7 @@ async def write_section(
         previous_content=section.content if issues else None,
         issues=issues,
     )
-    draft = await invoke_structured(ReportSectionDraftLLM, [system_message, user_message])
+    draft = await invoke_structured(ReportSectionDraftLLM, [system_message, user_message], "gemini")
     return draft.content.strip()
 
 
@@ -102,7 +103,7 @@ async def review_report(
     system_message, user_message = build_review_prompt(
         notebook_title, prompt, sections_text
     )
-    review = await invoke_structured(ReportReviewLLM, [system_message, user_message])
+    review = await invoke_structured(ReportReviewLLM, [system_message, user_message], "gemini")
 
     issues_by_section: dict[int, list[str]] = {}
     for finding in review.findings:
@@ -129,4 +130,4 @@ async def summarize_report(
         draft_description=draft_description,
         body_text=body_text,
     )
-    return await invoke_structured(ReportSummaryLLM, [system_message, user_message])
+    return await invoke_structured(ReportSummaryLLM, [system_message, user_message], "gemini")

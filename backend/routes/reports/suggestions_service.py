@@ -260,7 +260,7 @@ async def generate_report_suggestions(
     context_text = compact_context(context_lines)
     system_message, user_message = build_suggestions_prompt(notebook_title, context_text)
 
-    llm = create_llm()
+    llm = create_llm("gemini")
     structured_llm = llm.with_structured_output(
         schema=ReportSuggestionsPayloadLLM.model_json_schema(),
         method="json_schema",

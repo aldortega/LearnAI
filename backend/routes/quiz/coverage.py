@@ -134,7 +134,7 @@ async def plan_unit_coverage(
         difficulty_label,
         compact_context(context_lines, max_chars=UNIT_CONTEXT_CHARS),
     )
-    plan = await invoke_structured(UnitPlanLLM, [system_message, user_message])
+    plan = await invoke_structured(UnitPlanLLM, [system_message, user_message], "gemini")
     return normalize_level_targets(plan, levels, question_counts)
 
 
