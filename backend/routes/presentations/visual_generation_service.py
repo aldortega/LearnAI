@@ -6,6 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
+from ...config import LLMProvider
 from ...schemas.presentations import (
     PresentationGenerationStage,
     PresentationDetailLevel,
@@ -92,6 +93,7 @@ async def _direct_with_retry(
     style_guide: str,
     slides: list[SlideDraft],
     slide_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> PresentationSceneLLM:
     return await run_with_retry(
@@ -103,6 +105,7 @@ async def _direct_with_retry(
             style_guide,
             slides,
             slide_index,
+            provider,
             issues,
         ),
         MAX_SLIDE_RETRIES,
@@ -118,6 +121,7 @@ async def _rewrite_flagged_scenes(
     style_guide: str,
     slides: list[SlideDraft],
     issues_by_slide: dict[int, list[str]],
+    provider: LLMProvider,
 ) -> None:
     slide_indices = list(issues_by_slide)
     results = await gather_limited(
@@ -130,6 +134,7 @@ async def _rewrite_flagged_scenes(
                 style_guide,
                 slides,
                 slide_index,
+                provider,
                 issues_by_slide[slide_index],
             )
             for slide_index in slide_indices
@@ -244,6 +249,7 @@ async def generate_image_presentation_payload(
     notebook_object_id: ObjectId,
     owner_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
     on_stage: PresentationStageCallback | None = None,
 ) -> PresentationImageGenerationResult:
     async def notify(stage: PresentationGenerationStage) -> None:
@@ -264,6 +270,7 @@ async def generate_image_presentation_payload(
         topic,
         detail_level,
         compact_context(overview_lines, max_chars=OVERVIEW_CONTEXT_CHARS),
+        provider,
     )
     slides = [
         SlideDraft(
@@ -280,7 +287,7 @@ async def generate_image_presentation_payload(
         raise _generation_error()
 
     await notify("researching")
-    await research_slides(slides, notebook_object_id, user)
+    await research_slides(slides, notebook_object_id, user, provider)
 
     await notify("writing")
     scene_results = await gather_limited(
@@ -293,6 +300,7 @@ async def generate_image_presentation_payload(
                 style_guide,
                 slides,
                 index,
+                provider,
             )
             for index in range(1, len(slides) + 1)
         ],
@@ -310,7 +318,7 @@ async def generate_image_presentation_payload(
     for _ in range(MAX_REVIEW_ROUNDS):
         try:
             issues_by_slide = await review_visual_presentation(
-                notebook_title, topic, style_guide, slides
+                notebook_title, topic, style_guide, slides, provider
             )
         except Exception as exc:
             logger.warning(
@@ -328,6 +336,7 @@ async def generate_image_presentation_payload(
             style_guide,
             slides,
             issues_by_slide,
+            provider,
         )
 
     await notify("illustrating")

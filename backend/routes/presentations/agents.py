@@ -6,6 +6,7 @@ from typing import TypeVar
 from bson import ObjectId
 from fastapi import HTTPException, status
 
+from ...config import LLMProvider
 from ...schemas.presentations import PresentationDetailLevel
 from ...schemas.rag import RagSource
 from ..agents import gather_limited, invoke_structured
@@ -69,12 +70,13 @@ async def plan_presentation(
     topic: str,
     detail_level: PresentationDetailLevel,
     overview_context: str,
+    provider: LLMProvider,
 ) -> PresentationOutlineLLM:
     system_message, user_message = build_outline_prompt(
         notebook_title, topic, detail_level, overview_context
     )
     return await invoke_structured(
-        PresentationOutlineLLM, [system_message, user_message], "gemini"
+        PresentationOutlineLLM, [system_message, user_message], provider
     )
 
 
@@ -83,12 +85,13 @@ async def plan_visual_presentation(
     topic: str,
     detail_level: PresentationDetailLevel,
     overview_context: str,
+    provider: LLMProvider,
 ) -> PresentationVisualOutlineLLM:
     system_message, user_message = build_outline_prompt(
         notebook_title, topic, detail_level, overview_context, visual=True
     )
     return await invoke_structured(
-        PresentationVisualOutlineLLM, [system_message, user_message], "gemini"
+        PresentationVisualOutlineLLM, [system_message, user_message], provider
     )
 
 
@@ -96,13 +99,14 @@ async def research_slide(
     slide: SlideDraft,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> None:
     context_lines, sources, _, _ = await retrieve_context(
         slide.research_query,
         notebook_object_id,
         user,
         grade=True,
-        provider="gemini",
+        provider=provider,
     )
     slide.notes = compact_context(context_lines, max_chars=SLIDE_CONTEXT_CHARS)
     slide.sources = sources
@@ -112,9 +116,10 @@ async def research_slides(
     slides: list[SlideDraft],
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> None:
     results = await gather_limited(
-        [research_slide(slide, notebook_object_id, user) for slide in slides],
+        [research_slide(slide, notebook_object_id, user, provider) for slide in slides],
         MAX_PARALLEL_AGENTS,
     )
     failures = [result for result in results if isinstance(result, BaseException)]
@@ -142,6 +147,7 @@ async def write_slide(
     presentation_title: str,
     slides: list[SlideDraft],
     slide_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> PresentationSlideDraftLLM:
     slide = slides[slide_index - 1]
@@ -158,7 +164,7 @@ async def write_slide(
         issues=issues,
     )
     return await invoke_structured(
-        PresentationSlideDraftLLM, [system_message, user_message], "gemini"
+        PresentationSlideDraftLLM, [system_message, user_message], provider
     )
 
 
@@ -170,6 +176,7 @@ async def direct_scene(
     style_guide: str,
     slides: list[SlideDraft],
     slide_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> PresentationSceneLLM:
     slide = slides[slide_index - 1]
@@ -186,7 +193,7 @@ async def direct_scene(
         previous_prompt=slide.image_prompt if issues else None,
         issues=issues,
     )
-    return await invoke_structured(PresentationSceneLLM, [system_message, user_message], "gemini")
+    return await invoke_structured(PresentationSceneLLM, [system_message, user_message], provider)
 
 
 def _group_findings(
@@ -206,6 +213,7 @@ async def review_presentation(
     topic: str,
     detail_level: PresentationDetailLevel,
     slides: list[SlideDraft],
+    provider: LLMProvider,
 ) -> dict[int, list[str]]:
     slides_text = "\n\n".join(
         f"### Slide {index}: {slide.title}\n"
@@ -217,7 +225,7 @@ async def review_presentation(
         notebook_title, topic, detail_level, slides_text
     )
     review = await invoke_structured(
-        PresentationReviewLLM, [system_message, user_message], "gemini"
+        PresentationReviewLLM, [system_message, user_message], provider
     )
     return _group_findings(review, len(slides))
 
@@ -227,6 +235,7 @@ async def review_visual_presentation(
     topic: str,
     style_guide: str,
     slides: list[SlideDraft],
+    provider: LLMProvider,
 ) -> dict[int, list[str]]:
     scenes_text = "\n\n".join(
         f"### Slide {index}: {slide.title}\n"
@@ -239,6 +248,6 @@ async def review_visual_presentation(
         notebook_title, topic, style_guide, scenes_text
     )
     review = await invoke_structured(
-        PresentationReviewLLM, [system_message, user_message], "gemini"
+        PresentationReviewLLM, [system_message, user_message], provider
     )
     return _group_findings(review, len(slides))

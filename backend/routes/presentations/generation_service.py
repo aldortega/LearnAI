@@ -6,6 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
+from ...config import LLMProvider
 from ...schemas.presentations import (
     PresentationDetailLevel,
     PresentationGenerationStage,
@@ -74,6 +75,7 @@ async def _write_with_retry(
     presentation_title: str,
     slides: list[SlideDraft],
     slide_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> PresentationSlideDraftLLM:
     last_exc: Exception | None = None
@@ -86,6 +88,7 @@ async def _write_with_retry(
                 presentation_title,
                 slides,
                 slide_index,
+                provider,
                 issues,
             )
         except HTTPException:
@@ -115,6 +118,7 @@ async def _rewrite_flagged_slides(
     presentation_title: str,
     slides: list[SlideDraft],
     issues_by_slide: dict[int, list[str]],
+    provider: LLMProvider,
 ) -> None:
     slide_indices = list(issues_by_slide)
     results = await gather_limited(
@@ -126,6 +130,7 @@ async def _rewrite_flagged_slides(
                 presentation_title,
                 slides,
                 slide_index,
+                provider,
                 issues_by_slide[slide_index],
             )
             for slide_index in slide_indices
@@ -149,6 +154,7 @@ async def generate_presentation_payload(
     detail_level: PresentationDetailLevel,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
     on_stage: PresentationStageCallback | None = None,
 ) -> tuple[str, str, list[PresentationSlideOut], list[PresentationSourceRef]]:
     async def notify(stage: PresentationGenerationStage) -> None:
@@ -166,6 +172,7 @@ async def generate_presentation_payload(
         topic,
         detail_level,
         compact_context(overview_lines, max_chars=OVERVIEW_CONTEXT_CHARS),
+        provider,
     )
     slides = [
         SlideDraft(
@@ -181,7 +188,7 @@ async def generate_presentation_payload(
         raise _generation_error()
 
     await notify("researching")
-    await research_slides(slides, notebook_object_id, user)
+    await research_slides(slides, notebook_object_id, user, provider)
 
     await notify("writing")
     draft_results = await gather_limited(
@@ -193,6 +200,7 @@ async def generate_presentation_payload(
                 presentation_title,
                 slides,
                 index,
+                provider,
             )
             for index in range(1, len(slides) + 1)
         ],
@@ -210,7 +218,7 @@ async def generate_presentation_payload(
     for _ in range(MAX_REVIEW_ROUNDS):
         try:
             issues_by_slide = await review_presentation(
-                notebook_title, topic, detail_level, slides
+                notebook_title, topic, detail_level, slides, provider
             )
         except Exception as exc:
             logger.warning(
@@ -226,6 +234,7 @@ async def generate_presentation_payload(
             presentation_title,
             slides,
             issues_by_slide,
+            provider,
         )
 
     await notify("assembling")
@@ -260,13 +269,14 @@ async def regenerate_presentation_slide_payload(
     slide_index: int,
     current_slide: PresentationSlideOut,
     edit_prompt: str,
+    provider: LLMProvider,
 ) -> PresentationSlideOut:
     context_lines, _, _, _ = await retrieve_context(
         f"{current_slide.title}: {edit_prompt} (tema: {topic})",
         notebook_object_id,
         user,
         grade=True,
-        provider="gemini",
+        provider=provider,
     )
     context_text = compact_context(context_lines)
     system_message, user_message = build_regenerate_slide_prompt(
@@ -281,9 +291,10 @@ async def regenerate_presentation_slide_payload(
         context_text=context_text,
     )
 
-    llm = create_llm("gemini")
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema={
+            "title": "PresentationSlideRegeneration",
             "type": "object",
             "properties": {
                 "title": {"type": "string"},

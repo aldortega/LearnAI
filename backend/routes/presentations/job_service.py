@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from ...schemas.presentations import (
     PresentationDetailLevel,
@@ -86,11 +86,15 @@ def resolve_presentation_error_message(exc: Exception) -> str:
     return f"No se pudo generar la presentacion: {exc}"
 
 
-def process_presentation_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_presentation_generation(notebook_id, owner_id))
+def process_presentation_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider = "gemini"
+) -> None:
+    asyncio.run(_process_presentation_generation(notebook_id, owner_id, provider))
 
 
-async def _process_presentation_generation(notebook_id: str, owner_id: str) -> None:
+async def _process_presentation_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
     from rq import get_current_job
 
     job = get_current_job()
@@ -190,6 +194,7 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                         "_id": owner_object_id,
                         "_source_owner_id": notebook["owner_id"],
                     },
+                    provider=provider,
                     on_stage=on_stage,
                 )
                 title = image_result.title
@@ -206,6 +211,7 @@ async def _process_presentation_generation(notebook_id: str, owner_id: str) -> N
                         "_id": owner_object_id,
                         "_source_owner_id": notebook["owner_id"],
                     },
+                    provider=provider,
                     on_stage=on_stage,
                 )
             now = datetime.now(timezone.utc)
