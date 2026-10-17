@@ -273,10 +273,11 @@ async def select_relevant_candidates(
     candidates: list[dict],
     selected_top_k: int,
     provider: LLMProvider,
+    model_name: str | None = None,
 ) -> list[dict]:
     try:
         relevant = await grade_candidates(
-            question, select_grading_pool(candidates), provider
+            question, select_grading_pool(candidates), provider, model_name
         )
     except Exception:
         logger.warning("No se pudo evaluar la relevancia de fragmentos", exc_info=True)
@@ -335,8 +336,8 @@ class GeneralMarkerFilter:
         return remaining
 
 
-def create_llm(provider: LLMProvider) -> ChatModel:
-    return create_chat_model(provider, RAG_TEMPERATURE)
+def create_llm(provider: LLMProvider, model_name: str | None = None) -> ChatModel:
+    return create_chat_model(provider, RAG_TEMPERATURE, model_name)
 
 
 async def get_notebook_object_id(notebook_id: str, user: dict) -> ObjectId:
@@ -377,6 +378,7 @@ async def retrieve_context(
     top_k: int | None = None,
     grade: bool = False,
     provider: LLMProvider | None = None,
+    model_name: str | None = None,
 ) -> tuple[list[str], list[RagSource], list[str], int]:
     if not has_gemini_api_keys():
         raise HTTPException(
@@ -447,7 +449,7 @@ async def retrieve_context(
     ranked_candidates = rank_candidates(question, hits)
     if should_grade:
         selected_candidates = await select_relevant_candidates(
-            question, ranked_candidates, selected_top_k, provider
+            question, ranked_candidates, selected_top_k, provider, model_name
         )
     else:
         selected_candidates = select_candidates(ranked_candidates, selected_top_k)
@@ -485,6 +487,7 @@ async def generate_answer(
     flag_general: bool = False,
     *,
     provider: LLMProvider,
+    model_name: str | None = None,
 ) -> str:
     include_notice = bool(context_lines)
     system_message, user_message = build_prompt_messages(
@@ -494,7 +497,7 @@ async def generate_answer(
         cite=cite,
         general_marker=flag_general,
     )
-    llm = create_llm(provider)
+    llm = create_llm(provider, model_name)
     answer = await asyncio.to_thread(llm.invoke, [system_message, user_message])
     answer_text = coerce_text(getattr(answer, "content", answer))
     if not context_lines:

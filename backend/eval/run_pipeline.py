@@ -4,13 +4,19 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import get_args
 
 from bson import ObjectId
 from bson.errors import InvalidId
 from pydantic import ValidationError
 
-from ..config import settings
+from ..config import LLMProvider, settings
 from ..db import db
+from ..llm import (
+    ensure_provider_configured,
+    get_chat_model_name,
+    is_temperature_omitted,
+)
 from ..routes.rag.service import generate_answer, retrieve_context, split_general_marker
 from ..schemas.rag import RagSource
 from .configs import PIPELINE_CONFIGS, PipelineConfig, apply_overrides
@@ -49,6 +55,8 @@ async def run_question(
     notebook_object_id: ObjectId,
     config: PipelineConfig,
     run_index: int,
+    provider: LLMProvider,
+    chat_model: str,
 ) -> EvalRecord:
     start = time.perf_counter()
     contexts: list[str] = []
@@ -63,14 +71,16 @@ async def run_question(
                 notebook_object_id,
                 {},
                 grade=True,
-                provider=settings.llm_provider,
+                provider=provider,
+                model_name=chat_model,
             )
         answer = await generate_answer(
             question.question,
             contexts,
             cite=True,
             flag_general=True,
-            provider=settings.llm_provider,
+            provider=provider,
+            model_name=chat_model,
         )
         response, used_general_knowledge = split_general_marker(answer)
     except Exception as exc:
@@ -88,6 +98,10 @@ async def run_question(
         used_general_knowledge=used_general_knowledge,
         sources=sources,
         latency_ms=int((time.perf_counter() - start) * 1000),
+        provider=provider,
+        chat_model=chat_model,
+        embedding_model=EMBEDDING_MODEL,
+        temperature_omitted=is_temperature_omitted(provider, chat_model),
         error=error,
     )
 
@@ -99,13 +113,17 @@ def write_manifest(
     configs: list[PipelineConfig],
     repeats: int,
     question_count: int,
+    provider: LLMProvider,
+    chat_model: str,
 ) -> None:
     manifest = {
         "dataset": str(dataset_path),
         "question_count": question_count,
         "notebook_id": notebook_id,
         "repeats": repeats,
-        "chat_model": settings.gemini_chat_model,
+        "provider": provider,
+        "chat_model": chat_model,
+        "temperature_omitted": is_temperature_omitted(provider, chat_model),
         "embedding_model": EMBEDDING_MODEL,
         "chunk_size": settings.chunk_size,
         "chunk_overlap": settings.chunk_overlap,
@@ -138,6 +156,9 @@ async def resolve_notebook(notebook_id: str) -> ObjectId:
 async def run(args: argparse.Namespace) -> Path:
     dataset_path = Path(args.dataset).resolve()
     questions = load_dataset(dataset_path)
+    provider: LLMProvider = args.provider or settings.llm_provider
+    chat_model = get_chat_model_name(provider, args.chat_model)
+    ensure_provider_configured(provider)
     notebook_object_id = await resolve_notebook(args.notebook_id)
     configs = [PIPELINE_CONFIGS[name] for name in args.configs]
 
@@ -145,7 +166,14 @@ async def run(args: argparse.Namespace) -> Path:
     output_dir = RESULTS_DIR / f"{dataset_path.stem}_{timestamp}"
     output_dir.mkdir(parents=True)
     write_manifest(
-        output_dir, dataset_path, args.notebook_id, configs, args.repeats, len(questions)
+        output_dir,
+        dataset_path,
+        args.notebook_id,
+        configs,
+        args.repeats,
+        len(questions),
+        provider,
+        chat_model,
     )
 
     for config in configs:
@@ -156,7 +184,12 @@ async def run(args: argparse.Namespace) -> Path:
                 with output_path.open("w", encoding="utf-8") as output_file:
                     for position, question in enumerate(questions, 1):
                         record = await run_question(
-                            question, notebook_object_id, config, run_index
+                            question,
+                            notebook_object_id,
+                            config,
+                            run_index,
+                            provider,
+                            chat_model,
                         )
                         output_file.write(record.model_dump_json() + "\n")
                         output_file.flush()
@@ -186,6 +219,17 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         choices=sorted(PIPELINE_CONFIGS),
         default=["hybrid_grading"],
+    )
+    parser.add_argument(
+        "--provider",
+        choices=get_args(LLMProvider),
+        default=None,
+        help="Proveedor de LLM (por defecto LLM_PROVIDER configurado)",
+    )
+    parser.add_argument(
+        "--chat-model",
+        default=None,
+        help="Modelo de chat (por defecto el modelo configurado del proveedor)",
     )
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--delay", type=float, default=0.0, help="Segundos entre preguntas")
