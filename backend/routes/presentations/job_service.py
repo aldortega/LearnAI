@@ -87,7 +87,7 @@ def resolve_presentation_error_message(exc: Exception) -> str:
 
 
 def process_presentation_generation(
-    notebook_id: str, owner_id: str, provider: LLMProvider = "gemini"
+    notebook_id: str, owner_id: str, provider: LLMProvider
 ) -> None:
     asyncio.run(_process_presentation_generation(notebook_id, owner_id, provider))
 

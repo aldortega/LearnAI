@@ -44,7 +44,9 @@ async def plan_report(
     system_message, user_message = build_outline_prompt(
         notebook_title, format_type, prompt, overview_context
     )
-    outline = await invoke_structured(ReportOutlineLLM, [system_message, user_message], provider)
+    outline = await invoke_structured(
+        ReportOutlineLLM, [system_message, user_message], provider
+    )
     outline.sections = outline.sections[:MAX_REPORT_SECTIONS]
     return outline
 
@@ -89,7 +91,9 @@ async def write_section(
         previous_content=section.content if issues else None,
         issues=issues,
     )
-    draft = await invoke_structured(ReportSectionDraftLLM, [system_message, user_message], provider)
+    draft = await invoke_structured(
+        ReportSectionDraftLLM, [system_message, user_message], provider
+    )
     return draft.content.strip()
 
 
@@ -108,7 +112,9 @@ async def review_report(
     system_message, user_message = build_review_prompt(
         notebook_title, prompt, sections_text
     )
-    review = await invoke_structured(ReportReviewLLM, [system_message, user_message], provider)
+    review = await invoke_structured(
+        ReportReviewLLM, [system_message, user_message], provider
+    )
 
     issues_by_section: dict[int, list[str]] = {}
     for finding in review.findings:
@@ -136,4 +142,6 @@ async def summarize_report(
         draft_description=draft_description,
         body_text=body_text,
     )
-    return await invoke_structured(ReportSummaryLLM, [system_message, user_message], provider)
+    return await invoke_structured(
+        ReportSummaryLLM, [system_message, user_message], provider
+    )

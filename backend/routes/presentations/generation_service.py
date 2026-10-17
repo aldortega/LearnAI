@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from pydantic import BaseModel
 
 from ...config import LLMProvider
+from ...llm import is_transient_llm_error
 from ...schemas.presentations import (
     PresentationDetailLevel,
     PresentationGenerationStage,
@@ -91,9 +92,11 @@ async def _write_with_retry(
                 provider,
                 issues,
             )
-        except HTTPException:
-            raise
         except Exception as exc:
+            if isinstance(exc, HTTPException) and not is_transient_llm_error(
+                provider, exc
+            ):
+                raise
             last_exc = exc
             logger.warning(
                 "Fallo al redactar slide",

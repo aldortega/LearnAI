@@ -490,7 +490,8 @@ async def generate_quiz_for_notebook(
             }
         )
 
-    await plan_roadmap_coverage(notebook, user, units_payload, length, difficulty, provider
+    await plan_roadmap_coverage(
+        notebook, user, units_payload, length, difficulty, provider
     )
 
     now = datetime.now(timezone.utc)

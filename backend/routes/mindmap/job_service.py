@@ -60,7 +60,8 @@ def process_mindmap_generation(
     notebook_id: str,
     owner_id: str,
     prompt: str | None = None,
-    provider: LLMProvider = "gemini",
+    *,
+    provider: LLMProvider,
 ) -> None:
     asyncio.run(
         _process_mindmap_generation(
@@ -73,7 +74,8 @@ async def _process_mindmap_generation(
     notebook_id: str,
     owner_id: str,
     prompt: str | None = None,
-    provider: LLMProvider = "gemini",
+    *,
+    provider: LLMProvider,
 ) -> None:
     from rq import get_current_job
 

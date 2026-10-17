@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request, status
 
 from ...config import settings
-from ...llm import ensure_provider_configured, get_chat_model_name
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import presentations_queue
 from ...schemas.presentations import (
     PresentationConfigOut,

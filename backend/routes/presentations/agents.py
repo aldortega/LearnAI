@@ -193,7 +193,9 @@ async def direct_scene(
         previous_prompt=slide.image_prompt if issues else None,
         issues=issues,
     )
-    return await invoke_structured(PresentationSceneLLM, [system_message, user_message], provider)
+    return await invoke_structured(
+        PresentationSceneLLM, [system_message, user_message], provider
+    )
 
 
 def _group_findings(

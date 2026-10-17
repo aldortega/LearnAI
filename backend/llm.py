@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from fastapi import HTTPException, status
+
 from .config import LLMProvider, settings
-from .gemini import create_chat_model_with_fallback
+from .gemini import create_chat_model_with_fallback, has_gemini_api_keys
 from .openai_llm import (
     create_openai_chat_model,
     ensure_openai_configured,
@@ -13,6 +15,11 @@ from .openai_llm import (
 RAG_TEMPERATURE = 0.2
 GRADING_TEMPERATURE = 0.0
 NOTEBOOK_TEMPERATURE = 0.7
+GEMINI_EMBEDDINGS_NOT_CONFIGURED_DETAIL = "Gemini no configurado"
+TRANSIENT_LLM_STATUS_CODES = (
+    status.HTTP_429_TOO_MANY_REQUESTS,
+    status.HTTP_503_SERVICE_UNAVAILABLE,
+)
 
 
 class ChatModel(Protocol):
@@ -42,6 +49,15 @@ def is_temperature_omitted(provider: LLMProvider, model_name: str | None = None)
 def ensure_provider_configured(provider: LLMProvider) -> None:
     if provider == "openai":
         ensure_openai_configured()
+        if not has_gemini_api_keys():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=GEMINI_EMBEDDINGS_NOT_CONFIGURED_DETAIL,
+            )
+
+
+def is_transient_llm_error(provider: LLMProvider, exc: HTTPException) -> bool:
+    return provider == "openai" and exc.status_code in TRANSIENT_LLM_STATUS_CODES
 
 
 def create_chat_model(
