@@ -151,26 +151,26 @@ class AudioSuggestionsPayloadLLM(BaseModel):
 
 class AudioScriptSegmentLLM(BaseModel):
     speaker: str
-    text: str = Field(min_length=1, max_length=MAX_SEGMENT_CHARS)
+    text: str
 
 
 class AudioScriptPayloadLLM(BaseModel):
-    title: str = Field(min_length=1, max_length=MAX_PODCAST_TITLE_CHARS)
-    description: str = Field(min_length=1, max_length=MAX_PODCAST_DESCRIPTION_CHARS)
+    title: str
+    description: str
     segments: list[AudioScriptSegmentLLM] = Field(
         min_length=1, max_length=MAX_SCRIPT_SEGMENTS
     )
 
 
 class PodcastOutlineBlockLLM(BaseModel):
-    title: str = Field(min_length=1)
-    objective: str = Field(min_length=1)
-    research_query: str = Field(min_length=1)
+    title: str
+    objective: str
+    research_query: str
 
 
 class PodcastOutlineLLM(BaseModel):
-    title: str = Field(min_length=1, max_length=MAX_PODCAST_TITLE_CHARS)
-    description: str = Field(min_length=1, max_length=MAX_PODCAST_DESCRIPTION_CHARS)
+    title: str
+    description: str
     stance_a: str
     stance_b: str
     blocks: list[PodcastOutlineBlockLLM] = Field(
@@ -186,7 +186,7 @@ class PodcastBlockLLM(BaseModel):
 
 class PodcastReviewFindingLLM(BaseModel):
     block_index: int
-    issue: str = Field(min_length=1)
+    issue: str
 
 
 class PodcastReviewLLM(BaseModel):
