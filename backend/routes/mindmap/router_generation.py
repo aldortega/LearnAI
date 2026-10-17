@@ -3,7 +3,9 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import mindmap_queue
 from ...schemas.mindmap import (
     MindmapGenerateRequest,
@@ -65,6 +67,8 @@ async def generate_mindmap(
             detail="Necesitás al menos una fuente lista para generar el mapa mental",
         )
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
     prompt = coerce_text(payload.prompt if payload else "").strip() or None
     job_id = str(uuid4())
 
@@ -77,6 +81,8 @@ async def generate_mindmap(
             "status": "queued",
             "error": None,
             "prompt": prompt,
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "created_at": now,
             "started_at": None,
             "finished_at": None,
@@ -87,6 +93,7 @@ async def generate_mindmap(
         process_mindmap_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        provider=provider,
         job_id=job_id,
     )
     return MindmapGenerationJobOut(job_id=job.id, status="queued")

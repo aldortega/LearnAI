@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request
 
+from ...config import settings
 from ...db import db
 from ...schemas.mindmap import MindmapNodeDetailOut
 from ..auth import get_current_user
@@ -170,6 +171,7 @@ async def get_mindmap_node_detail(
         user,
         lineage_titles=lineage_titles,
         children_titles=children_titles,
+        provider=settings.llm_provider,
     )
     now = datetime.now(timezone.utc)
     await db.mindmap_node_details.update_one(
