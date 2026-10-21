@@ -12,3 +12,6 @@ redis_data/
 skills-lock.json
 docs
 .env.env
+
+# Resultados de evaluacion
+backend/eval/results/

@@ -19,14 +19,14 @@ from ..llm import (
 )
 from ..routes.rag.service import generate_answer, retrieve_context, split_general_marker
 from ..schemas.rag import RagSource
-from .configs import PIPELINE_CONFIGS, PipelineConfig, apply_overrides
+from .configs import JUDGE_MODEL, PIPELINE_CONFIGS, PipelineConfig, apply_overrides
 from .schemas import EvalQuestion, EvalRecord
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 EMBEDDING_MODEL = "models/gemini-embedding-001"
 
 
-def load_dataset(path: Path) -> list[EvalQuestion]:
+def load_dataset(path: Path, include_unreviewed: bool = False) -> list[EvalQuestion]:
     questions: list[EvalQuestion] = []
     seen_ids: set[str] = set()
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -39,9 +39,11 @@ def load_dataset(path: Path) -> list[EvalQuestion]:
         if question.id in seen_ids:
             raise SystemExit(f"Id duplicado en linea {line_number}: {question.id}")
         seen_ids.add(question.id)
+        if not question.reviewed and not include_unreviewed:
+            continue
         questions.append(question)
     if not questions:
-        raise SystemExit(f"Dataset vacio: {path}")
+        raise SystemExit(f"Dataset sin preguntas revisadas (\"reviewed\": true): {path}")
     return questions
 
 
@@ -95,6 +97,7 @@ async def run_question(
         response=response.strip(),
         reference=question.reference,
         reference_contexts=question.reference_contexts,
+        reference_chunks=question.reference_chunks,
         used_general_knowledge=used_general_knowledge,
         sources=sources,
         latency_ms=int((time.perf_counter() - start) * 1000),
@@ -125,6 +128,7 @@ def write_manifest(
         "chat_model": chat_model,
         "temperature_omitted": is_temperature_omitted(provider, chat_model),
         "embedding_model": EMBEDDING_MODEL,
+        "judge_model": JUDGE_MODEL,
         "chunk_size": settings.chunk_size,
         "chunk_overlap": settings.chunk_overlap,
         "started_at": datetime.now(timezone.utc).isoformat(),
@@ -155,7 +159,7 @@ async def resolve_notebook(notebook_id: str) -> ObjectId:
 
 async def run(args: argparse.Namespace) -> Path:
     dataset_path = Path(args.dataset).resolve()
-    questions = load_dataset(dataset_path)
+    questions = load_dataset(dataset_path, args.include_unreviewed)
     provider: LLMProvider = args.provider or settings.llm_provider
     chat_model = get_chat_model_name(provider, args.chat_model)
     ensure_provider_configured(provider)
@@ -230,6 +234,11 @@ def parse_args() -> argparse.Namespace:
         "--chat-model",
         default=None,
         help="Modelo de chat (por defecto el modelo configurado del proveedor)",
+    )
+    parser.add_argument(
+        "--include-unreviewed",
+        action="store_true",
+        help="Incluye preguntas sin revisar (\"reviewed\": false)",
     )
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument("--delay", type=float, default=0.0, help="Segundos entre preguntas")
