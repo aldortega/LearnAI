@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from bson import ObjectId
 from fastapi import HTTPException, status
 
+from ...config import LLMProvider
 from ...schemas.audio import AudioDuration, AudioFormatType, AudioScriptSegment
 from ...schemas.rag import RagSource
 from ..agents import gather_limited, invoke_structured
@@ -37,23 +38,28 @@ async def plan_podcast(
     duration: AudioDuration,
     topic: str,
     overview_context: str,
+    provider: LLMProvider,
 ) -> PodcastOutlineLLM:
     system_message, user_message = build_outline_prompt(
         notebook_title, format_type, duration, topic, overview_context
     )
-    return await invoke_structured(PodcastOutlineLLM, [system_message, user_message])
+    return await invoke_structured(
+        PodcastOutlineLLM, [system_message, user_message], provider
+    )
 
 
 async def research_block(
     block: BlockDraft,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> None:
     context_lines, sources, _, _ = await retrieve_context(
         block.research_query,
         notebook_object_id,
         user,
         grade=True,
+        provider=provider,
     )
     block.notes = compact_context(context_lines, max_chars=BLOCK_CONTEXT_CHARS)
     block.sources = sources
@@ -63,9 +69,10 @@ async def research_blocks(
     blocks: list[BlockDraft],
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> None:
     results = await gather_limited(
-        [research_block(block, notebook_object_id, user) for block in blocks],
+        [research_block(block, notebook_object_id, user, provider) for block in blocks],
         MAX_PARALLEL_AGENTS,
     )
     failures = [result for result in results if isinstance(result, BaseException)]
@@ -93,6 +100,7 @@ async def write_block(
     outline: PodcastOutlineLLM,
     blocks: list[BlockDraft],
     block_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> PodcastBlockLLM:
     block = blocks[block_index - 1]
@@ -114,7 +122,9 @@ async def write_block(
         ),
         issues=issues,
     )
-    return await invoke_structured(PodcastBlockLLM, [system_message, user_message])
+    return await invoke_structured(
+        PodcastBlockLLM, [system_message, user_message], provider
+    )
 
 
 async def review_script(
@@ -122,6 +132,7 @@ async def review_script(
     format_type: AudioFormatType,
     topic: str,
     blocks: list[BlockDraft],
+    provider: LLMProvider,
 ) -> dict[int, list[str]]:
     blocks_text = "\n\n".join(
         f"### Bloque {index}: {block.title}\n"
@@ -133,7 +144,9 @@ async def review_script(
     system_message, user_message = build_review_prompt(
         notebook_title, format_type, topic, blocks_text
     )
-    review = await invoke_structured(PodcastReviewLLM, [system_message, user_message])
+    review = await invoke_structured(
+        PodcastReviewLLM, [system_message, user_message], provider
+    )
     issues_by_block: dict[int, list[str]] = {}
     for finding in review.findings:
         if 1 <= finding.block_index <= len(blocks):

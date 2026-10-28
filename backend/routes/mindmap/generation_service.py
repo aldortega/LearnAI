@@ -5,6 +5,7 @@ import logging
 from bson import ObjectId
 from fastapi import HTTPException, status
 
+from ...config import LLMProvider
 from ..rag import create_llm, retrieve_context
 from .constants import MindmapNodeDetailLLM, MindmapTreePayloadLLM
 from .normalization import (
@@ -54,6 +55,7 @@ async def generate_mindmap_tree(
     topic: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> tuple[dict, dict]:
     question = f"Mapa mental completo sobre {topic}"
     context_lines, _, _, _ = await retrieve_context(
@@ -61,10 +63,11 @@ async def generate_mindmap_tree(
         notebook_object_id,
         user,
         top_k=12,
+        provider=provider,
     )
     context_text = compact_context(context_lines, max_chars=5500)
     system_message, user_message = build_mindmap_tree_prompt(topic, context_text)
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=MindmapTreePayloadLLM.model_json_schema(),
         method="json_schema",
@@ -122,6 +125,7 @@ async def generate_node_detail(
     user: dict,
     lineage_titles: list[str],
     children_titles: list[str],
+    provider: LLMProvider,
 ) -> str:
     lineage_path = " > ".join(
         [title.strip() for title in lineage_titles if isinstance(title, str) and title.strip()]
@@ -130,7 +134,9 @@ async def generate_node_detail(
         f"Explica brevemente el concepto {node_title} en {topic}. "
         f"Ruta conceptual: {lineage_path or node_title}"
     )
-    context_lines, _, _, _ = await retrieve_context(question, notebook_object_id, user)
+    context_lines, _, _, _ = await retrieve_context(
+        question, notebook_object_id, user, provider=provider
+    )
     context_text = compact_context(context_lines, max_chars=4200)
     system_message, user_message = build_node_detail_prompt(
         topic,
@@ -139,7 +145,7 @@ async def generate_node_detail(
         lineage_titles=lineage_titles,
         children_titles=children_titles,
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=MindmapNodeDetailLLM.model_json_schema(),
         method="json_schema",

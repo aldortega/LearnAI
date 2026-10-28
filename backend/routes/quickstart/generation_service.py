@@ -5,6 +5,7 @@ import logging
 from bson import ObjectId
 from fastapi import HTTPException, status
 
+from ...config import LLMProvider
 from ...schemas.quickstart import QuickstartDetailItemType
 from ...schemas.rag import RagSource
 from ..rag import create_llm, number_context_lines, retrieve_context
@@ -41,6 +42,7 @@ async def generate_quickstart_topics(
     title: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> tuple[dict, list[RagSource]]:
     context_lines, sources = await sample_overview_context(notebook_object_id, user)
     if not context_lines:
@@ -53,7 +55,7 @@ async def generate_quickstart_topics(
     system_message, user_message = build_quickstart_prompt(
         title, context_text, has_context=bool(context_lines)
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=QuickstartPayloadLLM.model_json_schema(), method="json_schema"
     )
@@ -80,6 +82,7 @@ async def generate_topic_expansion(
     topic: dict,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> tuple[dict, list[RagSource]]:
     topic_title = coerce_text(topic.get("title"))
     topic_summary = coerce_text(topic.get("summary"))
@@ -107,7 +110,7 @@ async def generate_topic_expansion(
         context_text,
         has_context=bool(context_lines),
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=QuickstartExpansionLLM.model_json_schema(), method="json_schema"
     )
@@ -141,6 +144,7 @@ async def generate_topic_item_detail(
     item_text: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> tuple[str, list[RagSource]]:
     item_query = (
         f"Responde esta pregunta del tema {topic_title}: {item_text}"
@@ -161,7 +165,7 @@ async def generate_topic_item_detail(
         context_text,
         has_context=bool(context_lines),
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=QuickstartTopicDetailLLM.model_json_schema(), method="json_schema"
     )
@@ -187,6 +191,7 @@ async def generate_quickstart_suggestions(
     existing_titles: list[str],
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> list[str]:
     context_lines, _, _, _ = await retrieve_context(
         f"Temas complementarios sobre {notebook_title}", notebook_object_id, user
@@ -195,7 +200,7 @@ async def generate_quickstart_suggestions(
     system_message, user_message = build_suggestions_prompt(
         notebook_title, existing_titles, context_text
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=QuickstartSuggestionsLLM.model_json_schema(), method="json_schema"
     )
@@ -217,6 +222,7 @@ async def generate_single_quickstart_topic(
     existing_titles: list[str],
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> dict:
     context_lines, _, _, _ = await retrieve_context(
         f"Conceptos clave y aplicaciones de {requested_title}", notebook_object_id, user
@@ -225,7 +231,7 @@ async def generate_single_quickstart_topic(
     system_message, user_message = build_single_topic_prompt(
         notebook_title, requested_title, existing_titles, context_text
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=QuickstartSingleTopicLLM.model_json_schema(), method="json_schema"
     )

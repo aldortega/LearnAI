@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import presentations_queue
 from ...schemas.presentations import (
     PresentationConfigOut,
@@ -94,10 +95,14 @@ async def generate_presentation(
     if active_job_doc:
         return map_presentation_generation_job(active_job_doc)
 
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
+
     job = presentations_queue.enqueue(
         process_presentation_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        provider,
         job_timeout=settings.presentation_job_timeout_seconds,
     )
     now = datetime.now(timezone.utc)
@@ -112,6 +117,8 @@ async def generate_presentation(
             "topic": topic,
             "detail_level": payload.detail_level,
             "generation_mode": payload.generation_mode,
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "created_at": now,
             "started_at": None,
             "finished_at": None,

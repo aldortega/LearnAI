@@ -8,7 +8,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from .generation_service import (
     find_level,
@@ -75,23 +75,32 @@ def process_quiz_generation(
     owner_id: str,
     length: str,
     difficulty: str,
-) -> None:
-    asyncio.run(_process_quiz_generation(notebook_id, owner_id, length, difficulty))
-
-
-def process_quiz_questions_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_quiz_questions_generation(notebook_id, owner_id))
-
-
-def process_quiz_level_questions_generation(
-    notebook_id: str, owner_id: str, level_id: str
+    provider: LLMProvider,
 ) -> None:
     asyncio.run(
-        _process_quiz_level_questions_generation(notebook_id, owner_id, level_id)
+        _process_quiz_generation(notebook_id, owner_id, length, difficulty, provider)
     )
 
 
-async def _process_quiz_questions_generation(notebook_id: str, owner_id: str) -> None:
+def process_quiz_questions_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
+    asyncio.run(_process_quiz_questions_generation(notebook_id, owner_id, provider))
+
+
+def process_quiz_level_questions_generation(
+    notebook_id: str, owner_id: str, level_id: str, provider: LLMProvider
+) -> None:
+    asyncio.run(
+        _process_quiz_level_questions_generation(
+            notebook_id, owner_id, level_id, provider
+        )
+    )
+
+
+async def _process_quiz_questions_generation(
+    notebook_id: str, owner_id: str, provider: LLMProvider
+) -> None:
     worker_client = AsyncIOMotorClient(settings.mongodb_uri)
     worker_db = worker_client[settings.database_name]
     try:
@@ -122,14 +131,14 @@ async def _process_quiz_questions_generation(notebook_id: str, owner_id: str) ->
             "_source_owner_id": notebook["owner_id"],
         }
         await generate_questions_for_roadmap(
-            notebook, user, roadmap, db_client=worker_db
+            notebook, user, roadmap, provider, db_client=worker_db
         )
     finally:
         worker_client.close()
 
 
 async def _process_quiz_level_questions_generation(
-    notebook_id: str, owner_id: str, level_id: str
+    notebook_id: str, owner_id: str, level_id: str, provider: LLMProvider
 ) -> None:
     worker_client = AsyncIOMotorClient(settings.mongodb_uri)
     worker_db = worker_client[settings.database_name]
@@ -192,7 +201,7 @@ async def _process_quiz_level_questions_generation(
                 "_source_owner_id": notebook["owner_id"],
             }
             await generate_questions_for_level(
-                notebook, user, roadmap, unit, level, db_client=worker_db
+                notebook, user, roadmap, unit, level, provider, db_client=worker_db
             )
             await worker_db.quiz_level_progress.update_one(
                 {
@@ -237,6 +246,7 @@ async def _process_quiz_generation(
     owner_id: str,
     length: str,
     difficulty: str,
+    provider: LLMProvider,
 ) -> None:
     from rq import get_current_job
 
@@ -283,6 +293,7 @@ async def _process_quiz_generation(
                 config,
                 length,
                 difficulty,
+                provider,
                 db_client=worker_db,
             )
         except Exception as exc:

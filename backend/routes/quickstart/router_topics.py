@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
+from ...config import settings
 from ...db import db
 from ...schemas.quickstart import (
     QuickstartAddTopicRequest,
@@ -97,7 +98,12 @@ async def add_quickstart_topic(
         if normalize_topic_title(coerce_text(topic.get("title")))
     ]
     generated_topic = await generate_single_quickstart_topic(
-        notebook["title"], requested_title, existing_titles, notebook["_id"], user
+        notebook["title"],
+        requested_title,
+        existing_titles,
+        notebook["_id"],
+        user,
+        settings.llm_provider,
     )
     final_title = normalize_topic_title(generated_topic["title"])
     if final_title.lower() in existing_title_keys:
@@ -268,7 +274,7 @@ async def expand_quickstart_topic(
         notebook_id, topic_id, user
     )
     return await get_or_create_topic_expansion(
-        notebook, user, topic_id, topic, fingerprint
+        notebook, user, topic_id, topic, fingerprint, settings.llm_provider
     )
 
 
@@ -287,7 +293,7 @@ async def get_quickstart_topic_detail(
         notebook_id, topic_id, user
     )
     expansion = await get_or_create_topic_expansion(
-        notebook, user, topic_id, topic, fingerprint
+        notebook, user, topic_id, topic, fingerprint, settings.llm_provider
     )
 
     requested_item_text = normalize_item_text(payload.item_text)
@@ -346,6 +352,7 @@ async def get_quickstart_topic_detail(
         item_text=resolved_item_text,
         notebook_object_id=notebook["_id"],
         user=user,
+        provider=settings.llm_provider,
     )
     sources_out = sources_to_refs(sources)
     now = datetime.now(timezone.utc)

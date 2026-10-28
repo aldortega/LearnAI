@@ -10,6 +10,7 @@ from fastapi import HTTPException, status
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
+from ...config import LLMProvider
 from ...gemini import has_gemini_api_keys
 from ..rag import create_llm, retrieve_context
 from .constants import (
@@ -38,9 +39,16 @@ class QuizOptionLLM(BaseModel):
     text: str
 
 
+class QuizOptionExplanationsLLM(BaseModel):
+    A: str
+    B: str
+    C: str
+    D: str
+
+
 class QuizExplanationsLLM(BaseModel):
     correct: str
-    by_option: dict[Literal["A", "B", "C", "D"], str]
+    by_option: QuizOptionExplanationsLLM
 
 
 class QuizQuestionLLM(BaseModel):
@@ -348,13 +356,16 @@ def normalize_questions(
 
 
 async def generate_roadmap_data(
-    title: str, context_lines: list[str], config: QuizGenerationConfig
+    title: str,
+    context_lines: list[str],
+    config: QuizGenerationConfig,
+    provider: LLMProvider,
 ) -> list[dict]:
     context_text = compact_context(context_lines)
     system_message, user_message = build_roadmap_prompt(
         title, context_text, config.units_per_roadmap, config.lessons_per_unit
     )
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=RoadmapPayloadLLM.model_json_schema(), method="json_schema"
     )
@@ -385,10 +396,11 @@ async def generate_questions(
     context_text: str,
     question_count: int,
     difficulty_label: str,
+    provider: LLMProvider,
     targets: list[dict] | None = None,
     avoid_questions: list[str] | None = None,
 ) -> list[dict]:
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=QuizPayloadLLM.model_json_schema(), method="json_schema"
     )

@@ -7,7 +7,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from .generation_service import generate_flashcards_payload
 from .normalization import coerce_text, normalize_topic_prompt
@@ -61,11 +61,19 @@ def resolve_flashcards_error_message(exc: Exception) -> str:
     return "No se pudieron generar las flashcards"
 
 
-def process_flashcards_generation(notebook_id: str, owner_id: str) -> None:
-    asyncio.run(_process_flashcards_generation(notebook_id, owner_id))
+def process_flashcards_generation(
+    notebook_id: str,
+    owner_id: str,
+    provider: LLMProvider,
+) -> None:
+    asyncio.run(_process_flashcards_generation(notebook_id, owner_id, provider))
 
 
-async def _process_flashcards_generation(notebook_id: str, owner_id: str) -> None:
+async def _process_flashcards_generation(
+    notebook_id: str,
+    owner_id: str,
+    provider: LLMProvider,
+) -> None:
     from rq import get_current_job
 
     job = get_current_job()
@@ -152,6 +160,7 @@ async def _process_flashcards_generation(notebook_id: str, owner_id: str) -> Non
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider=provider,
             )
             now = datetime.now(timezone.utc)
             await worker_db.flashcard_sets.insert_one(

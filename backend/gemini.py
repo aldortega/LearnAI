@@ -47,11 +47,12 @@ def get_gemini_api_keys() -> list[str]:
     seen: set[str] = set()
 
     primary_key = get_gemini_primary_api_key()
+    if primary_key:
+        ordered_keys.append(primary_key)
+        seen.add(primary_key)
 
     for key in _parse_gemini_api_keys(settings.gemini_api_keys):
         normalized_key = key.strip()
-        if normalized_key == primary_key:
-            continue
         if normalized_key and normalized_key not in seen:
             ordered_keys.append(normalized_key)
             seen.add(normalized_key)

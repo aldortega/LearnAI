@@ -6,7 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...db import db
 from .generation_service import generate_mindmap_tree
 from .normalization import coerce_text, flatten_tree_to_nodes
@@ -60,14 +60,22 @@ def process_mindmap_generation(
     notebook_id: str,
     owner_id: str,
     prompt: str | None = None,
+    *,
+    provider: LLMProvider,
 ) -> None:
-    asyncio.run(_process_mindmap_generation(notebook_id, owner_id, prompt=prompt))
+    asyncio.run(
+        _process_mindmap_generation(
+            notebook_id, owner_id, prompt=prompt, provider=provider
+        )
+    )
 
 
 async def _process_mindmap_generation(
     notebook_id: str,
     owner_id: str,
     prompt: str | None = None,
+    *,
+    provider: LLMProvider,
 ) -> None:
     from rq import get_current_job
 
@@ -141,6 +149,7 @@ async def _process_mindmap_generation(
                     "_id": owner_object_id,
                     "_source_owner_id": notebook["owner_id"],
                 },
+                provider,
             )
             root_node_id, nodes = flatten_tree_to_nodes(tree)
             generation_meta["generated_nodes"] = len(nodes)

@@ -4,6 +4,8 @@ from collections.abc import Awaitable, Callable
 from bson import ObjectId
 from fastapi import HTTPException, status
 
+from ...config import LLMProvider
+from ...llm import is_transient_llm_error
 from ...schemas.rag import RagSource
 from ...schemas.reports import ReportFormatType, ReportGenerationStage, ReportSourceRef
 from ..agents import gather_limited
@@ -62,6 +64,7 @@ async def _write_with_retry(
     report_title: str,
     sections: list[ReportSection],
     section_index: int,
+    provider: LLMProvider,
     issues: list[str] | None = None,
 ) -> str:
     last_exc: Exception | None = None
@@ -74,11 +77,14 @@ async def _write_with_retry(
                 report_title,
                 sections,
                 section_index,
+                provider,
                 issues,
             )
-        except HTTPException:
-            raise
         except Exception as exc:
+            if isinstance(exc, HTTPException) and not is_transient_llm_error(
+                provider, exc
+            ):
+                raise
             last_exc = exc
             logger.warning(
                 "Fallo al redactar seccion de informe",
@@ -94,6 +100,7 @@ async def _rewrite_flagged_sections(
     report_title: str,
     sections: list[ReportSection],
     issues_by_section: dict[int, list[str]],
+    provider: LLMProvider,
 ) -> None:
     section_indices = list(issues_by_section)
     results = await gather_limited(
@@ -105,6 +112,7 @@ async def _rewrite_flagged_sections(
                 report_title,
                 sections,
                 section_index,
+                provider,
                 issues_by_section[section_index],
             )
             for section_index in section_indices
@@ -127,6 +135,7 @@ async def generate_report_payload(
     prompt: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
     on_stage: ReportStageCallback | None = None,
 ) -> tuple[str, str, str, list[ReportSourceRef]]:
     async def notify(stage: ReportGenerationStage) -> None:
@@ -144,6 +153,7 @@ async def generate_report_payload(
         format_type,
         prompt,
         compact_context(overview_lines, max_chars=OVERVIEW_CONTEXT_CHARS),
+        provider,
     )
     sections = [
         ReportSection(
@@ -158,7 +168,7 @@ async def generate_report_payload(
     await notify("researching")
     research_results = await gather_limited(
         [
-            research_section(section, notebook_object_id, user)
+            research_section(section, notebook_object_id, user, provider)
             for section in sections
         ],
         MAX_PARALLEL_AGENTS,
@@ -189,6 +199,7 @@ async def generate_report_payload(
                 report_title,
                 sections,
                 index,
+                provider,
             )
             for index in range(1, len(sections) + 1)
         ],
@@ -204,7 +215,9 @@ async def generate_report_payload(
     await notify("reviewing")
     for _ in range(MAX_REVIEW_ROUNDS):
         try:
-            issues_by_section = await review_report(notebook_title, prompt, sections)
+            issues_by_section = await review_report(
+                notebook_title, prompt, sections, provider
+            )
         except Exception as exc:
             logger.warning("Fallo la revision del informe", extra={"error": str(exc)})
             break
@@ -217,6 +230,7 @@ async def generate_report_payload(
             report_title,
             sections,
             issues_by_section,
+            provider,
         )
 
     await notify("summarizing")
@@ -230,6 +244,7 @@ async def generate_report_payload(
         report_title,
         normalize_prompt(outline.description),
         body_text[:SUMMARY_BODY_CHARS],
+        provider,
     )
 
     await notify("assembling")

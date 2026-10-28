@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured, get_chat_model_name
 from ...rq_queue import audio_queue
 from ...schemas.audio import (
     AudioConfigOut,
@@ -108,6 +109,8 @@ async def generate_audio_suggestions_endpoint(
 ) -> AudioSuggestionsJobOut:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
 
     sources_fingerprint, ready_count = await compute_sources_fingerprint(
         coerce_text(notebook.get("title")),
@@ -136,6 +139,7 @@ async def generate_audio_suggestions_endpoint(
         str(notebook["_id"]),
         str(user["_id"]),
         sources_fingerprint,
+        provider,
     )
     now = datetime.now(timezone.utc)
     await db.audio_suggestion_generation_jobs.insert_one(
@@ -146,6 +150,8 @@ async def generate_audio_suggestions_endpoint(
             "status": "queued",
             "error": None,
             "sources_fingerprint": sources_fingerprint,
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "created_at": now,
             "started_at": None,
             "finished_at": None,
@@ -216,6 +222,8 @@ async def generate_audio_endpoint(
 ) -> AudioGenerationJobOut:
     user = await get_current_user(request)
     notebook = await get_notebook_or_404(notebook_id, user)
+    provider = settings.llm_provider
+    ensure_provider_configured(provider)
 
     if payload.format_type not in AUDIO_FORMAT_CONFIGS:
         raise HTTPException(
@@ -255,6 +263,7 @@ async def generate_audio_endpoint(
         process_audio_generation,
         str(notebook["_id"]),
         str(user["_id"]),
+        provider,
         job_timeout=settings.audio_job_timeout_seconds,
     )
     now = datetime.now(timezone.utc)
@@ -270,6 +279,8 @@ async def generate_audio_endpoint(
             "duration": payload.duration,
             "topic": topic,
             "suggestion_id": payload.suggestion_id,
+            "provider": provider,
+            "chat_model": get_chat_model_name(provider),
             "created_at": now,
             "started_at": None,
             "finished_at": None,

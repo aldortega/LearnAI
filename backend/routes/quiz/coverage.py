@@ -8,7 +8,7 @@ from bson import ObjectId
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from ...config import settings
+from ...config import LLMProvider, settings
 from ...gemini import embed_documents_with_fallback
 from ..agents import gather_limited, invoke_structured
 from ..rag import retrieve_context
@@ -121,6 +121,7 @@ async def plan_unit_coverage(
     levels: list[dict],
     question_counts: dict[str, int],
     difficulty_label: str,
+    provider: LLMProvider,
 ) -> dict[str, list[dict]]:
     context_lines, _, _, _ = await retrieve_context(
         f"{unit['title']}: {unit.get('description', '')}", notebook_object_id, user
@@ -134,7 +135,9 @@ async def plan_unit_coverage(
         difficulty_label,
         compact_context(context_lines, max_chars=UNIT_CONTEXT_CHARS),
     )
-    plan = await invoke_structured(UnitPlanLLM, [system_message, user_message])
+    plan = await invoke_structured(
+        UnitPlanLLM, [system_message, user_message], provider
+    )
     return normalize_level_targets(plan, levels, question_counts)
 
 

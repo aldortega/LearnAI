@@ -1,7 +1,9 @@
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
+from ...config import settings
 from ...db import db
+from ...llm import ensure_provider_configured
 from ...schemas.presentations import (
     PresentationApplySlideRequest,
     PresentationDetailLevel,
@@ -198,6 +200,7 @@ async def regenerate_presentation_slide(
         else "detailed"
     )
 
+    ensure_provider_configured(settings.llm_provider)
     regenerated_slide = await regenerate_presentation_slide_payload(
         notebook_title=coerce_text(notebook.get("title")),
         topic=coerce_text(presentation_doc.get("topic")),
@@ -210,6 +213,7 @@ async def regenerate_presentation_slide(
         slide_index=slide_index,
         current_slide=current_slide,
         edit_prompt=prompt,
+        provider=settings.llm_provider,
     )
 
     return PresentationRegenerateSlideOut(slide=regenerated_slide)

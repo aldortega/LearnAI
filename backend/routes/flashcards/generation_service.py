@@ -6,6 +6,7 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
+from ...config import LLMProvider
 from ...schemas.flashcards import FlashcardSourceRef
 from ..rag import create_llm, retrieve_context
 from .constants import FlashcardsPayloadLLM
@@ -39,6 +40,7 @@ async def generate_flashcards_payload(
     topic_prompt: str,
     notebook_object_id: ObjectId,
     user: dict,
+    provider: LLMProvider,
 ) -> tuple[str, list[dict], list[FlashcardSourceRef], str]:
     normalized_topic_prompt = normalize_topic_prompt(topic_prompt)
     query_text = (
@@ -51,6 +53,7 @@ async def generate_flashcards_payload(
         query_text,
         notebook_object_id,
         user,
+        provider=provider,
     )
 
     target_count = resolve_target_cards(card_count)
@@ -65,7 +68,7 @@ async def generate_flashcards_payload(
         context_text=context_text,
     )
 
-    llm = create_llm()
+    llm = create_llm(provider)
     structured_llm = llm.with_structured_output(
         schema=FlashcardsPayloadLLM.model_json_schema(),
         method="json_schema",
