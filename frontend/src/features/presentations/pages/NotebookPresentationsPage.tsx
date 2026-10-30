@@ -407,7 +407,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       onGoFlashcards={() => notebookId && navigate(`/notebook/${notebookId}/flashcards`)}
       onGoAudio={() => notebookId && navigate(`/notebook/${notebookId}/audio`)}
       onGoVoice={() => notebookId && navigate(`/notebook/${notebookId}/voice`)}
-      beforeMain={<input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.docx,.txt,.pptx" onChange={handleFileChange} />}
+      beforeMain={<input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.docx,.txt,.pptx" onChange={handleFileChange} />}
       footer={
         <PresentationsFooterModals
           deleteDocumentTarget={deleteDocumentTarget}

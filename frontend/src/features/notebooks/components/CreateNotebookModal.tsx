@@ -53,7 +53,7 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Crear nuevo cuaderno"
+      title="Nuevo cuaderno"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {error ? (
@@ -66,9 +66,9 @@ export function CreateNotebookModal({ isOpen, onClose, onSuccess }: Props) {
         ) : null}
 
         <TextField
-          label="Título"
+          label="Nombre"
           name="title"
-          placeholder="Ej: Biología Celular"
+          placeholder="Sistemas Operativos"
           required
           autoComplete="off"
           error={errors.title?.message}
