@@ -5,12 +5,12 @@ import { EmptySourcesIllustration } from "../../../shared/ui/illustrations/Empty
 
 type Props = {
   canManageDocuments: boolean;
-  onDropFile: (file: File) => void;
+  onDropFiles: (files: File[]) => void;
 };
 
 export function NotebookSourcesEmptyState({
   canManageDocuments,
-  onDropFile,
+  onDropFiles,
 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -30,9 +30,9 @@ export function NotebookSourcesEmptyState({
     event.preventDefault();
     setIsDragging(false);
 
-    const file = event.dataTransfer.files?.[0];
-    if (file) {
-      onDropFile(file);
+    const files = Array.from(event.dataTransfer.files ?? []);
+    if (files.length > 0) {
+      onDropFiles(files);
     }
   };
 
@@ -61,7 +61,7 @@ export function NotebookSourcesEmptyState({
           onDrop={handleDrop}
         >
           {canManageDocuments
-            ? "Arrastrá y soltá un archivo aquí"
+            ? "Arrastrá y soltá uno o varios archivos aquí"
             : "No tenés permisos para subir fuentes en este cuaderno"}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">

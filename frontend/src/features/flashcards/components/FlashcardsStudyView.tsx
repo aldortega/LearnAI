@@ -49,6 +49,7 @@ export function FlashcardsStudyView({
     error: explainError,
     activeTerm,
     explanationMarkdown,
+    explanationSources,
     openExplanation,
     closeExplanation,
   } = useFlashcardExplanation(notebookId);
@@ -246,6 +247,7 @@ export function FlashcardsStudyView({
         error={explainError}
         term={activeTerm}
         explanationMarkdown={explanationMarkdown}
+        sources={explanationSources}
         onClose={closeExplanation}
       />
     </div>

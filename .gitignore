@@ -15,3 +15,5 @@ docs
 
 # Resultados de evaluacion
 backend/eval/results/
+backend/eval/simulated_*/
+backend/eval/*.lock

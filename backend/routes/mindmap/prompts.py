@@ -1,5 +1,6 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from ..rag import CITATION_INSTRUCTION
 from .constants import (
     DETAIL_SCHEMA,
     TITLES_SCHEMA,
@@ -62,5 +63,6 @@ def build_node_detail_prompt(
         f"Contexto:\n{context_text}\n\n"
         "Entrega una explicacion corta y directa del nodo en 1 o 2 parrafos breves. "
         "La explicacion debe estar alineada con la ruta del nodo y diferenciarlo de sus vecinos."
+        f"{CITATION_INSTRUCTION}"
     )
     return SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)

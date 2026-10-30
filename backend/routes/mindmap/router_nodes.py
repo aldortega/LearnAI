@@ -11,7 +11,7 @@ from .normalization import coerce_text, strip_parent_prefix
 from .repository import resolve_mindmap_node_context
 
 router = APIRouter(tags=["mindmap"])
-DETAIL_CACHE_VERSION = 3
+DETAIL_CACHE_VERSION = 4
 
 
 def _build_sanitized_title_map(nodes: list[dict]) -> dict[str, str]:
@@ -149,7 +149,12 @@ async def get_mindmap_node_detail(
             and cached_explanation
             and cached_topic == detail_topic
         ):
-            return MindmapNodeDetailOut(node_id=node_id, explanation=cached_explanation)
+            cached_sources = cached_detail.get("sources")
+            return MindmapNodeDetailOut(
+                node_id=node_id,
+                explanation=cached_explanation,
+                sources=cached_sources if isinstance(cached_sources, list) else [],
+            )
 
     nodes = mindmap_doc.get("nodes", []) if isinstance(mindmap_doc, dict) else []
     nodes_list = nodes if isinstance(nodes, list) else []
@@ -164,7 +169,7 @@ async def get_mindmap_node_detail(
         sanitized_title_by_id,
     )
 
-    explanation = await generate_node_detail(
+    explanation, sources = await generate_node_detail(
         detail_topic,
         selected_node_title,
         notebook["_id"],
@@ -184,6 +189,7 @@ async def get_mindmap_node_detail(
                 "sources_fingerprint": fingerprint,
                 "topic": detail_topic,
                 "explanation": explanation,
+                "sources": sources,
                 "detail_version": DETAIL_CACHE_VERSION,
                 "updated_at": now,
             },
@@ -191,4 +197,6 @@ async def get_mindmap_node_detail(
         },
         upsert=True,
     )
-    return MindmapNodeDetailOut(node_id=node_id, explanation=explanation)
+    return MindmapNodeDetailOut(
+        node_id=node_id, explanation=explanation, sources=sources
+    )

@@ -177,7 +177,7 @@ export function NotebookFlashcardsPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt,.pptx"
+          multiple accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }

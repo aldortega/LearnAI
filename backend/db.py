@@ -11,6 +11,8 @@ db = client[settings.database_name]
 async def ensure_indexes() -> None:
     await db.users.create_index("email_normalized", unique=True)
     await db.users.create_index("username", unique=True)
+    await db.login_attempts.create_index("created_at", expireAfterSeconds=900)
+    await db.login_attempts.create_index("email_normalized")
     await db.sessions.create_index("expires_at", expireAfterSeconds=0)
     await db.sessions.create_index("user_id")
     await db.sessions.create_index("token_hash", unique=True)

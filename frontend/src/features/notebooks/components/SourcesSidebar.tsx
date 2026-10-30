@@ -3,6 +3,7 @@
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Clock,
   FileText,
   Loader2,
   Plus,
@@ -48,6 +49,14 @@ export function SourcesSidebar({
     }
     if (status === "error" || status === "failed") {
       return <AlertTriangle className="h-4 w-4 text-error" />;
+    }
+    if (status === "pending" || status === "queued") {
+      return (
+        <Clock
+          className="h-4 w-4 text-muted-foreground"
+          aria-label="En cola"
+        />
+      );
     }
     return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
   };

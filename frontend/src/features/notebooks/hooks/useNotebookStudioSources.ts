@@ -66,13 +66,16 @@ export function useNotebookStudioSources(
     }
   }, [streamError, documents.length]);
 
-  const processFileUpload = async (file: File) => {
-    const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      return;
-    }
+  const processFilesUpload = async (files: File[]) => {
+    const validFiles = files.filter((file) => {
+      const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
+      return allowedExtensions.includes(extension);
+    });
+    if (validFiles.length === 0) return;
 
-    await uploadDocument(file);
+    for (const file of validFiles) {
+      await uploadDocument(file);
+    }
 
     if (useFallback) {
       await reload();
@@ -82,10 +85,9 @@ export function useNotebookStudioSources(
   };
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file) return;
-    await processFileUpload(file);
+    await processFilesUpload(files);
   };
 
   const handleDeleteConfirm = async () => {

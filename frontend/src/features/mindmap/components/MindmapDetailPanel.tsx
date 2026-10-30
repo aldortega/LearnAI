@@ -1,3 +1,5 @@
+import type { CitableSource } from "../../../shared/lib/citations";
+import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { Modal } from "../../../shared/ui/Modal";
 
 type Props = {
@@ -5,6 +7,7 @@ type Props = {
   onClose: () => void;
   selectedNodeTitle: string | null;
   explanation: string | null;
+  sources: CitableSource[];
   isLoading: boolean;
   error: string | null;
   isStale: boolean;
@@ -15,6 +18,7 @@ export function MindmapDetailPanel({
   onClose,
   selectedNodeTitle,
   explanation,
+  sources,
   isLoading,
   error,
   isStale,
@@ -64,10 +68,8 @@ export function MindmapDetailPanel({
         ) : null}
 
         {!isLoading && !error && explanation ? (
-          <div className="mt-4 space-y-3 break-words text-sm leading-relaxed text-foreground">
-            {explanation.split("\n\n").map((paragraph, index) => (
-              <p key={`${selectedNodeTitle ?? "node"}-${index}`}>{paragraph}</p>
-            ))}
+          <div className="mt-4 break-words text-sm leading-relaxed text-foreground [&_p]:my-3">
+            <MarkdownWithCitations content={explanation} sources={sources} />
           </div>
         ) : null}
       </div>
