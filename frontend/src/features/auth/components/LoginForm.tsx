@@ -63,7 +63,7 @@ export function LoginForm() {
       <TextField
         label="Email"
         name="email"
-        placeholder="student@university.edu"
+        placeholder="marianela.acosta@gmail.com"
         autoComplete="email"
         required
         error={errors.email?.message}
@@ -88,7 +88,7 @@ export function LoginForm() {
             type="checkbox"
             {...register("rememberMe")}
             className={cn(
-              "h-4 w-4 rounded border-border-strong text-primary",
+              "h-4 w-4 rounded border-border-strong text-primary accent-primary",
               "focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
               "dark:focus:ring-primary",
             )}

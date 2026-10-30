@@ -7,13 +7,14 @@ import { Button } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/TextField";
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { AuthShell } from "../components/AuthShell";
+import { birthdateSchema, getTodayISODate } from "../utils/authSchemas";
 
 const completeProfileSchema = z.object({
   username: z
     .string()
     .min(3, "Mínimo 3 caracteres")
     .max(30, "Máximo 30 caracteres"),
-  birthdate: z.string().min(1, "Campo requerido"),
+  birthdate: birthdateSchema,
 });
 
 type CompleteProfileSchema = z.infer<typeof completeProfileSchema>;
@@ -80,7 +81,7 @@ export function CompleteProfilePage() {
           required
           error={errors.birthdate?.message}
           autoComplete="bday"
-          inputProps={register("birthdate")}
+          inputProps={{ ...register("birthdate"), max: getTodayISODate() }}
         />
 
         <Button

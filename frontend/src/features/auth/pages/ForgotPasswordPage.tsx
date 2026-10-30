@@ -81,7 +81,7 @@ export function ForgotPasswordPage() {
         <TextField
           label="Email"
           name="email"
-          placeholder="student@university.edu"
+          placeholder="marianela.acosta@gmail.com"
           autoComplete="email"
           required
           error={errors.email?.message}
