@@ -3,6 +3,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from .rag import ChatMessageSource
+
 
 FlashcardCountPreset = Literal["less", "default", "more"]
 FlashcardDifficulty = Literal["easy", "medium", "hard"]
@@ -62,5 +64,6 @@ class FlashcardExplainRequest(BaseModel):
 class FlashcardExplainOut(BaseModel):
     card_id: str
     explanation_markdown: str
+    sources: list[ChatMessageSource] = Field(default_factory=list)
     cached: bool
     generated_at: datetime

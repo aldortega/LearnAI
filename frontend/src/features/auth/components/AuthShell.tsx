@@ -30,7 +30,7 @@ function LogoMark() {
   );
 }
 
-export function AuthShell({ children, title, topSlot }: Props) {
+export function AuthShell({ children, title, subtitle, topSlot }: Props) {
   return (
     <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-2 dark:bg-zinc-950">
       {/* Left Panel - Branding */}
@@ -49,7 +49,7 @@ export function AuthShell({ children, title, topSlot }: Props) {
             Estudio inteligente, resultados superiores.
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-green-200">
-            Transformá tus materiales en aprendizaje inteligente con una IA diseñada para llevar tu rendimiento al siguiente nivel.
+            Transformá tus materiales en aprendizaje inteligente con una herramienta diseñada para llevar tu rendimiento al siguiente nivel.
           </p>
 
           
@@ -79,7 +79,7 @@ export function AuthShell({ children, title, topSlot }: Props) {
               {title}
             </h2>
             <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Ingresá a tu cuenta para continuar
+              {subtitle}
             </p>
           </div>
 

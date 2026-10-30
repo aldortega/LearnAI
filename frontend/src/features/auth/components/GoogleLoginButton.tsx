@@ -66,7 +66,7 @@ export function GoogleLoginButton({ onError }: Props) {
     <button
       type="button"
       onClick={() => login()}
-      className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-surface px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="inline-flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border bg-surface px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-all duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <GoogleIcon className="h-5 w-5 shrink-0" />
       <span>Continuar con Google</span>

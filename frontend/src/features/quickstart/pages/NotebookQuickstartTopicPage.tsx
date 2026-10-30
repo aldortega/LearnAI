@@ -1,25 +1,17 @@
 ﻿import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo } from "react";
 
-import { documentsApi } from "../../notebooks/api/documentsApi";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import type { Document } from "../../notebooks/types/documents.types";
 import { Button } from "../../../shared/ui/Button";
-import {
-  useDocuments,
-  useDocumentStream,
-  useNotebook,
-  useUploadDocument,
-} from "../../notebooks";
+import { useNotebook, useNotebookStudioSources } from "../../notebooks";
 import { QuickstartShell } from "../components/QuickstartShell";
 import { QuickstartTopicDetailView } from "../components/QuickstartTopicDetailView";
 import { useGenerateQuickstart } from "../hooks/useGenerateQuickstart";
 import { useQuickstart } from "../hooks/useQuickstart";
 import { useQuickstartExpansion } from "../hooks/useQuickstartExpansion";
 import { useQuickstartTopicDetail } from "../hooks/useQuickstartTopicDetail";
-
-const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 function normalizeDetailItem(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
@@ -30,23 +22,19 @@ export function NotebookQuickstartTopicPage() {
   const navigate = useNavigate();
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [streamKey, setStreamKey] = useState(0);
-  const [useFallback, setUseFallback] = useState(false);
-  const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
-
   const {
-    documents: streamedDocuments,
-    error: streamError,
-  } = useDocumentStream(notebookId, streamKey);
-  const { documents: fetchedDocuments, reload } = useDocuments(
-    notebookId,
-    useFallback,
-  );
-  const { uploadDocument, isUploading } = useUploadDocument(notebookId);
+    fileInputRef,
+    documents,
+    hasReadySources,
+    readySignature,
+    isUploading,
+    deletingDocumentIds,
+    deleteTarget,
+    setDeleteTarget,
+    handleFileChange,
+    handleDeleteConfirm,
+    pickFile,
+  } = useNotebookStudioSources(notebookId);
   const {
     quickstart,
     isLoading: isQuickstartLoading,
@@ -77,33 +65,6 @@ export function NotebookQuickstartTopicPage() {
   } = useQuickstartTopicDetail(notebookId, topic?.id);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setUseFallback(false);
-      setStreamKey(0);
-    });
-  }, [notebookId]);
-
-  const documents = useFallback ? fetchedDocuments : streamedDocuments;
-
-  useEffect(() => {
-    if (streamError && documents.length === 0) {
-      queueMicrotask(() => {
-        setUseFallback(true);
-      });
-    }
-  }, [streamError, documents.length]);
-
-  const hasReadySources = documents.some((doc) => doc.status === "done");
-  const readySignature = useMemo(
-    () =>
-      documents
-        .filter((doc) => doc.status === "done")
-        .map((doc) => `${doc.id}:${doc.updated_at}`)
-        .join("|"),
-    [documents],
-  );
-
-  useEffect(() => {
     if (!notebookId) return;
     void reloadQuickstart();
   }, [notebookId, reloadQuickstart, readySignature]);
@@ -125,28 +86,7 @@ export function NotebookQuickstartTopicPage() {
 
   const handlePickFile = () => {
     if (!canManageDocuments) return;
-    fileInputRef.current?.click();
-  };
-
-  const processFileUpload = async (file: File) => {
-    if (!canManageDocuments) return;
-    const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      return;
-    }
-    await uploadDocument(file);
-    if (useFallback) {
-      await reload();
-    } else {
-      setStreamKey((prev) => prev + 1);
-    }
-  };
-
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    await processFileUpload(file);
+    pickFile();
   };
 
   const handleDeleteRequest = (document: Document) => {
@@ -154,42 +94,6 @@ export function NotebookQuickstartTopicPage() {
     setDeleteTarget(document);
   };
   const handleDeleteCancel = () => setDeleteTarget(null);
-
-  const handleDeleteConfirm = async () => {
-    if (!notebookId || !deleteTarget || !canManageDocuments) return;
-
-    const documentId = deleteTarget.id;
-    setDeletingDocumentIds((prev) => {
-      const next = new Set(prev);
-      next.add(documentId);
-      return next;
-    });
-
-    try {
-      await documentsApi.remove(notebookId, documentId);
-    } catch {
-      setDeletingDocumentIds((prev) => {
-        const next = new Set(prev);
-        next.delete(documentId);
-        return next;
-      });
-      setDeleteTarget(null);
-      return;
-    }
-
-    setDeletingDocumentIds((prev) => {
-      const next = new Set(prev);
-      next.delete(documentId);
-      return next;
-    });
-    setDeleteTarget(null);
-
-    if (useFallback) {
-      await reload();
-    } else {
-      setStreamKey((prev) => prev + 1);
-    }
-  };
 
   const handleSelectDetail = (
     itemType: "additional_key_point" | "question",
@@ -278,6 +182,7 @@ export function NotebookQuickstartTopicPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
+          multiple
           accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />

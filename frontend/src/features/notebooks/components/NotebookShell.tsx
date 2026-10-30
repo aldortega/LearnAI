@@ -1,5 +1,6 @@
 ﻿import type { ReactNode } from "react";
 
+import { useDocumentTitle } from "../../../shared/hooks/useDocumentTitle";
 import { Header } from "../../home/components/Header";
 import { StudioSidebar } from "./StudioSidebar";
 import { SourcesSidebar } from "./SourcesSidebar";
@@ -95,6 +96,8 @@ export function NotebookShell({
   children,
   footer,
 }: Props) {
+  useDocumentTitle(title);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden overscroll-none bg-surface">
       <Header title={title} className="flex-none" />

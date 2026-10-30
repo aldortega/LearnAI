@@ -263,12 +263,14 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
 
     hasCheckedLatestReportJobRef.current = true;
 
+    const isNewRoute = () => routeModeRef.current === "new";
+
     void (async () => {
       const result = await resumeLatest({ suppressFailedError: true });
-      if (routeModeRef.current === "new") return;
+      if (isNewRoute()) return;
       if (result?.status !== "done") return;
       const updatedReports = await reloadReports();
-      if (routeModeRef.current === "new") return;
+      if (isNewRoute()) return;
       if (updatedReports.length === 0) return;
       setViewMode("history");
       setHistoryView("cards");
@@ -593,7 +595,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt,.pptx"
+          multiple accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }

@@ -3,6 +3,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from .rag import ChatMessageSource
+
 
 class MindmapNodeOut(BaseModel):
     id: str
@@ -46,3 +48,4 @@ class MindmapGenerateRequest(BaseModel):
 class MindmapNodeDetailOut(BaseModel):
     node_id: str
     explanation: str
+    sources: list[ChatMessageSource] = Field(default_factory=list)

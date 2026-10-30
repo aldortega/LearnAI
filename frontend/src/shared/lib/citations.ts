@@ -24,6 +24,7 @@ export function linkifyCitations(content: string): string {
 
 export function cleanSnippet(snippet: string): string {
   return snippet
+    .replace(/<\/?[a-z][^>]*>/gi, "")
     .replace(/[*`]+/g, "")
     .replace(/(^|\s)#{1,6}\s/g, "$1")
     .trim();

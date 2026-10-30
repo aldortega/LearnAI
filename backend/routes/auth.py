@@ -33,6 +33,9 @@ from ..services.email import send_password_reset
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+LOGIN_MAX_FAILED_ATTEMPTS = 5
+LOGIN_ATTEMPT_WINDOW_SECONDS = 900
+
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
@@ -180,14 +183,38 @@ async def login(
     payload: LoginRequest, request: Request, response: Response
 ) -> AuthResponse:
     email_normalized = normalize_email(payload.email)
+
+    window_start = datetime.now(timezone.utc) - timedelta(
+        seconds=LOGIN_ATTEMPT_WINDOW_SECONDS
+    )
+    failed_attempts = await db.login_attempts.count_documents(
+        {
+            "email_normalized": email_normalized,
+            "created_at": {"$gte": window_start},
+        }
+    )
+    if failed_attempts >= LOGIN_MAX_FAILED_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiados intentos fallidos. Esperá unos minutos antes de intentar nuevamente.",
+            headers={"Retry-After": str(LOGIN_ATTEMPT_WINDOW_SECONDS)},
+        )
+
     user = await db.users.find_one({"email_normalized": email_normalized})
 
     if not user or not verify_password(payload.password, user["password_hash"]):
+        await db.login_attempts.insert_one(
+            {
+                "email_normalized": email_normalized,
+                "created_at": datetime.now(timezone.utc),
+            }
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",
         )
 
+    await db.login_attempts.delete_many({"email_normalized": email_normalized})
     await create_session(
         user["_id"], request, response, remember_me=payload.remember_me
     )

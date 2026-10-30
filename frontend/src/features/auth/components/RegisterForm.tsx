@@ -5,7 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../../../shared/ui/Button";
 import { TextField } from "../../../shared/ui/TextField";
 import { useAuth } from "../../../shared/hooks/useAuth";
-import { registerSchema, type RegisterSchema } from "../utils/authSchemas";
+import {
+  getTodayISODate,
+  registerSchema,
+  type RegisterSchema,
+} from "../utils/authSchemas";
 
 export function RegisterForm() {
   const { register } = useAuth();
@@ -60,7 +64,7 @@ export function RegisterForm() {
         <TextField
           label="Nombre"
           name="name"
-          placeholder="Aldo"
+          placeholder="Brenda"
           required
           error={errors.name?.message}
           autoComplete="given-name"
@@ -69,7 +73,7 @@ export function RegisterForm() {
         <TextField
           label="Apellido"
           name="lastName"
-          placeholder="García"
+          placeholder="Cano"
           required
           error={errors.lastName?.message}
           autoComplete="family-name"
@@ -80,7 +84,7 @@ export function RegisterForm() {
       <TextField
         label="Email"
         name="email"
-        placeholder="student@university.edu"
+        placeholder="brenda.cano@gmail.com"
         type="email"
         required
         error={errors.email?.message}
@@ -92,7 +96,7 @@ export function RegisterForm() {
         <TextField
           label="Nombre de usuario"
           name="username"
-          placeholder="student123"
+          placeholder="brenda.cano"
           required
           error={errors.username?.message}
           autoComplete="username"
@@ -105,7 +109,7 @@ export function RegisterForm() {
           required
           error={errors.birthdate?.message}
           autoComplete="bday"
-          inputProps={registerField("birthdate")}
+          inputProps={{ ...registerField("birthdate"), max: getTodayISODate() }}
         />
       </div>
 

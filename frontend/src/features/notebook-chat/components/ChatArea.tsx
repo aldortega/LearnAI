@@ -25,7 +25,7 @@ type Props = {
   error: string | null;
   onSendMessage: (content: string) => Promise<void>;
   onClearChat: () => Promise<void>;
-  onDropFile: (file: File) => void;
+  onDropFiles: (files: File[]) => void;
 };
 
 export function ChatArea({
@@ -38,7 +38,7 @@ export function ChatArea({
   error,
   onSendMessage,
   onClearChat,
-  onDropFile,
+  onDropFiles,
 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [draft, setDraft] = useState("");
@@ -75,9 +75,9 @@ export function ChatArea({
     event.preventDefault();
     setIsDragging(false);
 
-    const file = event.dataTransfer.files?.[0];
-    if (file) {
-      onDropFile(file);
+    const files = Array.from(event.dataTransfer.files ?? []);
+    if (files.length > 0) {
+      onDropFiles(files);
     }
   };
 

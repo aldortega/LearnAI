@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { toNotebookErrorMessage } from "../../notebooks/utils/notebookErrors";
 import { mindmapApi } from "../api/mindmapApi";
+import type { MindmapNodeDetailOut } from "../types/mindmap.types";
 
 type Result = {
-  getDetail: (nodeId: string) => Promise<string | null>;
-  getCachedDetail: (nodeId: string) => string | null;
+  getDetail: (nodeId: string) => Promise<MindmapNodeDetailOut | null>;
+  getCachedDetail: (nodeId: string) => MindmapNodeDetailOut | null;
   isNodeLoading: (nodeId: string) => boolean;
   getNodeError: (nodeId: string) => string | null;
   clearNodeError: (nodeId: string) => void;
@@ -13,7 +14,7 @@ type Result = {
 };
 
 export function useMindmapNodeDetail(notebookId?: string): Result {
-  const [detailByNodeId, setDetailByNodeId] = useState<Record<string, string>>({});
+  const [detailByNodeId, setDetailByNodeId] = useState<Record<string, MindmapNodeDetailOut>>({});
   const [loadingByNodeId, setLoadingByNodeId] = useState<Record<string, boolean>>({});
   const [errorByNodeId, setErrorByNodeId] = useState<Record<string, string>>({});
 
@@ -67,11 +68,8 @@ export function useMindmapNodeDetail(notebookId?: string): Result {
 
       try {
         const detail = await mindmapApi.getNodeDetail(notebookId, nodeId);
-        setDetailByNodeId((previous) => ({
-          ...previous,
-          [nodeId]: detail.explanation,
-        }));
-        return detail.explanation;
+        setDetailByNodeId((previous) => ({ ...previous, [nodeId]: detail }));
+        return detail;
       } catch (e) {
         setErrorByNodeId((previous) => ({
           ...previous,

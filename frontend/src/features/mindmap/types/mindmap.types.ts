@@ -1,3 +1,5 @@
+import type { CitableSource } from "../../../shared/lib/citations";
+
 export type MindmapNodeOut = {
   id: string;
   title: string;
@@ -40,4 +42,5 @@ export type MindmapGenerateRequest = {
 export type MindmapNodeDetailOut = {
   node_id: string;
   explanation: string;
+  sources: CitableSource[];
 };

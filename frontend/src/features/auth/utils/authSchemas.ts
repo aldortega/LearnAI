@@ -12,6 +12,20 @@ export const loginSchema = z.object({
 export type LoginSchemaInput = z.input<typeof loginSchema>;
 export type LoginSchema = z.infer<typeof loginSchema>;
 
+export function getTodayISODate(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+export const birthdateSchema = z
+  .string()
+  .min(1, "La fecha de nacimiento es obligatoria")
+  .refine((value) => value <= getTodayISODate(), {
+    message: "La fecha no puede ser posterior a hoy",
+  });
+
 export const registerSchema = z.object({
   name: z.string().min(2, "Mínimo 2 caracteres"),
   lastName: z.string().min(2, "Mínimo 2 caracteres"),
@@ -20,7 +34,7 @@ export const registerSchema = z.object({
     .min(1, "El email es obligatorio")
     .email("Ingresá un email válido"),
   username: z.string().min(3, "Mínimo 3 caracteres"),
-  birthdate: z.string().min(1, "La fecha de nacimiento es obligatoria"),
+  birthdate: birthdateSchema,
   password: z.string().min(8, "Mínimo 8 caracteres"),
 });
 

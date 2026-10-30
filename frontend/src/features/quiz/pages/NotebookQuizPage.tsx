@@ -1,11 +1,10 @@
 ﻿import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { documentsApi } from "../../notebooks/api/documentsApi";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import type { Document } from "../../notebooks/types/documents.types";
-import { useDocuments, useDocumentStream, useNotebook, useUploadDocument } from "../../notebooks";
+import { useNotebook, useNotebookStudioSources } from "../../notebooks";
 import { GenerateQuizCard } from "../components/GenerateQuizCard";
 import { QuizArea } from "../components/QuizArea";
 import { RegenerateQuizModal } from "../components/RegenerateQuizModal";
@@ -18,61 +17,31 @@ import { useQuizRoadmap } from "../hooks/useQuizRoadmap";
 import { useResetQuizAttempts } from "../hooks/useResetQuizAttempts";
 import type { QuizGenerateRequest } from "../types/quiz.types";
 
-const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
-
 export function NotebookQuizPage() {
   const { notebookId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { notebook, isLoading: isNotebookLoading } = useNotebook(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
-  const [streamKey, setStreamKey] = useState(0);
-  const [useFallback, setUseFallback] = useState(false);
   const hasCheckedLatestJobRef = useRef(false);
-
-  const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
 
   const {
-    documents: streamedDocuments,
-    error: streamError,
-  } = useDocumentStream(notebookId, streamKey);
-
-  const { documents: fetchedDocuments, reload } = useDocuments(
-    notebookId,
-    useFallback,
-  );
-
-  const { uploadDocument, isUploading } = useUploadDocument(notebookId);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      setUseFallback(false);
-      setStreamKey(0);
-    });
-  }, [notebookId]);
+    fileInputRef,
+    documents,
+    hasReadySources,
+    isUploading,
+    deletingDocumentIds,
+    deleteTarget,
+    setDeleteTarget,
+    handleFileChange,
+    handleDeleteConfirm,
+    pickFile,
+  } = useNotebookStudioSources(notebookId);
 
   useEffect(() => {
     hasCheckedLatestJobRef.current = false;
   }, [notebookId]);
-
-  const documents = useFallback ? fetchedDocuments : streamedDocuments;
-
-  useEffect(() => {
-    if (streamError && documents.length === 0) {
-      queueMicrotask(() => {
-        setUseFallback(true);
-      });
-    }
-  }, [streamError, documents.length]);
-
-  const hasReadySources = useMemo(
-    () => documents.some((doc) => doc.status === "done"),
-    [documents],
-  );
 
   const {
     roadmap,
@@ -91,41 +60,9 @@ export function NotebookQuizPage() {
     clearError: clearDeleteRoadmapError,
   } = useDeleteQuizRoadmap(notebookId);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-
-
   const handlePickFile = () => {
     if (!canManageDocuments) return;
-    fileInputRef.current?.click();
-  };
-
-
-  const processFileUpload = async (file: File) => {
-    if (!canManageDocuments) return;
-    const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      return;
-    }
-
-    await uploadDocument(file);
-
-    if (useFallback) {
-      await reload();
-    } else {
-      setStreamKey((prev) => prev + 1);
-    }
-  };
-
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
-    if (!file) return;
-
-    await processFileUpload(file);
+    pickFile();
   };
 
   const handleDeleteRequest = (documentItem: Document) => {
@@ -135,44 +72,6 @@ export function NotebookQuizPage() {
 
   const handleDeleteCancel = () => {
     setDeleteTarget(null);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!notebookId || !deleteTarget || !canManageDocuments) return;
-
-    const documentId = deleteTarget.id;
-
-    setDeletingDocumentIds((prev) => {
-      const next = new Set(prev);
-      next.add(documentId);
-      return next;
-    });
-
-    try {
-      await documentsApi.remove(notebookId, documentId);
-    } catch {
-      setDeletingDocumentIds((prev) => {
-        const next = new Set(prev);
-        next.delete(documentId);
-        return next;
-      });
-      setDeleteTarget(null);
-      return;
-    }
-
-    setDeletingDocumentIds((prev) => {
-      const next = new Set(prev);
-      next.delete(documentId);
-      return next;
-    });
-
-    setDeleteTarget(null);
-
-    if (useFallback) {
-      await reload();
-    } else {
-      setStreamKey((prev) => prev + 1);
-    }
   };
 
   const handleGoChat = () => {
@@ -368,6 +267,7 @@ export function NotebookQuizPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
+          multiple
           accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />

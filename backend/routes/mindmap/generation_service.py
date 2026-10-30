@@ -6,7 +6,8 @@ from bson import ObjectId
 from fastapi import HTTPException, status
 
 from ...config import LLMProvider
-from ..rag import create_llm, retrieve_context
+from ..rag import create_llm, number_context_lines, retrieve_context
+from ..rag.service import build_source_summaries
 from .constants import MindmapNodeDetailLLM, MindmapTreePayloadLLM
 from .normalization import (
     compact_context,
@@ -126,7 +127,7 @@ async def generate_node_detail(
     lineage_titles: list[str],
     children_titles: list[str],
     provider: LLMProvider,
-) -> str:
+) -> tuple[str, list[dict]]:
     lineage_path = " > ".join(
         [title.strip() for title in lineage_titles if isinstance(title, str) and title.strip()]
     )
@@ -134,10 +135,10 @@ async def generate_node_detail(
         f"Explica brevemente el concepto {node_title} en {topic}. "
         f"Ruta conceptual: {lineage_path or node_title}"
     )
-    context_lines, _, _, _ = await retrieve_context(
+    context_lines, sources, _, _ = await retrieve_context(
         question, notebook_object_id, user, provider=provider
     )
-    context_text = compact_context(context_lines, max_chars=4200)
+    context_text = compact_context(number_context_lines(context_lines), max_chars=4200)
     system_message, user_message = build_node_detail_prompt(
         topic,
         node_title,
@@ -156,7 +157,10 @@ async def generate_node_detail(
             [system_message, user_message],
         )
         payload_data = coerce_payload(payload, MindmapNodeDetailLLM)
-        return normalize_detail_explanation(payload_data.get("explanation"), node_title)
+        explanation = normalize_detail_explanation(
+            payload_data.get("explanation"), node_title
+        )
+        return explanation, build_source_summaries(sources)
     except Exception as exc:
         logger.exception("Detalle mindmap invalido", extra={"error": str(exc)})
         raise HTTPException(
