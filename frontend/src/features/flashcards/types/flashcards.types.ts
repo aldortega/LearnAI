@@ -1,3 +1,5 @@
+import type { CitableSource } from "../../../shared/lib/citations";
+
 export type FlashcardCountPreset = "less" | "default" | "more";
 export type FlashcardDifficulty = "easy" | "medium" | "hard";
 
@@ -42,6 +44,7 @@ export type FlashcardsGenerationJobOut = {
 export type FlashcardExplainOut = {
   card_id: string;
   explanation_markdown: string;
+  sources: CitableSource[];
   cached: boolean;
   generated_at: string;
 };

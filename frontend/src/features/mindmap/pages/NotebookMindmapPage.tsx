@@ -143,7 +143,7 @@ export function NotebookMindmapPage() {
     return mindmap.nodes.find((node) => node.id === selectedNodeId) ?? null;
   }, [mindmap, selectedNodeId]);
 
-  const selectedExplanation = selectedNodeId ? getCachedDetail(selectedNodeId) : null;
+  const selectedDetail = selectedNodeId ? getCachedDetail(selectedNodeId) : null;
   const selectedDetailError = selectedNodeId ? getNodeError(selectedNodeId) : null;
   const isDetailLoading = selectedNodeId ? isNodeLoading(selectedNodeId) : false;
 
@@ -198,7 +198,7 @@ export function NotebookMindmapPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.docx,.txt,.pptx"
+          multiple accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
       }
@@ -277,7 +277,8 @@ export function NotebookMindmapPage() {
               isOpen={isDetailModalVisible}
               onClose={() => setIsDetailModalVisible(false)}
               selectedNodeTitle={selectedNode?.title ?? null}
-              explanation={selectedExplanation}
+              explanation={selectedDetail?.explanation ?? null}
+              sources={selectedDetail?.sources ?? []}
               isLoading={isDetailLoading}
               error={selectedDetailError}
               isStale={Boolean(isStale)}

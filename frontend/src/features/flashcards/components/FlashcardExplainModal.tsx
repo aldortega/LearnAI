@@ -1,5 +1,5 @@
-import { Streamdown } from "streamdown";
-
+import type { CitableSource } from "../../../shared/lib/citations";
+import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { Modal } from "../../../shared/ui/Modal";
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
   error: string | null;
   term: string;
   explanationMarkdown: string;
+  sources: CitableSource[];
   onClose: () => void;
 };
 
@@ -17,6 +18,7 @@ export function FlashcardExplainModal({
   error,
   term,
   explanationMarkdown,
+  sources,
   onClose,
 }: Props) {
   return (
@@ -62,7 +64,7 @@ export function FlashcardExplainModal({
               [&_strong]:font-semibold
             "
           >
-            <Streamdown>{explanationMarkdown}</Streamdown>
+            <MarkdownWithCitations content={explanationMarkdown} sources={sources} />
           </div>
         ) : null}
       </div>

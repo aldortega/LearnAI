@@ -125,7 +125,13 @@ async def explain_flashcard(
         cached_markdown = coerce_text(cached_detail.get("explanation_markdown")).strip()
         cached_term = coerce_text(cached_detail.get("term")).strip()
         cached_definition = coerce_text(cached_detail.get("definition")).strip()
-        if cached_markdown and cached_term == term and cached_definition == definition:
+        cached_sources = cached_detail.get("sources")
+        if (
+            cached_markdown
+            and cached_term == term
+            and cached_definition == definition
+            and isinstance(cached_sources, list)
+        ):
             generated_at = cached_detail.get("updated_at") or cached_detail.get(
                 "created_at"
             )
@@ -133,11 +139,12 @@ async def explain_flashcard(
                 return FlashcardExplainOut(
                     card_id=payload.card_id.strip(),
                     explanation_markdown=cached_markdown,
+                    sources=cached_sources,
                     cached=True,
                     generated_at=generated_at,
                 )
 
-    explanation_markdown = await generate_flashcard_explanation_markdown(
+    explanation_markdown, sources = await generate_flashcard_explanation_markdown(
         notebook_title=coerce_text(notebook.get("title")),
         term=term,
         definition=definition,
@@ -158,6 +165,7 @@ async def explain_flashcard(
                 "definition": definition,
                 "sources_fingerprint": fingerprint,
                 "explanation_markdown": explanation_markdown,
+                "sources": sources,
                 "updated_at": now,
             },
             "$setOnInsert": {"created_at": now},
@@ -168,6 +176,7 @@ async def explain_flashcard(
     return FlashcardExplainOut(
         card_id=payload.card_id.strip(),
         explanation_markdown=explanation_markdown,
+        sources=sources,
         cached=False,
         generated_at=now,
     )
