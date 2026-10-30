@@ -57,6 +57,9 @@ def get_gemini_api_keys() -> list[str]:
             ordered_keys.append(normalized_key)
             seen.add(normalized_key)
 
+    if not ordered_keys and primary_key:
+        ordered_keys.append(primary_key)
+
     return ordered_keys
 
 
