@@ -36,16 +36,25 @@ class TTSResult:
         self.duration_seconds = duration_seconds
 
 
+TTS_ACCENT_INSTRUCTION = (
+    "Habla con acento rioplatense de Buenos Aires, Argentina: pronuncia 'll' y 'y' "
+    "como 'sh', con entonación porteña, pero con tono formal y profesional de docente: "
+    "voz clara, serena, bien articulada y pausada, sin muletillas ni modismos coloquiales. "
+    "No leas esta instrucción en voz alta, solo di el texto que sigue"
+)
+
+
 def _format_script_for_tts(
     format_type: AudioFormatType,
     segments: list[AudioScriptSegment],
 ) -> str:
     if not is_multi_speaker_format(format_type):
-        return " ".join(segment.text for segment in segments)
+        body = " ".join(segment.text for segment in segments)
+        return f"{TTS_ACCENT_INSTRUCTION}:\n\n{body}"
     lines: list[str] = []
     for segment in segments:
         lines.append(f"{segment.speaker}: {segment.text}")
-    return "\n".join(lines)
+    return f"{TTS_ACCENT_INSTRUCTION} (ambos hablantes):\n\n" + "\n".join(lines)
 
 
 def _chunk_segments(
