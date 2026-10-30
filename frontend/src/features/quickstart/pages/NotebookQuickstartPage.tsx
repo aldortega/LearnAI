@@ -1,16 +1,13 @@
 ﻿import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef } from "react";
 
-import { documentsApi } from "../../notebooks/api/documentsApi";
 import { DeleteDocumentModal } from "../../notebooks/components/DeleteDocumentModal";
 import { NotebookShell } from "../../notebooks/components/NotebookShell";
 import type { Document } from "../../notebooks/types/documents.types";
 import {
-  useDocuments,
-  useDocumentStream,
   useNotebook,
   useNotebookReadySources,
-  useUploadDocument,
+  useNotebookStudioSources,
 } from "../../notebooks";
 import { QuickstartEmptyState } from "../components/QuickstartEmptyState";
 import { QuickstartOverview } from "../components/QuickstartOverview";
@@ -19,8 +16,6 @@ import { useQuickstartBootstrapState } from "../hooks/useQuickstartBootstrapStat
 import { useGenerateQuickstart } from "../hooks/useGenerateQuickstart";
 import { useQuickstart } from "../hooks/useQuickstart";
 import { NotebookLoadingScreen } from "../../../shared/ui/NotebookLoadingScreen";
-
-const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 export function NotebookQuickstartPage() {
   const { notebookId } = useParams();
@@ -31,26 +26,20 @@ export function NotebookQuickstartPage() {
     isResolving: isResolvingReadySources,
   } = useNotebookReadySources(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [streamKey, setStreamKey] = useState(0);
-  const [useFallback, setUseFallback] = useState(false);
   const hasCheckedLatestJobRef = useRef(false);
 
-  const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
-
   const {
-    documents: streamedDocuments,
-    error: streamError,
-  } = useDocumentStream(notebookId, streamKey);
-
-  const { documents: fetchedDocuments, reload } = useDocuments(
-    notebookId,
-    useFallback,
-  );
-  const { uploadDocument, isUploading } = useUploadDocument(notebookId);
+    fileInputRef,
+    documents,
+    readySignature,
+    isUploading,
+    deletingDocumentIds,
+    deleteTarget,
+    setDeleteTarget,
+    handleFileChange,
+    handleDeleteConfirm,
+    pickFile,
+  } = useNotebookStudioSources(notebookId);
 
   const {
     quickstart,
@@ -68,54 +57,12 @@ export function NotebookQuickstartPage() {
   } = useGenerateQuickstart(notebookId);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setUseFallback(false);
-      setStreamKey(0);
-    });
-  }, [notebookId]);
-
-  useEffect(() => {
     hasCheckedLatestJobRef.current = false;
   }, [notebookId]);
 
-  const documents = useFallback ? fetchedDocuments : streamedDocuments;
-
-  useEffect(() => {
-    if (streamError && documents.length === 0) {
-      queueMicrotask(() => {
-        setUseFallback(true);
-      });
-    }
-  }, [streamError, documents.length]);
-
   const handlePickFile = () => {
     if (!canManageDocuments) return;
-    fileInputRef.current?.click();
-  };
-
-  const processFileUpload = async (file: File) => {
-    if (!canManageDocuments) return;
-    const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      return;
-    }
-
-    await uploadDocument(file);
-
-    if (useFallback) {
-      await reload();
-    } else {
-      setStreamKey((prev) => prev + 1);
-    }
-  };
-
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
-    if (!file) return;
-
-    await processFileUpload(file);
+    pickFile();
   };
 
   const handleDeleteRequest = (document: Document) => {
@@ -126,53 +73,6 @@ export function NotebookQuickstartPage() {
   const handleDeleteCancel = () => {
     setDeleteTarget(null);
   };
-
-  const handleDeleteConfirm = async () => {
-    if (!notebookId || !deleteTarget || !canManageDocuments) return;
-
-    const documentId = deleteTarget.id;
-
-    setDeletingDocumentIds((prev) => {
-      const next = new Set(prev);
-      next.add(documentId);
-      return next;
-    });
-
-    try {
-      await documentsApi.remove(notebookId, documentId);
-    } catch {
-      setDeletingDocumentIds((prev) => {
-        const next = new Set(prev);
-        next.delete(documentId);
-        return next;
-      });
-      setDeleteTarget(null);
-      return;
-    }
-
-    setDeletingDocumentIds((prev) => {
-      const next = new Set(prev);
-      next.delete(documentId);
-      return next;
-    });
-
-    setDeleteTarget(null);
-
-    if (useFallback) {
-      await reload();
-    } else {
-      setStreamKey((prev) => prev + 1);
-    }
-  };
-
-  const readySignature = useMemo(
-    () =>
-      documents
-        .filter((doc) => doc.status === "done")
-        .map((doc) => `${doc.id}:${doc.updated_at}`)
-        .join("|"),
-    [documents],
-  );
 
   const handleGenerateQuickstart = async () => {
     if (!notebookId) return;
@@ -290,6 +190,7 @@ export function NotebookQuickstartPage() {
           ref={fileInputRef}
           type="file"
           className="hidden"
+          multiple
           accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />

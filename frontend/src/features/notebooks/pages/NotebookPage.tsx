@@ -78,14 +78,17 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
     fileInputRef.current?.click();
   };
 
-  const processFileUpload = async (file: File) => {
+  const processFilesUpload = async (files: File[]) => {
     if (!canManageDocuments) return;
-    const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-    if (!allowedExtensions.includes(extension)) {
-      return;
-    }
+    const validFiles = files.filter((file) => {
+      const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
+      return allowedExtensions.includes(extension);
+    });
+    if (validFiles.length === 0) return;
 
-    await uploadDocument(file);
+    for (const file of validFiles) {
+      await uploadDocument(file);
+    }
 
     if (useFallback) {
       await reload();
@@ -97,16 +100,14 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
   const handleFileChange = async (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
 
-    if (!file) return;
-
-    await processFileUpload(file);
+    await processFilesUpload(files);
   };
 
-  const handleDropFile = async (file: File) => {
-    await processFileUpload(file);
+  const handleDropFiles = async (files: File[]) => {
+    await processFilesUpload(files);
   };
 
   const handleDeleteRequest = (document: Document) => {
@@ -232,6 +233,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
           ref={fileInputRef}
           type="file"
           className="hidden"
+          multiple
           accept=".pdf,.docx,.txt,.pptx"
           onChange={handleFileChange}
         />
@@ -259,7 +261,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
           error={chatError}
           onSendMessage={sendMessage}
           onClearChat={clearConversation}
-          onDropFile={handleDropFile}
+          onDropFiles={handleDropFiles}
         />
       ) : isResolving ? (
         <div className="grid min-h-[320px] place-items-center px-6 py-10">
@@ -286,7 +288,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       ) : (
         <NotebookSourcesEmptyState
           canManageDocuments={canManageDocuments}
-          onDropFile={handleDropFile}
+          onDropFiles={handleDropFiles}
         />
       )}
     </NotebookShell>
