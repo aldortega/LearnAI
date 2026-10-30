@@ -12,3 +12,9 @@ redis_data/
 skills-lock.json
 docs
 .env.env
+
+# RAGAS eval artifacts
+backend/eval/corpus/
+backend/eval/results/
+backend/eval/simulated_*/
+backend/eval/*.lock
