@@ -7,6 +7,8 @@ from ..config import settings
 
 SettingValue = int | float | bool
 
+JUDGE_MODEL = "gemini-3.8-flash"
+
 BASE_OVERRIDES: dict[str, SettingValue] = {
     "rag_top_k": 8,
     "rag_min_score": 0.65,

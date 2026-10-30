@@ -13,8 +13,7 @@ skills-lock.json
 docs
 .env.env
 
-# RAGAS eval artifacts
-backend/eval/corpus/
+# Resultados de evaluacion
 backend/eval/results/
 backend/eval/simulated_*/
 backend/eval/*.lock

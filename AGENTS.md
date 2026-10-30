@@ -195,5 +195,19 @@ Stack obligatorio: React, TypeScript, Tailwind CSS **v4**, arquitectura feature-
 - Respeta `session_cookie_name` y configuración existente.
 - Nunca loguear credenciales ni tokens.
 
+## Agent skills
+
+### Issue tracker
+
+Issues en GitHub Issues (`aldortega/LearnAI`, vía `gh`). Ver `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Vocabulario por defecto: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Ver `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (`GLOSSARY.md` + `docs/adr/` en la raíz). Ver `docs/agents/domain.md`.
+
 
 Fin.
