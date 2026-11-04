@@ -37,6 +37,7 @@ export function NotebookFlashcardsPage() {
     deleteTarget,
     setDeleteTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = useFlashcardsNotebookSources(notebookId);
@@ -136,6 +137,7 @@ export function NotebookFlashcardsPage() {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={() => {
         if (!canManageDocuments) return;
         pickFile();

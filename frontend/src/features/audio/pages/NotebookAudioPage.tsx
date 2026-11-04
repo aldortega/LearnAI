@@ -41,6 +41,7 @@ export function NotebookAudioPage() {
     deleteTarget: sourceDeleteTarget,
     setDeleteTarget: setSourceDeleteTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = useNotebookStudioSources(notebookId);
@@ -260,6 +261,7 @@ export function NotebookAudioPage() {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={() => {
         if (!canManageDocuments) return;
         pickFile();

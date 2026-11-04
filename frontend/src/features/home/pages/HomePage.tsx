@@ -242,7 +242,7 @@ export function HomePage() {
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-foreground">
-                  Compartidas conmigo{" "}
+                  Compartidos{" "}
                   <span className="font-normal text-muted-foreground">
                     ({sharedNotebooks.length})
                   </span>

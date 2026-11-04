@@ -14,8 +14,8 @@ import {
   useNotebookReadySources,
   useUploadDocument,
 } from "../index";
-
-const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
+import { buildRejectedFilesToast, splitSourceFiles } from "../utils/sourceFiles";
+import { useToast } from "../../../shared/ui/toast/useToast";
 
 type Props = {
   redirectWhenReady?: boolean;
@@ -28,6 +28,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
   const { isResolving, hasProcessingDocuments } = useNotebookReadySources(notebookId);
   const canManageDocuments = notebook?.can_manage_documents ?? false;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { pushToast } = useToast();
   const [streamKey, setStreamKey] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
   const [deletingDocumentIds, setDeletingDocumentIds] = useState<Set<string>>(
@@ -80,10 +81,8 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
 
   const processFilesUpload = async (files: File[]) => {
     if (!canManageDocuments) return;
-    const validFiles = files.filter((file) => {
-      const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-      return allowedExtensions.includes(extension);
-    });
+    const { validFiles, rejectedFiles } = splitSourceFiles(files);
+    if (rejectedFiles.length > 0) pushToast(buildRejectedFilesToast(rejectedFiles));
     if (validFiles.length === 0) return;
 
     for (const file of validFiles) {
@@ -174,6 +173,7 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
       mode="chat"

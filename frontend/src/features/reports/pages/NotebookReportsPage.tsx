@@ -66,6 +66,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
     deleteTarget,
     setDeleteTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = useReportsNotebookSources(notebookId);
@@ -556,6 +557,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={() => {
         if (!canManageDocuments) return;
         pickFile();

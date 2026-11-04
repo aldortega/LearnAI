@@ -35,6 +35,7 @@ export function NotebookQuizPage() {
     deleteTarget,
     setDeleteTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = useNotebookStudioSources(notebookId);
@@ -234,6 +235,7 @@ export function NotebookQuizPage() {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
       mode="quiz"

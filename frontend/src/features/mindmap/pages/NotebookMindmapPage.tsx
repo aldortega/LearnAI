@@ -35,6 +35,7 @@ export function NotebookMindmapPage() {
     deleteTarget,
     setDeleteTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = useMindmapNotebookSources(notebookId);
@@ -155,6 +156,7 @@ export function NotebookMindmapPage() {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={() => {
         if (!canManageDocuments) return;
         pickFile();

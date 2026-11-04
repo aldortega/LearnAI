@@ -62,6 +62,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
     deleteTarget: deleteDocumentTarget,
     setDeleteTarget: setDeleteDocumentTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = usePresentationsNotebookSources(notebookId);
@@ -379,6 +380,7 @@ export function NotebookPresentationsPage({ routeMode = "list" }: Props) {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={() => canManageDocuments && pickFile()}
       onDeleteDocument={(document) => canManageDocuments && setDeleteDocumentTarget(document)}
       mode="presentations"
