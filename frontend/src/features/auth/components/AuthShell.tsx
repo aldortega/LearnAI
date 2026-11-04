@@ -1,6 +1,7 @@
 ﻿import type { ReactNode } from "react";
 
 import { GraduationCap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { cn } from "../../../shared/lib/cn";
 
@@ -13,7 +14,7 @@ type Props = {
 
 function LogoMark() {
   return (
-    <div className="flex items-center gap-3">
+    <Link to="/" className="flex w-fit items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
       <div
         className={cn(
           "grid h-10 w-10 place-items-center rounded-lg bg-white/10 ring-1 ring-white/20",
@@ -26,7 +27,7 @@ function LogoMark() {
           LearnAI
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -64,14 +65,14 @@ export function AuthShell({ children, title, subtitle, topSlot }: Props) {
       <div className="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-10 lg:hidden">
-            <div className="flex items-center gap-2">
+            <Link to="/" className="flex w-fit items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
               <div className="grid h-8 w-8 place-items-center rounded-lg bg-green-900 text-white">
                 <GraduationCap className="h-5 w-5" />
               </div>
               <span className="text-lg font-bold text-green-900 dark:text-green-200">
                 LearnAI
               </span>
-            </div>
+            </Link>
           </div>
 
           <div>

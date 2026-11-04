@@ -17,6 +17,7 @@ import { ResetPasswordPage } from "./features/auth/pages/ResetPasswordPage";
 import { NotebookAudioPage } from "./features/audio/pages/NotebookAudioPage";
 import { NotebookFlashcardsPage } from "./features/flashcards/pages/NotebookFlashcardsPage";
 import { HomePage } from "./features/home/pages/HomePage";
+import { LandingPage } from "./features/landing";
 import { useNotebookPrefetch, useNotebookReadySources } from "./features/notebooks";
 import { NotebookMindmapPage } from "./features/mindmap/pages/NotebookMindmapPage";
 import { NotebookPage } from "./features/notebooks/pages/NotebookPage";
@@ -43,6 +44,38 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!user.profile_complete) {
     return <CompleteProfilePage />;
+  }
+
+  return <>{children}</>;
+}
+
+function RootRoute() {
+  const { user, isBootstrapping } = useAuth();
+
+  if (isBootstrapping) {
+    return <NotebookLoadingScreen message="Cargando..." />;
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  return (
+    <ProtectedRoute>
+      <HomePage />
+    </ProtectedRoute>
+  );
+}
+
+function GuestRoute({ children }: { children: ReactNode }) {
+  const { user, isBootstrapping } = useAuth();
+
+  if (isBootstrapping) {
+    return <NotebookLoadingScreen message="Cargando..." />;
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -100,15 +133,26 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-                {/* Protected routes */}
                 <Route
-                  path="/"
+                  path="/login"
                   element={
-                    <ProtectedRoute>
-                      <HomePage />
-                    </ProtectedRoute>
+                    <GuestRoute>
+                      <AuthPage key="login" initialMode="login" />
+                    </GuestRoute>
                   }
                 />
+                <Route
+                  path="/register"
+                  element={
+                    <GuestRoute>
+                      <AuthPage key="register" initialMode="register" />
+                    </GuestRoute>
+                  }
+                />
+
+                <Route path="/" element={<RootRoute />} />
+
+                {/* Protected routes */}
                 <Route
                   path="/notebook/:notebookId"
                   element={
