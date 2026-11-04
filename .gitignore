@@ -2,16 +2,40 @@
 qdrant_storage/
 redis_data/
 .vscode/
-# Python cache
+
+# Python
 **/__pycache__/
 *.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+.pnpm-store
+
+# Env (conserva plantillas)
+.env
+.env.*
+!.env*.example
+
+# Documentacion local
+docs/
+
+# Logs y SO
+*.log
+.DS_Store
+
+# Herramientas de agentes
 .claude
 .codex
 .opencode
 .agents
+.cursor/
 skills-lock.json
-docs
-.env.env
 
 # Resultados de evaluacion
 backend/eval/results/
