@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     session_secret: str = ""
     frontend_origin: str = "http://localhost:5173"
     session_cookie_name: str = "session"
+    session_cookie_secure: bool = False
     session_short_hours: int = 12
     session_remember_days: int = 7
     google_client_id: Optional[str] = None
