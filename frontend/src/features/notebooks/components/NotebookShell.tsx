@@ -104,7 +104,7 @@ export function NotebookShell({
   const closeSources = useCallback(() => setIsSourcesOpen(false), []);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden overscroll-none bg-surface">
+    <div className="flex h-dvh flex-col overflow-hidden overscroll-none bg-surface">
       <Header
         title={title}
         className="flex-none"
@@ -119,7 +119,7 @@ export function NotebookShell({
       />
       {beforeMain}
 
-      <main className="flex min-h-0 flex-1 overflow-hidden overscroll-none">
+      <main className="flex min-h-0 flex-1 flex-col-reverse overflow-hidden overscroll-none md:flex-row">
         <StudioRail
           mode={mode}
           isStudioLocked={isStudioLocked}

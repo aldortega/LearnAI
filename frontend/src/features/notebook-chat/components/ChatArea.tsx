@@ -146,7 +146,7 @@ export function ChatArea({
 
       <div className="flex flex-1 flex-col overflow-y-auto" ref={scrollRef}>
         {!hasSources ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-center">
+          <div className="flex flex-1 items-center justify-center p-6 text-center sm:p-8">
             <div className="max-w-md">
               <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary">
                 <Upload className="h-8 w-8" />
@@ -177,7 +177,7 @@ export function ChatArea({
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col px-6 py-6">
+          <div className="flex flex-1 flex-col px-4 py-4 sm:px-6 sm:py-6">
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
               {isLoading ? (
                 <div className="rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground">
@@ -280,7 +280,7 @@ export function ChatArea({
               onKeyDown={handleKeyDown}
               placeholder="Hacé una pregunta sobre tus fuentes..."
               className={cn(
-                "min-h-[44px] flex-1 resize-none rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground",
+                "min-h-[44px] min-w-0 flex-1 resize-none rounded-xl border border-border bg-muted px-3 py-2 text-base text-foreground sm:text-sm",
                 "placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
                 "disabled:cursor-not-allowed disabled:opacity-60",
                 "dark:border-border",
@@ -291,7 +291,7 @@ export function ChatArea({
             <Button
               onClick={() => void handleSubmit()}
               disabled={isSendDisabled}
-              className="px-6"
+              className="px-4 sm:px-6"
             >
               Enviar
             </Button>

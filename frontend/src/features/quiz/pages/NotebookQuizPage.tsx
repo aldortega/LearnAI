@@ -317,7 +317,7 @@ export function NotebookQuizPage() {
             }}
           />
         ) : roadmap ? (
-          <div className="h-full overflow-y-auto p-6">
+          <div className="h-full overflow-y-auto p-4 sm:p-6">
             <div className="mx-auto max-w-5xl">
             {levelEntryError ? (
               <p role="alert" className="mb-4 text-sm text-error">

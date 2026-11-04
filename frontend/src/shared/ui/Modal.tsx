@@ -85,14 +85,14 @@ export function Modal({
       <div
         ref={contentRef}
         className={cn(
-          "relative w-full rounded-xl bg-surface shadow-xl ring-1 ring-border transition-all",
+          "relative flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-xl bg-surface shadow-xl ring-1 ring-border transition-all",
           maxWidthClasses[maxWidth],
           "animate-in fade-in zoom-in-95 duration-200",
           "bg-surface ring-border",
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div className="flex flex-none items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-6">
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button
             onClick={onClose}
@@ -103,7 +103,7 @@ export function Modal({
           </button>
         </div>
 
-        <div className="p-6">{children}</div>
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-6">{children}</div>
       </div>
     </div>,
     document.body,

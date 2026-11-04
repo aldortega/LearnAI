@@ -99,7 +99,7 @@ export function StudioRail({
   return (
     <nav
       aria-label="Modos de estudio"
-      className="flex h-full w-16 flex-none flex-col items-center gap-1 border-r border-border bg-muted py-3"
+      className="flex w-full flex-none flex-row items-center justify-center-safe gap-1 overflow-x-auto md:justify-start border-t border-border bg-muted px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:h-full md:w-16 md:flex-col md:overflow-x-visible md:border-t-0 md:border-r md:px-0 md:py-3"
     >
       {items.map((item) => {
         const isActive = activeMode === item.key;
@@ -111,7 +111,7 @@ export function StudioRail({
             : item.label;
 
         return (
-          <div key={item.key} className="group relative">
+          <div key={item.key} className="group relative flex-none">
             <button
               type="button"
               onClick={item.onClick}
@@ -134,7 +134,7 @@ export function StudioRail({
             <span
               role="tooltip"
               className={cn(
-                "pointer-events-none absolute left-full top-1/2 z-30 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-surface opacity-0 shadow-md transition-opacity",
+                "pointer-events-none absolute left-full top-1/2 z-30 ml-2 hidden -translate-y-1/2 whitespace-nowrap md:block rounded-md bg-foreground px-2 py-1 text-xs font-medium text-surface opacity-0 shadow-md transition-opacity",
                 "group-hover:opacity-100 group-has-[:focus-visible]:opacity-100",
               )}
             >

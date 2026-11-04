@@ -16,35 +16,35 @@ export function Header({ title, className, actions }: Props) {
   return (
     <header
       className={cn(
-        "flex h-16 w-full items-center justify-between border-b border-border bg-surface px-6",
+        "flex h-16 w-full items-center justify-between gap-3 border-b border-border bg-surface px-4 sm:px-6",
         "dark:border-border",
         className,
       )}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <Link
           to="/"
-          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
         >
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
             <GraduationCap className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold tracking-tight text-primary">
+          <span className={cn("text-lg font-bold tracking-tight text-primary", title && "hidden sm:inline")}>
             LearnAI
           </span>
         </Link>
 
         {title ? (
           <>
-            <div className="h-4 w-px bg-muted-hover" />
-            <h1 className="text-sm font-semibold text-foreground">
+            <div className="hidden h-4 w-px bg-muted-hover sm:block" />
+            <h1 className="truncate text-sm font-semibold text-foreground">
               {title}
             </h1>
           </>
         ) : null}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {actions}
         <NotificationBell />
         <UserMenu />

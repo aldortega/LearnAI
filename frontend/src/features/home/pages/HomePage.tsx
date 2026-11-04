@@ -149,15 +149,15 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-muted">
+    <div className="min-h-dvh w-full bg-muted">
       <Header className="sticky top-0 z-10 bg-surface/80 backdrop-blur-md" />
 
-      <main className="px-8 py-10">
+      <main className="px-4 py-6 sm:px-8 sm:py-10">
         <div className="mx-auto max-w-4xl">
           {/* Greeting + Create button */}
-          <div className="mb-10 flex items-start justify-between">
+          <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Hola, {firstName}
               </h1>
               <p className="mt-2 text-muted-foreground">
@@ -168,7 +168,7 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="flex shrink-0 items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
+              className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               Crear Cuaderno

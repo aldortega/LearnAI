@@ -32,7 +32,7 @@ export function SourcesPill({ documents, isOpen, isUploading, onClick }: Props) 
       aria-haspopup="dialog"
       aria-label={statusText ? `${label} (${statusText})` : label}
       className={cn(
-        "relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-muted px-3 py-1.5 text-sm font-medium text-foreground transition-colors",
+        "relative inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1.5 sm:gap-2 sm:px-3 text-sm font-medium text-foreground transition-colors",
         "hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         isOpen && "border-primary ring-1 ring-primary",
       )}
@@ -42,7 +42,8 @@ export function SourcesPill({ documents, isOpen, isUploading, onClick }: Props) 
       ) : (
         <FileText className="h-4 w-4 text-muted-foreground" />
       )}
-      <span>{label}</span>
+      <span className="hidden sm:inline">{label}</span>
+      <span className="sm:hidden">{count}</span>
       {hasError ? <span className="h-2 w-2 rounded-full bg-error" aria-hidden /> : null}
     </button>
   );

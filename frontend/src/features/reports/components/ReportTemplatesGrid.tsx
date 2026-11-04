@@ -135,7 +135,7 @@ export function ReportTemplatesGrid({
         <h3 className="text-sm font-semibold text-foreground">
           Formatos predeterminados
         </h3>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3 md:flex">
           {visibleTemplates.map((template) => (
             <TemplateCard
               key={template.type}
@@ -171,7 +171,7 @@ export function ReportTemplatesGrid({
             <span>Actualizar</span>
           </button>
         </div>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-3 md:flex">
           {isSuggestionsLoading
             ? [1, 2, 3, 4].map((slot) => <SuggestionSkeletonCard key={slot} />)
             : visibleSuggestions.map((suggestion) => (

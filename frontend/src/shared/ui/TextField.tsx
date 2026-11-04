@@ -75,7 +75,7 @@ export function TextField({
         <input
           {...mergedInputProps}
           className={cn(
-            "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground transition-all duration-200",
+            "h-10 w-full rounded-lg border border-border bg-surface px-3 text-base text-foreground transition-all duration-200 sm:text-sm",
             "placeholder:text-muted-foreground",
             "focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none",
             error

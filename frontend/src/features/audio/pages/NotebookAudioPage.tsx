@@ -333,7 +333,7 @@ export function NotebookAudioPage() {
       }
     >
       <AudioShell headerAction={headerAction}>
-        <div className="relative h-full overflow-y-auto p-6">
+        <div className="relative h-full overflow-y-auto p-4 sm:p-6">
           <AudioGenerationOverlay
             isVisible={isGenerating}
             message="Generando podcast..."

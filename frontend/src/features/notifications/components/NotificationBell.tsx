@@ -130,7 +130,7 @@ export function NotificationBell() {
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 z-50 mt-2 w-96 rounded-lg border border-border bg-surface shadow-lg ring-1 ring-black/5">
+        <div className="fixed inset-x-4 top-16 z-50 mt-2 rounded-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:w-96 border border-border bg-surface shadow-lg ring-1 ring-black/5">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-sm font-semibold text-foreground">Invitaciones</p>
             {hasPendingInvitations ? (

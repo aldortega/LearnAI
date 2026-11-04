@@ -669,7 +669,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
           </div>
         }
       >
-        <div className="relative h-full overflow-y-auto p-6">
+        <div className="relative h-full overflow-y-auto p-4 sm:p-6">
           <div className="mx-auto w-full max-w-4xl">
             {viewMode === "templates" ? (
               <div className="space-y-4">
