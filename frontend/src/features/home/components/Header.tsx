@@ -1,4 +1,5 @@
 ﻿import { GraduationCap } from "lucide-react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { NotificationBell } from "../../notifications";
@@ -8,9 +9,10 @@ import { cn } from "../../../shared/lib/cn";
 type Props = {
   title?: string;
   className?: string;
+  actions?: ReactNode;
 };
 
-export function Header({ title, className }: Props) {
+export function Header({ title, className, actions }: Props) {
   return (
     <header
       className={cn(
@@ -43,6 +45,7 @@ export function Header({ title, className }: Props) {
       </div>
 
       <div className="flex items-center gap-3">
+        {actions}
         <NotificationBell />
         <UserMenu />
       </div>

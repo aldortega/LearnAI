@@ -1,7 +1,5 @@
 import {
   BookOpenCheck,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Headphones,
   Mic,
@@ -11,10 +9,9 @@ import {
   Network,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { cn } from "../../../shared/lib/cn";
-import { Button } from "../../../shared/ui/Button";
+import { Spinner } from "../../../shared/ui/Spinner";
 
 type Mode =
   | "chat"
@@ -56,7 +53,9 @@ type Props = {
   onGoVoice?: () => void;
 };
 
-export function StudioSidebar({
+const NEEDS_SOURCE_HINT = "Necesitás al menos una fuente lista";
+
+export function StudioRail({
   mode,
   isStudioLocked,
   canStartQuiz,
@@ -84,176 +83,66 @@ export function StudioSidebar({
   onGoAudio,
   onGoVoice,
 }: Props) {
-  const [isOpen, setIsOpen] = useState(() => {
-    const saved = localStorage.getItem("studioSidebarOpen");
-    return saved !== null ? saved === "true" : true;
-  });
-
-  useEffect(() => {
-    localStorage.setItem("studioSidebarOpen", String(isOpen));
-  }, [isOpen]);
-
   const activeMode: Mode | null = isStudioLocked ? null : mode;
   const items = [
-    {
-      key: "quickstart" as const,
-      label: "Inicio rapido",
-      icon: Sparkles,
-      onClick: onGoQuickstart,
-      disabled: isStudioLocked || !canStartQuickstart,
-      loading: isGeneratingQuickstart,
-    },
-    {
-      key: "mindmap" as const,
-      label: "Mapa mental",
-      icon: Network,
-      onClick: onGoMindmap,
-      disabled: isStudioLocked || !canStartMindmap,
-      loading: isGeneratingMindmap,
-    },
-    {
-      key: "chat" as const,
-      label: "Chat",
-      icon: MessageSquare,
-      onClick: onGoChat,
-      disabled: isStudioLocked,
-      loading: false,
-    },
-    {
-      key: "quiz" as const,
-      label: "Quiz",
-      icon: BookOpenCheck,
-      onClick: onGoQuiz,
-      disabled: isStudioLocked || !canStartQuiz,
-      loading: isGeneratingQuiz,
-    },
-    {
-      key: "flashcards" as const,
-      label: "Flashcards",
-      icon: Layers,
-      onClick: onGoFlashcards,
-      disabled: isStudioLocked || !canStartFlashcards,
-      loading: isGeneratingFlashcards,
-    },
-    {
-      key: "reports" as const,
-      label: "Informes",
-      icon: FileText,
-      onClick: onGoReports,
-      disabled: isStudioLocked || !canStartReports,
-      loading: isGeneratingReports,
-    },
-    {
-      key: "presentations" as const,
-      label: "Presentaciones",
-      icon: Presentation,
-      onClick: onGoPresentations,
-      disabled: isStudioLocked || !canStartPresentations,
-      loading: isGeneratingPresentations,
-    },
-    {
-      key: "audio" as const,
-      label: "Audios",
-      icon: Headphones,
-      onClick: onGoAudio ?? (() => undefined),
-      disabled: isStudioLocked || !canStartAudio || !onGoAudio,
-      loading: isGeneratingAudio,
-    },
-    {
-      key: "voice" as const,
-      label: "Voz",
-      icon: Mic,
-      onClick: onGoVoice ?? (() => undefined),
-      disabled: isStudioLocked || !canStartVoice || !onGoVoice,
-      loading: false,
-    },
+    { key: "quickstart" as const, label: "Inicio rápido", icon: Sparkles, onClick: onGoQuickstart, canStart: canStartQuickstart, loading: isGeneratingQuickstart },
+    { key: "chat" as const, label: "Chat", icon: MessageSquare, onClick: onGoChat, canStart: true, loading: false },
+    { key: "mindmap" as const, label: "Mapa mental", icon: Network, onClick: onGoMindmap, canStart: canStartMindmap, loading: isGeneratingMindmap },
+    { key: "quiz" as const, label: "Quiz", icon: BookOpenCheck, onClick: onGoQuiz, canStart: canStartQuiz, loading: isGeneratingQuiz },
+    { key: "flashcards" as const, label: "Flashcards", icon: Layers, onClick: onGoFlashcards, canStart: canStartFlashcards, loading: isGeneratingFlashcards },
+    { key: "reports" as const, label: "Informes", icon: FileText, onClick: onGoReports, canStart: canStartReports, loading: isGeneratingReports },
+    { key: "presentations" as const, label: "Presentaciones", icon: Presentation, onClick: onGoPresentations, canStart: canStartPresentations, loading: isGeneratingPresentations },
+    { key: "audio" as const, label: "Audios", icon: Headphones, onClick: onGoAudio ?? (() => undefined), canStart: canStartAudio && Boolean(onGoAudio), loading: isGeneratingAudio },
+    { key: "voice" as const, label: "Voz", icon: Mic, onClick: onGoVoice ?? (() => undefined), canStart: canStartVoice && Boolean(onGoVoice), loading: false },
   ];
 
-  const hasAnyBlockedMode =
-    !canStartQuickstart ||
-    !canStartQuiz ||
-    !canStartFlashcards ||
-    !canStartReports ||
-    !canStartPresentations ||
-    !canStartMindmap;
-
   return (
-    <div
-      className={cn(
-        "relative flex h-full flex-col overflow-hidden border-l border-border bg-muted transition-all duration-300 ease-in-out",
-        "dark:border-border",
-        isOpen ? "w-64" : "w-12",
-      )}
+    <nav
+      aria-label="Modos de estudio"
+      className="flex h-full w-16 flex-none flex-col items-center gap-1 border-r border-border bg-muted py-3"
     >
-      <div
-        className={cn(
-          "flex h-[45px] items-center border-b border-border",
-          "dark:border-border",
-          isOpen ? "justify-between px-4" : "justify-center",
-        )}
-      >
-        {isOpen ? (
-          <h2 className="whitespace-nowrap text-sm font-semibold text-foreground">Estudio</h2>
-        ) : null}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="rounded-md p-2 text-muted-foreground hover:bg-muted-hover"
-          aria-label={isOpen ? "Cerrar panel" : "Abrir panel"}
-        >
-          {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
-      </div>
+      {items.map((item) => {
+        const isActive = activeMode === item.key;
+        const isDisabled = isStudioLocked || !item.canStart || item.loading;
+        const hint = item.loading
+          ? `${item.label} · generando…`
+          : !isStudioLocked && !item.canStart && item.key !== "audio" && item.key !== "voice"
+            ? `${item.label} · ${NEEDS_SOURCE_HINT}`
+            : item.label;
 
-      <div className={cn("flex-1 overflow-y-auto p-4", !isOpen && "px-2")}>
-        {isOpen ? (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-              <div className="grid gap-2">
-                {items.map((item) => (
-                  <Button
-                    key={item.key}
-                    variant={activeMode === item.key ? "primary" : "ghost"}
-                    className="w-full justify-start whitespace-nowrap transition-colors"
-                    leftIcon={<item.icon className="h-4 w-4" />}
-                    onClick={item.onClick}
-                    disabled={item.disabled}
-                    loading={item.loading}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-              {!isStudioLocked && hasAnyBlockedMode ? (
-                <p className="mt-3 text-xs text-muted-foreground" role="alert">
-                  Necesitás al menos una fuente lista para usar el modo estudio.
-                </p>
-              ) : null}
-            </div>
+        return (
+          <div key={item.key} className="group relative">
+            <button
+              type="button"
+              onClick={item.onClick}
+              disabled={isDisabled}
+              aria-label={hint}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "relative grid h-10 w-10 place-items-center rounded-xl transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-muted",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-muted-hover hover:text-foreground",
+                !isDisabled && "cursor-pointer",
+                isDisabled && !item.loading && "cursor-not-allowed opacity-50",
+                item.loading && "cursor-progress",
+              )}
+            >
+              {item.loading ? <Spinner className="h-4 w-4" /> : <item.icon className="h-5 w-5" />}
+            </button>
+            <span
+              role="tooltip"
+              className={cn(
+                "pointer-events-none absolute left-full top-1/2 z-30 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-surface opacity-0 shadow-md transition-opacity",
+                "group-hover:opacity-100 group-has-[:focus-visible]:opacity-100",
+              )}
+            >
+              {hint}
+            </span>
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 pt-4">
-            {items.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                className={cn(
-                  "rounded-md p-2 transition-colors",
-                  activeMode === item.key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted-hover",
-                  (item.disabled || item.loading) && "cursor-not-allowed opacity-50",
-                )}
-                onClick={item.onClick}
-                disabled={item.disabled || item.loading}
-                title={item.label}
-                aria-label={item.label}
-              >
-                <item.icon className="h-4 w-4" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+        );
+      })}
+    </nav>
   );
 }

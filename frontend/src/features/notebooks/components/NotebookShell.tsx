@@ -1,9 +1,10 @@
-﻿import type { ReactNode } from "react";
+﻿import { useCallback, useState, type ReactNode } from "react";
 
 import { useDocumentTitle } from "../../../shared/hooks/useDocumentTitle";
 import { Header } from "../../home/components/Header";
-import { StudioSidebar } from "./StudioSidebar";
-import { SourcesSidebar } from "./SourcesSidebar";
+import { SourcesModal } from "./SourcesModal";
+import { SourcesPill } from "./SourcesPill";
+import { StudioRail } from "./StudioRail";
 import type { Document } from "../types/documents.types";
 
 export type NotebookShellMode =
@@ -25,6 +26,7 @@ type Props = {
   isUploading: boolean;
   deletingDocumentIds: Set<string>;
   onAddSource: () => void;
+  onDropFiles: (files: File[]) => void;
   onDeleteDocument: (document: Document) => void;
   mode: NotebookShellMode;
   isStudioLocked: boolean;
@@ -65,6 +67,7 @@ export function NotebookShell({
   isUploading,
   deletingDocumentIds,
   onAddSource,
+  onDropFiles,
   onDeleteDocument,
   mode,
   isStudioLocked,
@@ -97,24 +100,27 @@ export function NotebookShell({
   footer,
 }: Props) {
   useDocumentTitle(title);
+  const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+  const closeSources = useCallback(() => setIsSourcesOpen(false), []);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden overscroll-none bg-surface">
-      <Header title={title} className="flex-none" />
+      <Header
+        title={title}
+        className="flex-none"
+        actions={
+          <SourcesPill
+            documents={documents}
+            isOpen={isSourcesOpen}
+            isUploading={isUploading}
+            onClick={() => setIsSourcesOpen((open) => !open)}
+          />
+        }
+      />
       {beforeMain}
 
       <main className="flex min-h-0 flex-1 overflow-hidden overscroll-none">
-        <SourcesSidebar
-          documents={documents}
-          canManageDocuments={canManageDocuments}
-          isNotebookLoading={isNotebookLoading}
-          isUploading={isUploading}
-          deletingDocumentIds={deletingDocumentIds}
-          onAddSource={onAddSource}
-          onDeleteDocument={onDeleteDocument}
-        />
-        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">{children}</div>
-        <StudioSidebar
+        <StudioRail
           mode={mode}
           isStudioLocked={isStudioLocked}
           canStartQuiz={canStartQuiz}
@@ -142,7 +148,20 @@ export function NotebookShell({
           onGoAudio={onGoAudio}
           onGoVoice={onGoVoice}
         />
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">{children}</div>
       </main>
+      <SourcesModal
+        isOpen={isSourcesOpen}
+        onClose={closeSources}
+        documents={documents}
+        canManageDocuments={canManageDocuments}
+        isNotebookLoading={isNotebookLoading}
+        isUploading={isUploading}
+        deletingDocumentIds={deletingDocumentIds}
+        onAddSource={onAddSource}
+        onDropFiles={onDropFiles}
+        onDeleteDocument={onDeleteDocument}
+      />
       {footer}
     </div>
   );

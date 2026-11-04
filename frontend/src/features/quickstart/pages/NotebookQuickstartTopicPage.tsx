@@ -32,6 +32,7 @@ export function NotebookQuickstartTopicPage() {
     deleteTarget,
     setDeleteTarget,
     handleFileChange,
+    handleDropFiles,
     handleDeleteConfirm,
     pickFile,
   } = useNotebookStudioSources(notebookId);
@@ -122,6 +123,7 @@ export function NotebookQuickstartTopicPage() {
       isNotebookLoading={isNotebookLoading}
       isUploading={isUploading}
       deletingDocumentIds={deletingDocumentIds}
+      onDropFiles={handleDropFiles}
       onAddSource={handlePickFile}
       onDeleteDocument={handleDeleteRequest}
       mode="quickstart"

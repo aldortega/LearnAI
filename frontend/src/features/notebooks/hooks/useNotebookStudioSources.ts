@@ -7,13 +7,13 @@ import {
   type RefObject,
 } from "react";
 
+import { useToast } from "../../../shared/ui/toast/useToast";
 import { documentsApi } from "../api/documentsApi";
 import type { Document } from "../types/documents.types";
+import { buildRejectedFilesToast, splitSourceFiles } from "../utils/sourceFiles";
 import { useDocumentStream } from "./useDocumentStream";
 import { useDocuments } from "./useDocuments";
 import { useUploadDocument } from "./useUploadDocument";
-
-const allowedExtensions = [".pdf", ".docx", ".txt", ".pptx"];
 
 export type NotebookStudioSourcesResult = {
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -25,6 +25,7 @@ export type NotebookStudioSourcesResult = {
   deleteTarget: Document | null;
   setDeleteTarget: (document: Document | null) => void;
   handleFileChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  handleDropFiles: (files: File[]) => Promise<void>;
   handleDeleteConfirm: () => Promise<void>;
   pickFile: () => void;
 };
@@ -46,6 +47,7 @@ export function useNotebookStudioSources(
   } = useDocumentStream(notebookId, streamKey);
   const { documents: fetchedDocuments, reload } = useDocuments(notebookId, useFallback);
   const { uploadDocument, isUploading } = useUploadDocument(notebookId);
+  const { pushToast } = useToast();
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -67,10 +69,8 @@ export function useNotebookStudioSources(
   }, [streamError, documents.length]);
 
   const processFilesUpload = async (files: File[]) => {
-    const validFiles = files.filter((file) => {
-      const extension = `.${file.name.split(".").pop() ?? ""}`.toLowerCase();
-      return allowedExtensions.includes(extension);
-    });
+    const { validFiles, rejectedFiles } = splitSourceFiles(files);
+    if (rejectedFiles.length > 0) pushToast(buildRejectedFilesToast(rejectedFiles));
     if (validFiles.length === 0) return;
 
     for (const file of validFiles) {
@@ -145,6 +145,7 @@ export function useNotebookStudioSources(
     deleteTarget,
     setDeleteTarget: setDeleteTargetState,
     handleFileChange,
+    handleDropFiles: processFilesUpload,
     handleDeleteConfirm,
     pickFile: () => fileInputRef.current?.click(),
   };
