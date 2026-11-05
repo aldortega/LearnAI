@@ -195,6 +195,16 @@ Stack obligatorio: React, TypeScript, Tailwind CSS **v4**, arquitectura feature-
 - Respeta `session_cookie_name` y configuración existente.
 - Nunca loguear credenciales ni tokens.
 
+## Entorno de desarrollo en el VPS
+
+Aplica cuando el agente corre en el VPS de producción (usuario `deploy`).
+
+- Desarrolla solo en `~/dev/LearnAI`. Nunca edites `~/LearnAI`: es el checkout de producción y cada deploy hace `git reset --hard origin/main`.
+- Un push a `main` despliega automáticamente a producción (GitHub Actions). Trabaja en ramas y no hagas push a `main` sin pedirlo explícitamente.
+- Los contenedores de dev usan el proyecto `learnai-dev` vía `docker-compose.override.yml` (local, no versionado): puertos solo en `127.0.0.1` e imagen `learnai-api-dev`. No reutilices la imagen `learnai-api` ni toques los contenedores `learnai-*` de producción.
+- Arranca con `docker compose up -d` y para con `docker compose stop` al terminar: el VPS tiene poca RAM y comparte máquina con producción.
+- `backend/.env` de dev usa la base `learnai_dev`, pero comparte claves de LLM y el bucket de Supabase con producción: evita generar cargas masivas o subir archivos de prueba innecesarios.
+
 ## Agent skills
 
 ### Issue tracker
