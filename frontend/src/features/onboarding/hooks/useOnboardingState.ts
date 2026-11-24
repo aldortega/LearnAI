@@ -27,9 +27,11 @@ export function useOnboardingState(): OnboardingState {
   const { pushToast } = useToast();
   const navigate = useNavigate();
   const [isManuallyOpen, setIsManuallyOpen] = useState(false);
-  const [hasDismissed, setHasDismissed] = useState(false);
+  const [dismissedUserId, setDismissedUserId] = useState<string | null>(null);
 
-  const shouldAutoOpen = Boolean(user?.profile_complete && user.onboarding_pending) && !hasDismissed;
+  const userId = user?.id ?? null;
+  const shouldAutoOpen =
+    Boolean(user?.profile_complete && user.onboarding_pending) && dismissedUserId !== userId;
   const isOpen = Boolean(user) && (isManuallyOpen || shouldAutoOpen);
   const isPending = Boolean(user?.onboarding_pending);
 
@@ -37,7 +39,7 @@ export function useOnboardingState(): OnboardingState {
 
   const closeTutorial = useCallback(() => {
     setIsManuallyOpen(false);
-    setHasDismissed(true);
+    setDismissedUserId(userId);
     if (!isPending) return;
 
     onboardingApi
@@ -50,7 +52,7 @@ export function useOnboardingState(): OnboardingState {
           description: getErrorMessage(error),
         });
       });
-  }, [isPending, refreshMe, pushToast]);
+  }, [userId, isPending, refreshMe, pushToast]);
 
   const finishTutorial = useCallback(() => {
     closeTutorial();
