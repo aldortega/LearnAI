@@ -12,6 +12,7 @@ import { LeaveNotebookModal } from "../../notebooks/components/LeaveNotebookModa
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyNotebooksIllustration } from "../../../shared/ui/illustrations/EmptyNotebooksIllustration";
 import { Header } from "../components/Header";
+import { useCreateNotebookModal } from "../hooks/useCreateNotebookModal";
 import { NotebookCard } from "../components/NotebookCard";
 import { NotebookListItem } from "../components/NotebookListItem";
 
@@ -42,7 +43,7 @@ export function HomePage() {
   const { notebooks, isLoading: isNotebooksLoading, error: notebooksError, reload } = useNotebooks(user?.id);
   const { deleteNotebook, isLoading, error, clearError } = useDeleteNotebook();
   const { leaveNotebook, isLoading: isLeaving, error: leaveError, clearError: clearLeaveError } = useLeaveNotebook();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const createModal = useCreateNotebookModal();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -167,7 +168,7 @@ export function HomePage() {
 
             <button
               type="button"
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={createModal.open}
               className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
@@ -286,8 +287,8 @@ export function HomePage() {
       </main>
 
       <CreateNotebookModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={createModal.isOpen}
+        onClose={createModal.close}
         onSuccess={() => {
           void reload();
         }}
