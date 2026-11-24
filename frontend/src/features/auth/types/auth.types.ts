@@ -7,6 +7,7 @@ export type User = {
   username: string | null;
   birthdate: string | null;
   profile_complete: boolean;
+  onboarding_pending: boolean;
 };
 
 export type AuthResponse = {

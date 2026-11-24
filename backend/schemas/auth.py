@@ -38,6 +38,7 @@ class UserOut(BaseModel):
     username: Optional[str] = None
     birthdate: Optional[date] = None
     profile_complete: bool = True
+    onboarding_pending: bool = False
 
 
 class AuthResponse(BaseModel):
