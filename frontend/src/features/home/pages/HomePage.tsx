@@ -11,6 +11,7 @@ import { InviteUserModal } from "../../notebooks/components/InviteUserModal";
 import { LeaveNotebookModal } from "../../notebooks/components/LeaveNotebookModal";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyNotebooksIllustration } from "../../../shared/ui/illustrations/EmptyNotebooksIllustration";
+import { OnboardingPrototype } from "../../onboarding/prototype/OnboardingPrototype";
 import { Header } from "../components/Header";
 import { NotebookCard } from "../components/NotebookCard";
 import { NotebookListItem } from "../components/NotebookListItem";
@@ -151,6 +152,7 @@ export function HomePage() {
   return (
     <div className="min-h-dvh w-full bg-muted">
       <Header className="sticky top-0 z-10 bg-surface/80 backdrop-blur-md" />
+      <OnboardingPrototype />
 
       <main className="px-4 py-6 sm:px-8 sm:py-10">
         <div className="mx-auto max-w-4xl">
