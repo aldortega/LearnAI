@@ -274,19 +274,9 @@ export function NotebookPage({ redirectWhenReady = false }: Props) {
             </p>
           </div>
         </div>
-      ) : hasProcessingDocuments ? (
-        <div className="grid min-h-[320px] place-items-center px-6 py-10">
-          <div className="max-w-md rounded-2xl border border-border bg-surface px-6 py-5 text-center">
-            <h2 className="text-base font-semibold text-foreground">
-              Tus fuentes se estan procesando
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Cuando termine la ingesta, el studio se habilitara automaticamente.
-            </p>
-          </div>
-        </div>
       ) : (
         <NotebookSourcesEmptyState
+          phase={isUploading ? "uploading" : hasProcessingDocuments ? "processing" : "idle"}
           canManageDocuments={canManageDocuments}
           onDropFiles={handleDropFiles}
         />
