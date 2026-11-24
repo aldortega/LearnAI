@@ -1,14 +1,17 @@
 import { useState, type DragEvent } from "react";
 
 import { cn } from "../../../shared/lib/cn";
+import { Spinner } from "../../../shared/ui/Spinner";
 import { EmptySourcesIllustration } from "../../../shared/ui/illustrations/EmptySourcesIllustration";
 
 type Props = {
+  phase?: "idle" | "uploading" | "processing";
   canManageDocuments: boolean;
   onDropFiles: (files: File[]) => void;
 };
 
 export function NotebookSourcesEmptyState({
+  phase = "idle",
   canManageDocuments,
   onDropFiles,
 }: Props) {
@@ -36,16 +39,36 @@ export function NotebookSourcesEmptyState({
     }
   };
 
+  const isBusy = phase !== "idle";
+  const title =
+    phase === "uploading"
+      ? "Subiendo tus fuentes..."
+      : phase === "processing"
+        ? "Tus fuentes se están procesando"
+        : "Subí tus fuentes para comenzar";
+  const description =
+    phase === "uploading"
+      ? "No cierres esta página mientras se suben los archivos."
+      : phase === "processing"
+        ? "Cuando termine la ingesta, el studio se habilitará automáticamente. Mientras tanto, podés subir más fuentes."
+        : "Añadí al menos una fuente para habilitar los modos de estudio y comenzar a estudiar con IA.";
+
   return (
-    <div className="flex h-full items-center justify-center p-8 text-center">
+    <div
+      className="flex h-full items-center justify-center p-8 text-center"
+      aria-busy={isBusy}
+    >
       <div className="max-w-md">
-        <EmptySourcesIllustration className="mx-auto mb-4 h-auto w-48" />
-        <h2 className="mb-2 text-xl font-semibold text-foreground">
-          Subí tus fuentes para comenzar
-        </h2>
-        <p className="mb-6 text-muted-foreground">
-          Añadí al menos una fuente para habilitar los modos de estudio y
-          comenzar a estudiar con IA.
+        {isBusy ? (
+          <div className="mx-auto mb-4 grid h-20 place-items-center text-primary">
+            <Spinner className="h-10 w-10 border-4" />
+          </div>
+        ) : (
+          <EmptySourcesIllustration className="mx-auto mb-4 h-auto w-48" />
+        )}
+        <h2 className="mb-2 text-xl font-semibold text-foreground">{title}</h2>
+        <p className="mb-6 text-muted-foreground" role={isBusy ? "status" : undefined}>
+          {description}
         </p>
         <div
           className={cn(
