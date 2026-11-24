@@ -58,6 +58,7 @@ def user_to_out(user: dict) -> UserOut:
         username=username,
         birthdate=birthdate,
         profile_complete=profile_complete,
+        onboarding_pending=bool(user.get("onboarding_pending", False)),
     )
 
 
@@ -160,6 +161,7 @@ async def register(
             payload.birthdate, datetime.min.time(), tzinfo=timezone.utc
         ),
         "password_hash": hash_password(payload.password),
+        "onboarding_pending": True,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
@@ -356,6 +358,7 @@ async def google_login(
             "password_hash": None,
             "google_sub": google_sub,
             "avatar_url": avatar_url,
+            "onboarding_pending": True,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -407,6 +410,26 @@ async def complete_profile(
     user["birthdate"] = datetime.combine(
         payload.birthdate, datetime.min.time(), tzinfo=timezone.utc
     )
+    return AuthResponse(user=user_to_out(user))
+
+
+@router.post("/onboarding/complete", response_model=AuthResponse)
+async def complete_onboarding(request: Request) -> AuthResponse:
+    user = await get_current_user(request)
+    now = datetime.now(timezone.utc)
+
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {
+                "onboarding_pending": False,
+                "onboarding_completed_at": now,
+                "updated_at": now,
+            }
+        },
+    )
+
+    user["onboarding_pending"] = False
     return AuthResponse(user=user_to_out(user))
 
 

@@ -1,12 +1,14 @@
-﻿import { LogOut, Monitor, Moon, Sun, User } from "lucide-react";
+﻿import { GraduationCap, LogOut, Monitor, Moon, Sun, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
 import { useTheme } from "../../../shared/hooks/useTheme";
+import { useOnboarding } from "../../onboarding";
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const { openTutorial } = useOnboarding();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -106,6 +108,17 @@ export function UserMenu() {
               </button>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              openTutorial();
+              setIsMenuOpen(false);
+            }}
+            className="flex w-full items-center gap-2 border-b border-border px-4 py-2 text-sm text-foreground hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+          >
+            <GraduationCap className="h-4 w-4" />
+            Ver tutorial
+          </button>
           <button
             onClick={() => {
               logout();
