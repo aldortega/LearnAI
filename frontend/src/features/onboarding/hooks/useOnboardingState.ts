@@ -1,18 +1,14 @@
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
 import type { ApiError } from "../../../shared/lib/apiClient";
 import { useToast } from "../../../shared/ui/toast/useToast";
 import { onboardingApi } from "../api/onboardingApi";
 
-export const OPEN_CREATE_NOTEBOOK_STATE = { openCreateNotebook: true } as const;
-
 type OnboardingState = {
   isOpen: boolean;
   openTutorial: () => void;
   closeTutorial: () => void;
-  finishTutorial: () => void;
 };
 
 function getErrorMessage(error: unknown): string {
@@ -25,7 +21,6 @@ function getErrorMessage(error: unknown): string {
 export function useOnboardingState(): OnboardingState {
   const { user, refreshMe } = useAuth();
   const { pushToast } = useToast();
-  const navigate = useNavigate();
   const [isManuallyOpen, setIsManuallyOpen] = useState(false);
   const [dismissedUserId, setDismissedUserId] = useState<string | null>(null);
 
@@ -54,10 +49,5 @@ export function useOnboardingState(): OnboardingState {
       });
   }, [userId, isPending, refreshMe, pushToast]);
 
-  const finishTutorial = useCallback(() => {
-    closeTutorial();
-    navigate("/", { state: OPEN_CREATE_NOTEBOOK_STATE });
-  }, [closeTutorial, navigate]);
-
-  return { isOpen, openTutorial, closeTutorial, finishTutorial };
+  return { isOpen, openTutorial, closeTutorial };
 }

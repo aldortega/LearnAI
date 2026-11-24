@@ -10,16 +10,15 @@ import { OnboardingStepDots } from "./OnboardingStepDots";
 
 type Props = {
   onClose: () => void;
-  onFinish: () => void;
 };
 
 function getPrimaryLabel(isFirstStep: boolean, isLastStep: boolean): string {
   if (isFirstStep) return "Ver cómo funciona";
-  if (isLastStep) return "Crear mi primer cuaderno";
+  if (isLastStep) return "Empezar";
   return "Siguiente";
 }
 
-export function OnboardingCarousel({ onClose, onFinish }: Props) {
+export function OnboardingCarousel({ onClose }: Props) {
   const demo = useOnboardingDemo();
   const titleId = useId();
   const descriptionId = useId();
@@ -68,7 +67,7 @@ export function OnboardingCarousel({ onClose, onFinish }: Props) {
             <div className="flex w-full justify-end gap-2 sm:w-auto">
               {demo.isFirstStep ? <Button variant="ghost" onClick={onClose}>Saltar</Button> : null}
               {!demo.isFirstStep && !demo.isLastStep ? <Button variant="ghost" onClick={demo.back}>Atrás</Button> : null}
-              <Button onClick={demo.isLastStep ? onFinish : demo.next}>
+              <Button onClick={demo.isLastStep ? onClose : demo.next}>
                 {getPrimaryLabel(demo.isFirstStep, demo.isLastStep)}
               </Button>
             </div>
