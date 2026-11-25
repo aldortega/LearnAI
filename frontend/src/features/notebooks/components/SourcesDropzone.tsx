@@ -3,6 +3,7 @@ import { useState, type DragEvent } from "react";
 
 import { cn } from "../../../shared/lib/cn";
 import { Spinner } from "../../../shared/ui/Spinner";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   disabled: boolean;
@@ -43,7 +44,7 @@ export function SourcesDropzone({ disabled, isUploading, onPickFiles, onDropFile
       onDrop={handleDrop}
       disabled={disabled}
       className={cn(
-        "flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors",
+        "group/icon flex w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
         disabled
           ? "cursor-not-allowed border-border bg-muted opacity-60"
@@ -54,11 +55,16 @@ export function SourcesDropzone({ disabled, isUploading, onPickFiles, onDropFile
     >
       <div
         className={cn(
-          "grid h-12 w-12 place-items-center rounded-full",
+          "grid h-12 w-12 place-items-center rounded-full transition-colors",
           isDragging ? "bg-primary text-primary-foreground" : "bg-surface text-primary",
         )}
       >
-        {isUploading ? <Spinner className="h-5 w-5" /> : <UploadCloud className="h-6 w-6" />}
+        {isUploading ? <Spinner className="h-5 w-5" /> : <UploadCloud
+            className={cn(
+              "h-6 w-6",
+              isDragging ? "animate-float motion-reduce:animate-none" : iconMotion.floatOnHover,
+            )}
+          />}
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">

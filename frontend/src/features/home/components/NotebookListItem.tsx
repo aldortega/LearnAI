@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getEmojiBackgroundClass } from "../../notebooks/utils/emojiColors";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 const DEFAULT_NOTEBOOK_EMOJI = "📓";
 
@@ -133,9 +134,9 @@ export function NotebookListItem({
                 setIsMenuOpen(false);
                 onDelete();
               }}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted"
+              className={`${ICON_MOTION_TRIGGER} flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted`}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className={`h-4 w-4 ${iconMotion.trashLidOnHover}`} />
               Eliminar
             </button>
           </div>

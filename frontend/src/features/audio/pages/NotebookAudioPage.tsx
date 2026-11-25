@@ -23,6 +23,7 @@ import type {
   AudioSuggestion,
   PodcastOut,
 } from "../types/audio.types";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 type ViewMode = "create" | "history";
 
@@ -241,14 +242,14 @@ export function NotebookAudioPage() {
       onClick={() =>
         setViewMode((prev) => (prev === "create" ? "history" : "create"))
       }
-      className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       aria-label={viewMode === "create" ? "Ver historial" : "Crear podcast"}
       title={viewMode === "create" ? "Ver historial" : "Crear podcast"}
     >
       {viewMode === "create" ? (
         <Headphones className="h-4 w-4" />
       ) : (
-        <Plus className="h-4 w-4" />
+        <Plus className={`h-4 w-4 ${iconMotion.rotateQuarterOnHover}`} />
       )}
     </button>
   );

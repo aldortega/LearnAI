@@ -6,6 +6,7 @@ import { cn } from "../../../shared/lib/cn";
 import type { QuickstartTopic } from "../types/quickstart.types";
 import { resolveTopicEmoji } from "../utils/topicEmoji";
 import { QuickstartTopicMobileMenu } from "./QuickstartTopicMobileMenu";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   topic: QuickstartTopic;
@@ -154,9 +155,9 @@ export function QuickstartTopicCard({
               disabled={isDeleting}
               aria-label={`Eliminar tema ${topic.title}`}
               title="Eliminar tema"
-              className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-error/10 hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:cursor-not-allowed disabled:opacity-30"
+              className={`${ICON_MOTION_TRIGGER} hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-error/10 hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:cursor-not-allowed disabled:opacity-30`}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className={`h-4 w-4 ${iconMotion.trashLidOnHover}`} />
             </button>
           ) : null}
           <QuickstartTopicMobileMenu

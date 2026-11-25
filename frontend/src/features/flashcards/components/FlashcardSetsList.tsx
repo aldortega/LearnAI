@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 
 import type { FlashcardSetOut } from "../types/flashcards.types";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   sets: FlashcardSetOut[];
@@ -44,9 +45,9 @@ export function FlashcardSetsList({ sets, onSelectSet, onDeleteSet }: Props) {
                 onClick={() => onDeleteSet(setItem.set_id)}
                 aria-label={`Eliminar set ${setItem.set_title}`}
                 title="Eliminar set"
-                className="absolute right-2 top-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-background/80 text-muted-foreground opacity-100 shadow-sm transition hover:bg-background hover:text-red-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:opacity-0 sm:group-hover:opacity-100"
+                className={`${ICON_MOTION_TRIGGER} absolute right-2 top-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-background/80 text-muted-foreground opacity-100 shadow-sm transition hover:bg-background hover:text-red-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:opacity-0 sm:group-hover:opacity-100`}
               >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                <Trash2 className={`h-4 w-4 ${iconMotion.trashLidOnHover}`} aria-hidden="true" />
               </button>
             </div>
           ))}

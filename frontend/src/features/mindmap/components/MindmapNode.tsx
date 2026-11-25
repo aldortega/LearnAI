@@ -1,7 +1,8 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Handle, Position, type NodeProps } from "reactflow";
 
 import { cn } from "../../../shared/lib/cn";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 export type MindmapNodeData = {
   title: string;
@@ -49,11 +50,9 @@ export function MindmapNode({
             aria-label={data.isExpanded ? "Ocultar nodos hijos" : "Mostrar nodos hijos"}
             title={data.isExpanded ? "Ocultar nodos hijos" : "Mostrar nodos hijos"}
           >
-            {data.isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
+            <ChevronRight
+              className={`h-3.5 w-3.5 ${iconMotion.disclosure} ${data.isExpanded ? "rotate-90" : ""}`}
+            />
           </button>
         ) : null}
       </div>
