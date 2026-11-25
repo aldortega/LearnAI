@@ -247,7 +247,6 @@ export function NotebookFlashcardsPage() {
             showConfiguration
             initialCardCount={latestSet?.card_count ?? "default"}
             initialDifficulty={latestSet?.difficulty ?? "medium"}
-            initialTopicPrompt={latestSet?.topic_prompt ?? ""}
             onGenerateDefault={() => {
               void runGeneration();
             }}

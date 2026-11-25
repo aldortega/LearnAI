@@ -16,7 +16,6 @@ type Props = {
   showConfiguration?: boolean;
   initialCardCount?: FlashcardCountPreset;
   initialDifficulty?: FlashcardDifficulty;
-  initialTopicPrompt?: string;
   onGenerateDefault: () => void;
   onGenerateCustom: (options: FlashcardsGenerateRequest) => void;
 };
@@ -28,7 +27,6 @@ export function GenerateFlashcardsCard({
   showConfiguration = false,
   initialCardCount = "default",
   initialDifficulty = "medium",
-  initialTopicPrompt = "",
   onGenerateDefault,
   onGenerateCustom,
 }: Props) {
@@ -36,7 +34,7 @@ export function GenerateFlashcardsCard({
     useState<FlashcardCountPreset>(initialCardCount);
   const [difficulty, setDifficulty] =
     useState<FlashcardDifficulty>(initialDifficulty);
-  const [topicPrompt, setTopicPrompt] = useState(initialTopicPrompt);
+  const [topicPrompt, setTopicPrompt] = useState("");
 
   const handleGenerate = () => {
     if (!showConfiguration) {
