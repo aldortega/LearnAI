@@ -4,6 +4,7 @@ import { cn } from "../../../shared/lib/cn";
 import type { Document, DocumentStatus } from "../types/documents.types";
 import { getSourceExtension } from "../utils/sourceFiles";
 import { SourceFileTypeIcon } from "./SourceFileTypeIcon";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   document: Document;
@@ -63,6 +64,7 @@ export function SourceListItem({ document, canManage, isDeleting, onDelete }: Pr
           <button
             type="button"
             className={cn(
+              ICON_MOTION_TRIGGER,
               "absolute inset-0 flex cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-opacity hover:text-error",
               "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               "disabled:cursor-not-allowed disabled:opacity-60",
@@ -75,7 +77,7 @@ export function SourceListItem({ document, canManage, isDeleting, onDelete }: Pr
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className={cn("h-4 w-4", iconMotion.trashLidOnHover)} />
             )}
           </button>
         ) : null}

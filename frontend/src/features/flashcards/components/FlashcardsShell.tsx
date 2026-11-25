@@ -1,6 +1,9 @@
 import { Layers, RefreshCcw, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ModeTitle } from "../../notebooks/components/ModeTitle";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
+
 type Props = {
   children: ReactNode;
   showSetsAction?: boolean;
@@ -34,7 +37,7 @@ export function FlashcardsShell({
   return (
     <div className="flex h-full flex-col bg-surface">
       <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
-        <h2 className="text-sm font-semibold text-foreground">Flashcards</h2>
+        <ModeTitle>Flashcards</ModeTitle>
         <div className="flex items-center gap-1">
           {showSetsAction ? (
             <button
@@ -51,13 +54,15 @@ export function FlashcardsShell({
           {showAction ? (
             <button
               type="button"
-              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className={`${ICON_MOTION_TRIGGER} rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50`}
               onClick={onAction}
               disabled={!canAction || isActionLoading}
               aria-label={actionLabel}
               title={actionLabel}
             >
-              <ActionIcon className={`h-4 w-4 ${isActionLoading ? "animate-spin" : ""}`} />
+              <ActionIcon
+                className={`h-4 w-4 ${isActionLoading ? "animate-spin" : actionType === "regenerate" ? iconMotion.spinOnHover : ""}`}
+              />
             </button>
           ) : null}
         </div>

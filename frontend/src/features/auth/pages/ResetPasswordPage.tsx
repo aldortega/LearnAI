@@ -12,6 +12,7 @@ import {
   resetPasswordSchema,
   type ResetPasswordSchema,
 } from "../utils/authSchemas";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -126,9 +127,9 @@ export function ResetPasswordPage() {
 
         <Link
           to="/"
-          className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          className={`${ICON_MOTION_TRIGGER} flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground`}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className={`h-4 w-4 ${iconMotion.nudgeLeftOnHover}`} />
           Volver al inicio de sesión
         </Link>
       </form>

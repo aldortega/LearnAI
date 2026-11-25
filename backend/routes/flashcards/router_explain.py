@@ -27,7 +27,7 @@ def resolve_requested_card(cards_data: object, requested_card_id: str) -> tuple[
         if card_id != requested_card_id:
             continue
         term = normalize_term(raw_card.get("term"), index)
-        definition = normalize_definition(raw_card.get("definition"), term)
+        definition = normalize_definition(raw_card.get("definition"))
         return term, definition
 
     raise HTTPException(

@@ -199,13 +199,17 @@ export function QuizArea({
                   isSubmitting={isSubmitting}
                   isAnswered={Boolean(lastResult)}
                   selectedOptionId={selectedOptionId}
+                  correctOptionId={lastResult?.correct_option_id ?? null}
                   onSelectOption={(optionId) => {
                     void handleSubmit(optionId);
                   }}
                 />
 
                 {lastResult ? (
-                  <div ref={feedbackRef} className="space-y-3 scroll-mb-4">
+                  <div
+                    ref={feedbackRef}
+                    className="space-y-3 scroll-mb-4 animate-fade-up motion-reduce:animate-none"
+                  >
                     <AnswerFeedback
                       isCorrect={lastResult.is_correct}
                       explanation={lastResult.explanation}

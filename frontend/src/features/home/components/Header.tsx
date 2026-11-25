@@ -9,10 +9,11 @@ import { cn } from "../../../shared/lib/cn";
 type Props = {
   title?: string;
   className?: string;
+  titleAddon?: ReactNode;
   actions?: ReactNode;
 };
 
-export function Header({ title, className, actions }: Props) {
+export function Header({ title, className, titleAddon, actions }: Props) {
   return (
     <header
       className={cn(
@@ -24,10 +25,10 @@ export function Header({ title, className, actions }: Props) {
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <Link
           to="/"
-          className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
+          className="group/logo flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
         >
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
+            <GraduationCap className="h-5 w-5 group-hover/logo:animate-cap-toss motion-reduce:group-hover/logo:animate-none" />
           </div>
           <span className={cn("text-lg font-bold tracking-tight text-primary", title && "hidden sm:inline")}>
             LearnAI
@@ -42,6 +43,7 @@ export function Header({ title, className, actions }: Props) {
             </h1>
           </>
         ) : null}
+        {titleAddon ? <div className="shrink-0">{titleAddon}</div> : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">

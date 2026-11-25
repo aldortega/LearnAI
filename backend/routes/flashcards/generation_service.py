@@ -91,11 +91,7 @@ async def generate_flashcards_payload(
             detail="No se pudieron generar las flashcards",
         ) from exc
 
-    cards = normalize_cards(
-        payload_data,
-        target_count=target_count,
-        fallback_topic=normalized_topic_prompt or notebook_title,
-    )
+    cards = normalize_cards(payload_data, target_count=target_count)
     if not cards:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

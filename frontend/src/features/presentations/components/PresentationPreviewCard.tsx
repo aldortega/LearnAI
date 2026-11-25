@@ -9,6 +9,7 @@ import {
 
 import { cn } from "../../../shared/lib/cn";
 import type { PresentationOut } from "../types/presentations.types";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   presentation: PresentationOut;
@@ -114,9 +115,9 @@ export function PresentationPreviewCard({
               type="button"
               onClick={handleDelete}
               disabled={isAnyPresentationDeleting}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className={cn(ICON_MOTION_TRIGGER, "flex w-full items-center gap-2 px-3 py-1.5 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60")}
             >
-              <Trash2 className={cn("h-3.5 w-3.5", isDeleting && "animate-pulse")} />
+              <Trash2 className={cn("h-3.5 w-3.5", iconMotion.trashLidOnHover, isDeleting && "animate-pulse")} />
               Eliminar
             </button>
           </div>

@@ -2,6 +2,7 @@ import { Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AddQuickstartTopicModal } from "./AddQuickstartTopicModal";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   suggestions: string[];
@@ -69,9 +70,9 @@ export function QuickstartTopicSuggestions({
             title="Agregar tema personalizado"
             disabled={isDisabled}
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground/80 transition hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="group/icon inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground/80 transition hover:bg-muted-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className={`h-3.5 w-3.5 ${iconMotion.rotateQuarterOnHover}`} />
             <span>Agregar tema</span>
           </button>
         </div>

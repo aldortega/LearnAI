@@ -1,12 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../ui/toast/useToast";
-import { GenerationMonitorContext, type TrackJobInput } from "./context";
+import {
+  buildActivityKey,
+  GenerationActivityContext,
+  GenerationMonitorContext,
+  type TrackJobInput,
+} from "./context";
 import { generationKindLabels, getGenerationStatusFetcher } from "./registry";
 import {
   buildGenerationJobKey,
   type GenerationJobBase,
+  type GenerationKind,
   type TrackedGenerationJob,
 } from "./types";
 
@@ -28,6 +34,38 @@ export function GenerationMonitorProvider({ children }: Props) {
   const waitersRef = useRef<Map<string, Set<Waiter>>>(new Map());
   const inFlightRef = useRef<Set<string>>(new Set());
   const loadedForUserRef = useRef<string | null>(null);
+  const [ownedCompletionKeys, setOwnedCompletionKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [ownedActiveKeys, setOwnedActiveKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const userId = user?.id ?? null;
+
+  const syncActiveKeys = useCallback(() => {
+    const next = new Set<string>();
+    for (const job of jobsRef.current.values()) {
+      if (job.status === "queued" || job.status === "processing") {
+        next.add(`${job.ownerId}|${buildActivityKey(job.notebookId, job.kind)}`);
+      }
+    }
+    setOwnedActiveKeys((prev) => {
+      if (prev.size === next.size && [...next].every((key) => prev.has(key))) return prev;
+      return next;
+    });
+  }, []);
+
+  const acknowledgeCompletion = useCallback(
+    (notebookId: string, kind: GenerationKind) => {
+      if (!userId) return;
+      const ownedKey = `${userId}|${buildActivityKey(notebookId, kind)}`;
+      setOwnedCompletionKeys((prev) => {
+        if (!prev.has(ownedKey)) return prev;
+        const next = new Set(prev);
+        next.delete(ownedKey);
+        return next;
+      });
+    },
+    [userId],
+  );
 
   const flushStorage = useCallback(() => {
     const activeJobs = Array.from(jobsRef.current.values())
@@ -69,6 +107,7 @@ export function GenerationMonitorProvider({ children }: Props) {
       jobsRef.current.delete(key);
       inFlightRef.current.delete(key);
       flushStorage();
+      syncActiveKeys();
       resolveWaiters(key, payload);
 
       if (!opts?.notify) {
@@ -76,6 +115,8 @@ export function GenerationMonitorProvider({ children }: Props) {
       }
 
       if (payload.status === "done") {
+        const ownedKey = `${current.ownerId}|${buildActivityKey(current.notebookId, current.kind)}`;
+        setOwnedCompletionKeys((prev) => new Set(prev).add(ownedKey));
         return;
       }
 
@@ -87,7 +128,7 @@ export function GenerationMonitorProvider({ children }: Props) {
         description: payload.error ?? undefined,
       });
     },
-    [flushStorage, pushToast, resolveWaiters],
+    [flushStorage, pushToast, resolveWaiters, syncActiveKeys],
   );
 
   const clearAllJobs = useCallback(() => {
@@ -120,9 +161,10 @@ export function GenerationMonitorProvider({ children }: Props) {
       });
 
       flushStorage();
+      syncActiveKeys();
       return key;
     },
-    [flushStorage],
+    [flushStorage, syncActiveKeys],
   );
 
   const waitForJob = useCallback(async <TJob extends GenerationJobBase>(key: string) => {
@@ -180,6 +222,7 @@ export function GenerationMonitorProvider({ children }: Props) {
     if (!user) return;
 
     const intervalId = window.setInterval(() => {
+      syncActiveKeys();
       const now = Date.now();
       const activeJobs = Array.from(jobsRef.current.values());
 
@@ -249,7 +292,7 @@ export function GenerationMonitorProvider({ children }: Props) {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [finalizeJob, flushStorage, user]);
+  }, [finalizeJob, flushStorage, syncActiveKeys, user]);
 
   const value = useMemo(
     () => ({
@@ -260,9 +303,28 @@ export function GenerationMonitorProvider({ children }: Props) {
     [clearAllJobs, trackJob, waitForJob],
   );
 
+  const activityValue = useMemo(() => {
+    const prefix = `${userId}|`;
+    const pickOwn = (ownedKeys: ReadonlySet<string>): ReadonlySet<string> => {
+      const keys = new Set<string>();
+      if (!userId) return keys;
+      for (const ownedKey of ownedKeys) {
+        if (ownedKey.startsWith(prefix)) keys.add(ownedKey.slice(prefix.length));
+      }
+      return keys;
+    };
+    return {
+      activeKeys: pickOwn(ownedActiveKeys),
+      completedKeys: pickOwn(ownedCompletionKeys),
+      acknowledgeCompletion,
+    };
+  }, [acknowledgeCompletion, ownedActiveKeys, ownedCompletionKeys, userId]);
+
   return (
     <GenerationMonitorContext.Provider value={value}>
-      {children}
+      <GenerationActivityContext.Provider value={activityValue}>
+        {children}
+      </GenerationActivityContext.Provider>
     </GenerationMonitorContext.Provider>
   );
 }

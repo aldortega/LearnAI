@@ -6,6 +6,7 @@ import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyChatIllustration } from "../../../shared/ui/illustrations/EmptyChatIllustration";
 import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { cn } from "../../../shared/lib/cn";
+import { ModeTitle } from "../../notebooks/components/ModeTitle";
 import { ChatComposer } from "./ChatComposer";
 import { ClearChatModal } from "./ClearChatModal";
 
@@ -98,7 +99,7 @@ export function ChatArea({
   return (
     <div className="flex h-full flex-col bg-surface">
       <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
-        <h2 className="text-sm font-semibold text-foreground">Chat</h2>
+        <ModeTitle>Chat</ModeTitle>
         <div className="relative" ref={menuRef}>
           <button
             type="button"
@@ -192,51 +193,43 @@ export function ChatArea({
                       isAssistant ? "items-start" : "items-end",
                     )}
                   >
-                    <div
-                      className={cn(
-                        "max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm",
-                        isAssistant
-                          ? "bg-muted text-foreground"
-                          : "bg-primary text-primary-foreground",
-                      )}
-                    >
-                      {isAssistant ? (
-                        <div className="text-sm leading-relaxed">
-                          <MarkdownWithCitations
-                            content={message.content}
-                            sources={message.sources}
-                            generalKnowledge={message.used_general_knowledge}
-                          />
-                        </div>
-                      ) : (
+                    {isAssistant ? (
+                      <div className="w-full text-sm leading-relaxed text-foreground">
+                        <MarkdownWithCitations
+                          content={message.content}
+                          sources={message.sources}
+                          generalKnowledge={message.used_general_knowledge}
+                        />
+                      </div>
+                    ) : (
+                      <div className="max-w-[85%] rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm">
                         <p className="whitespace-pre-wrap leading-relaxed">
                           {message.content}
                         </p>
-                      )}
-                    </div>
-
+                      </div>
+                    )}
                   </div>
                 );
               })}
 
               {streamingContent ? (
                 <div className="flex flex-col items-start">
-                  <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground shadow-sm">
-                    <div className="text-sm leading-relaxed">
-                      <MarkdownWithCitations content={streamingContent} sources={[]} />
-                    </div>
+                  <div className="w-full text-sm leading-relaxed text-foreground">
+                    <MarkdownWithCitations
+                      content={streamingContent}
+                      sources={[]}
+                      isStreaming
+                    />
                   </div>
                 </div>
               ) : null}
 
               {isStreaming && !streamingContent ? (
                 <div className="flex flex-col items-start">
-                  <div className="rounded-2xl bg-muted px-4 py-4 shadow-sm">
-                    <div className="flex items-center gap-1">
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-                      <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
-                    </div>
+                  <div className="flex items-center gap-1 py-2">
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
                   </div>
                 </div>
               ) : null}

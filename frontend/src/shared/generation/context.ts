@@ -29,3 +29,24 @@ export function useGenerationMonitor(): GenerationMonitorContextValue {
   }
   return ctx;
 }
+
+export type GenerationActivityContextValue = {
+  activeKeys: ReadonlySet<string>;
+  completedKeys: ReadonlySet<string>;
+  acknowledgeCompletion: (notebookId: string, kind: GenerationKind) => void;
+};
+
+export function buildActivityKey(notebookId: string, kind: GenerationKind): string {
+  return `${notebookId}:${kind}`;
+}
+
+export const GenerationActivityContext =
+  createContext<GenerationActivityContextValue | null>(null);
+
+export function useGenerationActivity(): GenerationActivityContextValue {
+  const ctx = useContext(GenerationActivityContext);
+  if (!ctx) {
+    throw new Error("useGenerationActivity must be used within GenerationMonitorProvider");
+  }
+  return ctx;
+}

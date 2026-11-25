@@ -1,5 +1,5 @@
 import { ArrowUp } from "lucide-react";
-import type { KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 
 import { Button } from "../../../shared/ui/Button";
 import { cn } from "../../../shared/lib/cn";
@@ -21,10 +21,17 @@ export function ChatComposer({
   onChange,
   onSubmit,
 }: Props) {
+  const [sendCount, setSendCount] = useState(0);
+
+  const handleSubmit = () => {
+    if (!isSendDisabled) setSendCount((count) => count + 1);
+    onSubmit();
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter" || event.shiftKey) return;
     event.preventDefault();
-    onSubmit();
+    handleSubmit();
   };
 
   return (
@@ -60,13 +67,18 @@ export function ChatComposer({
             rows={1}
           />
           <Button
-            onClick={onSubmit}
+            onClick={handleSubmit}
             disabled={isSendDisabled}
             aria-label="Enviar mensaje"
             title="Enviar"
-            className="size-10 shrink-0 rounded-xl p-0"
+            className="size-10 shrink-0 overflow-hidden rounded-full! p-0"
           >
-            <ArrowUp aria-hidden className="size-4" strokeWidth={1.75} />
+            <ArrowUp
+              key={sendCount}
+              aria-hidden
+              className={cn("size-4", sendCount > 0 && "animate-send-fly motion-reduce:animate-none")}
+              strokeWidth={1.75}
+            />
           </Button>
         </div>
       </div>

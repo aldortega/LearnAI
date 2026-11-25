@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -23,7 +25,6 @@ MAX_CONTEXT_CHARS = 5500
 MAX_TOPIC_PROMPT_CHARS = 500
 MAX_TERM_CHARS = 280
 MAX_DEFINITION_CHARS = 280
-MIN_DEFINITION_CHARS = 24
 MAX_EXPLANATION_MARKDOWN_CHARS = 2400
 MAX_SET_TITLE_CHARS = 90
 
@@ -32,6 +33,7 @@ FLASHCARDS_SCHEMA = (
     '  "set_title": "string",\n'
     '  "cards": [\n'
     "    {\n"
+    '      "type": "definition | question | cloze",\n'
     '      "term": "string",\n'
     '      "definition": "string"\n'
     "    }\n"
@@ -41,6 +43,7 @@ FLASHCARDS_SCHEMA = (
 
 
 class FlashcardLLM(BaseModel):
+    type: Literal["definition", "question", "cloze"]
     term: str
     definition: str
 

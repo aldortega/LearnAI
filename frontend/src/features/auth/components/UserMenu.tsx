@@ -10,6 +10,7 @@ export function UserMenu() {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { openTutorial } = useOnboarding();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [animatedTheme, setAnimatedTheme] = useState<"system" | "light" | "dark" | null>(null);
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const avatarUrl = user?.avatar_url ?? null;
@@ -60,16 +61,25 @@ export function UserMenu() {
             <div className="mt-2 space-y-1">
               <button
                 type="button"
-                onClick={() => setTheme("system")}
+                onClick={() => {
+                  setTheme("system");
+                  setAnimatedTheme("system");
+                }}
                 className={
-                  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
+                  "group/icon flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "system"
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted")
                 }
               >
                 <span className="flex items-center gap-2">
-                  <Monitor className="h-4 w-4" />
+                  <Monitor
+                    key={animatedTheme === "system" ? "animated" : "idle"}
+                    className={
+                      "h-4 w-4 transition-transform duration-200 group-hover/icon:-translate-y-px motion-reduce:transition-none " +
+                      (animatedTheme === "system" ? "animate-pop-in motion-reduce:animate-none" : "")
+                    }
+                  />
                   Sistema
                 </span>
                 {theme === "system" ? (
@@ -78,31 +88,49 @@ export function UserMenu() {
               </button>
               <button
                 type="button"
-                onClick={() => setTheme("light")}
+                onClick={() => {
+                  setTheme("light");
+                  setAnimatedTheme("light");
+                }}
                 className={
-                  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
+                  "group/icon flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "light"
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted")
                 }
               >
                 <span className="flex items-center gap-2">
-                  <Sun className="h-4 w-4" />
+                  <Sun
+                    key={animatedTheme === "light" ? "animated" : "idle"}
+                    className={
+                      "h-4 w-4 transition-transform duration-500 ease-out group-hover/icon:rotate-45 motion-reduce:transition-none " +
+                      (animatedTheme === "light" ? "animate-sun-rise motion-reduce:animate-none" : "")
+                    }
+                  />
                   Claro
                 </span>
               </button>
               <button
                 type="button"
-                onClick={() => setTheme("dark")}
+                onClick={() => {
+                  setTheme("dark");
+                  setAnimatedTheme("dark");
+                }}
                 className={
-                  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
+                  "group/icon flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition " +
                   (theme === "dark"
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted")
                 }
               >
                 <span className="flex items-center gap-2">
-                  <Moon className="h-4 w-4" />
+                  <Moon
+                    key={animatedTheme === "dark" ? "animated" : "idle"}
+                    className={
+                      "h-4 w-4 transition-transform duration-300 ease-out group-hover/icon:-rotate-12 motion-reduce:transition-none " +
+                      (animatedTheme === "dark" ? "animate-moon-swing motion-reduce:animate-none" : "")
+                    }
+                  />
                   Oscuro
                 </span>
               </button>
