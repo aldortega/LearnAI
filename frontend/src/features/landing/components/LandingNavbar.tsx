@@ -1,14 +1,9 @@
 import { Moon, Sun } from "lucide-react";
-import { Link } from "react-router-dom";
 
 import { useTheme } from "../../../shared/hooks/useTheme";
 import { cn } from "../../../shared/lib/cn";
-import { ButtonLink } from "../../../shared/ui/ButtonLink";
 import { useScrolledPast } from "../hooks/useScrolledPast";
 import { LandingLogo } from "./LandingLogo";
-
-const quietLinkClasses =
-  "rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function LandingNavbar() {
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -41,12 +36,6 @@ export function LandingNavbar() {
               <Moon aria-hidden className="size-4" strokeWidth={1.5} />
             )}
           </button>
-          <Link to="/login" className={`hidden sm:inline-flex ${quietLinkClasses}`}>
-            Ingresar
-          </Link>
-          <ButtonLink to="/register" className="ml-1">
-            Crear cuenta
-          </ButtonLink>
         </div>
       </nav>
     </header>

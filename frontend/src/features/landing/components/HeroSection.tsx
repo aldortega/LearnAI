@@ -1,7 +1,6 @@
 import { ArrowRight } from "lucide-react";
 
 import { ButtonLink } from "../../../shared/ui/ButtonLink";
-import { scrollToSection } from "../utils/scrollToSection";
 import { ProductPreview } from "./ProductPreview";
 
 export function HeroSection() {
@@ -20,19 +19,11 @@ export function HeroSection() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <ButtonLink
-              to="/register"
+              to="/login"
               size="lg"
               rightIcon={<ArrowRight aria-hidden className="size-4" strokeWidth={1.5} />}
             >
               Empezar ahora
-            </ButtonLink>
-            <ButtonLink
-              href="#como-funciona"
-              size="lg"
-              variant="secondary"
-              onClick={scrollToSection}
-            >
-              Ver cómo funciona
             </ButtonLink>
           </div>
         </div>
