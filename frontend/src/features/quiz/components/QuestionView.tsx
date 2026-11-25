@@ -12,7 +12,6 @@ type Props = {
   isAnswered: boolean;
   selectedOptionId: string | null;
   onSelectOption: (optionId: string) => void;
-  onSubmit: () => void;
 };
 
 export function QuestionView({
@@ -23,7 +22,6 @@ export function QuestionView({
   isAnswered,
   selectedOptionId,
   onSelectOption,
-  onSubmit,
 }: Props) {
   const [hintOpen, setHintOpen] = useState(false);
 
@@ -41,11 +39,12 @@ export function QuestionView({
           key={option.id}
           type="button"
           onClick={() => onSelectOption(option.id)}
-          disabled={isAnswered}
+          disabled={isAnswered || isSubmitting}
           className={cn(
             "w-full rounded-xl border px-4 py-3 text-left transition",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             isAnswered && "cursor-not-allowed opacity-80",
+            isSubmitting && "cursor-wait",
             isSelected
               ? "border-primary/40 bg-primary/10 text-primary"
               : "border-border bg-surface text-foreground hover:bg-muted",
@@ -67,9 +66,7 @@ export function QuestionView({
         </button>
       );
     });
-  }, [question.options, selectedOptionId, onSelectOption, isAnswered]);
-
-  const canSubmit = Boolean(selectedOptionId) && !isAnswered;
+  }, [question.options, selectedOptionId, onSelectOption, isAnswered, isSubmitting]);
 
   return (
     <div className="space-y-4">
@@ -104,23 +101,6 @@ export function QuestionView({
         ) : null}
 
         <div className="mt-4 space-y-3">{optionRows}</div>
-
-        <div className="mt-5 flex items-center justify-end">
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={!canSubmit || isSubmitting}
-            className={cn(
-              "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-              !canSubmit || isSubmitting
-                ? "cursor-not-allowed bg-primary/40 text-primary-foreground/70"
-                : "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-hover",
-            )}
-          >
-            {isSubmitting ? "Enviando..." : "Responder"}
-          </button>
-        </div>
       </div>
     </div>
   );

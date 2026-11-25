@@ -62,7 +62,7 @@ export function RoadmapView({
             </div>
           </header>
 
-          <div className="grid gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
             {unit.levels
               .slice()
               .sort((a, b) => a.order - b.order)
