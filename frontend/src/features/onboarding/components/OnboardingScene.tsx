@@ -16,11 +16,13 @@ export function OnboardingScene({ demo }: Props) {
     case "welcome":
       return <WelcomeScene />;
     case "create":
-      return <CreateNotebookScene isCreated={demo.isNotebookCreated} />;
+      return <CreateNotebookScene typedName={demo.typedNotebookName} isCreated={demo.isNotebookCreated} />;
     case "upload":
-      return <UploadSourceScene status={demo.sourceStatus} />;
+      return <UploadSourceScene status={demo.sourceStatus} progress={demo.sourceProgress} />;
     case "ask":
-      return <AskScene isQuestionAsked={demo.isQuestionAsked} revealedSegments={demo.revealedSegments} />;
+      return (
+        <AskScene typedQuestion={demo.typedQuestion} phase={demo.askPhase} revealedTokens={demo.revealedTokens} />
+      );
     case "citations":
       return <CitationsScene />;
     case "study-modes":

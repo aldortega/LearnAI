@@ -7,7 +7,9 @@ export type OnboardingStep =
   | "study-modes"
   | "done";
 
-export type DemoSourceStatus = "none" | "processing" | "done";
+export type DemoSourceStatus = "none" | "dragging" | "hovering" | "processing" | "done";
+
+export type DemoAskPhase = "typing" | "thinking" | "streaming" | "done";
 
 export type DemoStudyMode = "quickstart" | "quiz" | "mindmap";
 

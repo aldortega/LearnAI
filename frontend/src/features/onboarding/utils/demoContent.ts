@@ -2,52 +2,52 @@ import type { CitableSource } from "../../../shared/lib/citations";
 import type { DemoAnswerSegment, DemoStudyMode } from "../types/onboarding.types";
 
 export const DEMO_NOTEBOOK = {
-  name: "Biología",
-  emoji: "🌿",
+  name: "Sistemas operativos",
+  emoji: "💻",
 };
 
-export const DEMO_SOURCE_FILE = "fotosintesis_biologia.pdf";
+export const DEMO_SOURCE_FILE = "apunte_sistemas_operativos.pdf";
 
-export const DEMO_QUESTION = "¿Qué ocurre en la fase luminosa de la fotosíntesis?";
+export const DEMO_QUESTION = "¿Cuál es la diferencia entre un proceso y un hilo?";
 
 export const DEMO_CITATION: CitableSource = {
   index: 1,
   file_name: DEMO_SOURCE_FILE,
-  page: 12,
+  page: 8,
   snippet:
-    "La fase luminosa tiene lugar en las membranas de los tilacoides. La energía de la luz es captada por la clorofila y se utiliza para romper moléculas de agua (fotólisis), liberando oxígeno.",
+    "Un proceso es un programa en ejecución con su propio espacio de direcciones. Los hilos de un mismo proceso comparten ese espacio de memoria y sus recursos, pero cada uno tiene su propia pila y contador de programa.",
 };
 
 export const DEMO_ANSWER: DemoAnswerSegment[] = [
-  { kind: "text", text: "En la fase luminosa, la clorofila capta la energía de la luz en las membranas de los tilacoides y la usa para romper moléculas de agua, liberando oxígeno " },
+  { kind: "text", text: "Un proceso es un programa en ejecución con su propio espacio de memoria, mientras que los hilos de un mismo proceso comparten esa memoria y sus recursos, aunque cada uno tiene su propia pila " },
   { kind: "cite", index: 1 },
-  { kind: "text", text: ". Gracias a este proceso, las plantas y algas producen la mayor parte del oxígeno que respiramos " },
+  { kind: "text", text: ". Por eso crear y alternar entre hilos suele ser más liviano que hacerlo entre procesos " },
   { kind: "general" },
   { kind: "text", text: "." },
 ];
 
 export const DEMO_QUICKSTART = {
   summary:
-    "Tus apuntes explican cómo las plantas transforman la luz en energía química, en dos fases que ocurren en distintas partes del cloroplasto.",
+    "Tus apuntes explican cómo el sistema operativo ejecuta programas como procesos e hilos, y cómo decide cuál usa la CPU en cada momento.",
   topics: [
-    { emoji: "☀️", title: "Fase luminosa", keyPoints: ["Ocurre en los tilacoides", "La luz rompe el agua y libera oxígeno", "Produce ATP y NADPH"] },
-    { emoji: "🔄", title: "Ciclo de Calvin", keyPoints: ["Ocurre en el estroma", "Fija el CO2 del aire", "Usa ATP y NADPH para formar glucosa"] },
-    { emoji: "🌱", title: "Factores que la afectan", keyPoints: ["Intensidad de la luz", "Concentración de CO2", "Temperatura"] },
+    { emoji: "⚙️", title: "Procesos", keyPoints: ["Programa en ejecución", "Espacio de memoria propio", "Estados: listo, ejecutando, bloqueado"] },
+    { emoji: "🧵", title: "Hilos", keyPoints: ["Comparten la memoria del proceso", "Cada uno con su propia pila", "Más livianos de crear"] },
+    { emoji: "⏱️", title: "Planificación", keyPoints: ["Decide quién usa la CPU", "FIFO, SJF y Round Robin", "Cambio de contexto"] },
   ],
 };
 
 export const DEMO_QUIZ = {
-  question: "¿Qué gas se libera durante la fase luminosa?",
-  options: ["Dióxido de carbono", "Oxígeno", "Nitrógeno", "Hidrógeno"],
+  question: "¿Qué comparten los hilos de un mismo proceso?",
+  options: ["La pila", "El espacio de memoria", "El contador de programa", "Los registros de la CPU"],
   correctIndex: 1,
-  explanation: "La fotólisis del agua libera oxígeno como subproducto.",
+  explanation: "Los hilos comparten el espacio de memoria del proceso, pero cada uno tiene su propia pila y contador de programa.",
 };
 
 export const DEMO_MINDMAP = {
-  root: "Fotosíntesis",
+  root: "Procesos",
   branches: [
-    { label: "Fase luminosa", children: ["Tilacoides", "Fotólisis del agua", "ATP y NADPH"] },
-    { label: "Ciclo de Calvin", children: ["Estroma", "Fijación de CO2", "Glucosa"] },
+    { label: "Estados", children: ["Listo", "Ejecutando", "Bloqueado"] },
+    { label: "Planificación", children: ["FIFO", "SJF", "Round Robin"] },
   ],
 };
 
@@ -66,3 +66,11 @@ export const MORE_STUDY_MODES: { key: MoreStudyModeKey; label: string; descripti
   { key: "audio", label: "Audios", description: "Escuchá tus apuntes como un podcast mientras hacés otras cosas." },
   { key: "voice", label: "Voz", description: "Conversá por voz con la IA sobre tus documentos." },
 ];
+
+export const DEMO_QUESTION_CHARS = Array.from(DEMO_QUESTION);
+
+export const DEMO_ANSWER_TOKENS: DemoAnswerSegment[] = DEMO_ANSWER.flatMap((segment) =>
+  segment.kind === "text"
+    ? (segment.text.match(/\S+\s*|\s+/g) ?? []).map((text): DemoAnswerSegment => ({ kind: "text", text }))
+    : [segment],
+);
