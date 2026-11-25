@@ -56,7 +56,7 @@ export function QuickstartTopicsList({
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/60 bg-surface">
+    <div className="rounded-2xl border border-border/60 bg-surface">
       {topics.map((topic, index) => (
         <QuickstartTopicCard
           key={topic.id}
