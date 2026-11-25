@@ -1,5 +1,4 @@
 import { useMemo, type ComponentProps } from "react";
-import { Streamdown } from "streamdown";
 
 import type { CitableSource } from "../lib/citations";
 import {
@@ -9,6 +8,7 @@ import {
 } from "../lib/citations";
 import { CitationChip } from "./CitationChip";
 import { GeneralKnowledgeChip } from "./GeneralKnowledgeChip";
+import { Markdown } from "./Markdown";
 
 type Props = {
   content: string;
@@ -50,5 +50,5 @@ export function MarkdownWithCitations({
     ? `${linkifyCitations(content).trimEnd()} [!](${GENERAL_KNOWLEDGE_HREF})`
     : linkifyCitations(content);
 
-  return <Streamdown components={components}>{markdown}</Streamdown>;
+  return <Markdown components={components}>{markdown}</Markdown>;
 }
