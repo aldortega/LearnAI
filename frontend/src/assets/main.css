@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
+@import "streamdown/styles.css";
 
 @source "../node_modules/streamdown/dist/*.js";
 
@@ -432,6 +433,17 @@ body {
   }
   to {
     transform: translateY(0);
+  }
+}
+
+@keyframes sd-token-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
   }
 }
 

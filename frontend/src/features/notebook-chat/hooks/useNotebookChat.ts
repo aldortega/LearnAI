@@ -5,6 +5,7 @@ import { toNotebookErrorMessage } from "../../../shared/lib/apiErrors";
 import { swrKeys } from "../../../shared/lib/swrKeys";
 import { chatApi, streamChatMessage } from "../api/chatApi";
 import type { ChatMessage } from "../types/chat.types";
+import { useSmoothText } from "./useSmoothText";
 
 type Result = {
   messages: ChatMessage[];
@@ -50,6 +51,11 @@ export function useNotebookChat(notebookId?: string): Result {
   const [isClearing, setIsClearing] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const {
+    text: smoothStreamingContent,
+    whenCaughtUp,
+    cancel: cancelSmoothStream,
+  } = useSmoothText(streamingContent);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -68,6 +74,7 @@ export function useNotebookChat(notebookId?: string): Result {
 
       const controller = new AbortController();
       abortRef.current = controller;
+      let isFinalizing = false;
 
       try {
         await streamChatMessage(
@@ -78,12 +85,15 @@ export function useNotebookChat(notebookId?: string): Result {
               setStreamingContent((prev) => prev + chunk);
             },
             onDone: (message) => {
-              void mutateMessages(
-                (currentMessages) => [...(currentMessages ?? []), message],
-                { revalidate: false },
-              );
-              setStreamingContent("");
-              setIsStreaming(false);
+              isFinalizing = true;
+              whenCaughtUp(() => {
+                void mutateMessages(
+                  (currentMessages) => [...(currentMessages ?? []), message],
+                  { revalidate: false },
+                );
+                setStreamingContent("");
+                setIsStreaming(false);
+              });
             },
             onError: (message) => {
               setStreamError(message);
@@ -103,10 +113,10 @@ export function useNotebookChat(notebookId?: string): Result {
         setStreamingContent("");
         setIsStreaming(false);
       } finally {
-        setIsStreaming(false);
+        if (!isFinalizing) setIsStreaming(false);
       }
     },
-    [isStreaming, mutateMessages, notebookId],
+    [isStreaming, mutateMessages, notebookId, whenCaughtUp],
   );
 
   const clearConversation = useCallback(async () => {
@@ -117,6 +127,7 @@ export function useNotebookChat(notebookId?: string): Result {
 
     abortRef.current?.abort();
     abortRef.current = null;
+    cancelSmoothStream();
     setIsStreaming(false);
     setStreamingContent("");
 
@@ -128,7 +139,7 @@ export function useNotebookChat(notebookId?: string): Result {
     } finally {
       setIsClearing(false);
     }
-  }, [isClearing, mutateMessages, notebookId]);
+  }, [cancelSmoothStream, isClearing, mutateMessages, notebookId]);
 
   const resetError = useCallback(() => setStreamError(null), []);
 
@@ -141,7 +152,7 @@ export function useNotebookChat(notebookId?: string): Result {
 
   return {
     messages: messages ?? [],
-    streamingContent,
+    streamingContent: smoothStreamingContent,
     isLoading,
     isStreaming,
     isClearing,
