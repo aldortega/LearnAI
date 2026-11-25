@@ -19,5 +19,17 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: 'streamdown',
+          message: 'Usa <Markdown /> de shared/ui/Markdown para incluir el soporte de matemáticas (KaTeX).',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/shared/ui/Markdown.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 ])

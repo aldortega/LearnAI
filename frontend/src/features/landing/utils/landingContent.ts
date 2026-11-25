@@ -43,12 +43,6 @@ export type LandingFaq = {
   answer: string;
 };
 
-export const LANDING_NAV_LINKS = [
-  { label: "Cómo funciona", href: "#como-funciona" },
-  { label: "Herramientas", href: "#herramientas" },
-  { label: "Preguntas", href: "#preguntas" },
-] as const;
-
 export const LANDING_STEPS: LandingStep[] = [
   {
     title: "Subí tus materiales",

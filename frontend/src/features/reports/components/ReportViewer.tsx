@@ -1,6 +1,6 @@
-import { Streamdown } from "streamdown";
-
+import { Markdown } from "../../../shared/ui/Markdown";
 import type { ReportOut } from "../types/reports.types";
+
 
 type Props = {
   report: ReportOut | null;
@@ -69,7 +69,7 @@ export function ReportViewer({
             [&_pre_code]:bg-transparent [&_pre_code]:p-0
           "
         >
-          <Streamdown>{report.content}</Streamdown>
+          <Markdown>{report.content}</Markdown>
         </div>
       </div>
     </section>

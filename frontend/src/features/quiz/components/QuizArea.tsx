@@ -39,6 +39,7 @@ export function QuizArea({
     lastResult: QuizFeedback | null;
   }>({ questionId: null, selectedOptionId: null, lastResult: null });
   const hasSyncedRoadmapRef = useRef(false);
+  const feedbackRef = useRef<HTMLDivElement>(null);
 
   const { questions, isLoading: isQuestionsLoading, error: questionsError } =
     useQuizQuestions(notebookId, levelId);
@@ -119,15 +120,20 @@ export function QuizArea({
     currentAnswerState.lastResult ??
     (attemptForCurrent ? mapAttemptToResult(attemptForCurrent) : null);
 
-  const handleSubmit = async () => {
-    if (!currentQuestion || !selectedOptionId) return;
-    const result = await submit(currentQuestion.id, selectedOptionId);
+  const handleSubmit = async (optionId: string) => {
+    if (!currentQuestion || lastResult || isSubmitting) return;
+    setAnswerState({
+      questionId: currentQuestion.id,
+      selectedOptionId: optionId,
+      lastResult: null,
+    });
+    const result = await submit(currentQuestion.id, optionId);
     if (!result) return;
 
     setQuestionIndexState({ levelId, index: safeQuestionIndex });
     setAnswerState({
       questionId: currentQuestion.id,
-      selectedOptionId,
+      selectedOptionId: optionId,
       lastResult: {
         is_correct: result.is_correct,
         explanation: result.explanation,
@@ -143,6 +149,13 @@ export function QuizArea({
       await onReloadRoadmap();
     }
   };
+
+  const hasSubmittedResult = Boolean(answerState.lastResult);
+
+  useEffect(() => {
+    if (!hasSubmittedResult) return;
+    feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [hasSubmittedResult, answerState.questionId]);
 
   const handleNext = () => {
     if (safeQuestionIndex + 1 >= questions.length) {
@@ -161,8 +174,8 @@ export function QuizArea({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+        <div className="mx-auto flex w-full min-w-0 max-w-4xl flex-col gap-6">
           {quizErrorText ? (
             <div
               className="rounded-xl border border-error bg-error/10 px-4 py-3 text-sm text-error"
@@ -187,21 +200,12 @@ export function QuizArea({
                   isAnswered={Boolean(lastResult)}
                   selectedOptionId={selectedOptionId}
                   onSelectOption={(optionId) => {
-                    if (!currentQuestion) return;
-                    setAnswerState((prev) => ({
-                      questionId: currentQuestion.id,
-                      selectedOptionId: optionId,
-                      lastResult:
-                        prev.questionId === currentQuestion.id
-                          ? prev.lastResult
-                          : null,
-                    }));
+                    void handleSubmit(optionId);
                   }}
-                  onSubmit={handleSubmit}
                 />
 
                 {lastResult ? (
-                  <div className="space-y-3">
+                  <div ref={feedbackRef} className="space-y-3 scroll-mb-4">
                     <AnswerFeedback
                       isCorrect={lastResult.is_correct}
                       explanation={lastResult.explanation}
@@ -211,13 +215,15 @@ export function QuizArea({
                       passed={lastResult.passed}
                     />
 
-                    <div className="flex justify-end">
-                      {safeQuestionIndex + 1 >= questions.length ? (
-                        <Button onClick={handleGoRoadmap}>Volver al roadmap</Button>
-                      ) : (
-                        <Button onClick={handleNext}>Siguiente</Button>
-                      )}
-                    </div>
+                    {safeQuestionIndex + 1 >= questions.length ? (
+                      <Button onClick={handleGoRoadmap} className="w-full">
+                        Volver al roadmap
+                      </Button>
+                    ) : (
+                      <Button onClick={handleNext} className="w-full">
+                        Siguiente
+                      </Button>
+                    )}
                   </div>
                 ) : null}
               </div>

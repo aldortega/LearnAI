@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Streamdown } from "streamdown";
 
 import { Button } from "../../../shared/ui/Button";
 import { SlideEditPromptPanel } from "./SlideEditPromptPanel";
@@ -7,6 +6,7 @@ import type {
   PresentationOut,
   PresentationSlide,
 } from "../types/presentations.types";
+import { Markdown } from "../../../shared/ui/Markdown";
 
 type Props = {
   presentation: PresentationOut | null;
@@ -299,9 +299,11 @@ export function PresentationViewer({
               [&_strong]:font-semibold
             "
                   >
-                    <Streamdown controls={{ table: false, code: false }}>
+                    <Markdown
+                      controls={{ table: false, code: false }}
+                    >
                       {ensureMultilineBullets(activeSlide.content_markdown ?? "")}
-                    </Streamdown>
+                    </Markdown>
                   </div>
                 </>
               )}

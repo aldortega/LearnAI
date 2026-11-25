@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useSwipeable } from "react-swipeable";
 
 import { FlashcardExplainModal } from "./FlashcardExplainModal";
 import { useFlashcardExplanation } from "../hooks/useFlashcardExplanation";
@@ -95,6 +96,12 @@ export function FlashcardsStudyView({
     setIsFlipped((previous) => !previous);
   }, []);
 
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: goToNextCard,
+    onSwipedRight: goToPreviousCard,
+    delta: 50,
+  });
+
   useEffect(() => {
     closeExplanation();
   }, [currentCard?.id, closeExplanation]);
@@ -171,7 +178,7 @@ export function FlashcardsStudyView({
         <div className="mx-auto flex w-full max-w-2xl items-center gap-2 sm:gap-2.5">
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground shadow-sm transition hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="hidden h-9 w-9 items-center justify-center sm:inline-flex rounded-xl border border-border bg-surface text-muted-foreground shadow-sm transition hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isFirstCard && !hasPreviousSet}
             aria-label="Tarjeta anterior"
             title="Tarjeta anterior"
@@ -180,11 +187,11 @@ export function FlashcardsStudyView({
             <ChevronLeft className="h-5 w-5" />
           </button>
 
-          <div className="relative w-full">
+          <div className="relative w-full touch-pan-y" {...swipeHandlers}>
             <button
               type="button"
               onClick={toggleCardFace}
-              className="aspect-[3/2] w-full text-left [perspective:1200px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:aspect-[4/3]"
+              className="aspect-[4/3] w-full text-left [perspective:1200px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label={isFlipped ? "Mostrar frente" : "Mostrar reverso"}
             >
               <div
@@ -229,7 +236,7 @@ export function FlashcardsStudyView({
 
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground shadow-sm transition hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="hidden h-9 w-9 items-center justify-center sm:inline-flex rounded-xl border border-border bg-surface text-muted-foreground shadow-sm transition hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isLastCard && !hasNextSet}
             aria-label="Tarjeta siguiente"
             title="Tarjeta siguiente"

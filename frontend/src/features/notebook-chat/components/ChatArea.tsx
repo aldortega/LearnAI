@@ -1,18 +1,12 @@
-﻿import { MoreHorizontal, Upload } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type DragEvent,
-  type KeyboardEvent,
-} from "react";
+import { MoreHorizontal, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 
 import type { ChatMessage } from "../types/chat.types";
-import { Button } from "../../../shared/ui/Button";
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyChatIllustration } from "../../../shared/ui/illustrations/EmptyChatIllustration";
 import { MarkdownWithCitations } from "../../../shared/ui/MarkdownWithCitations";
 import { cn } from "../../../shared/lib/cn";
+import { ChatComposer } from "./ChatComposer";
 import { ClearChatModal } from "./ClearChatModal";
 
 type Props = {
@@ -89,12 +83,6 @@ export function ChatArea({
     const message = draft.trim();
     setDraft("");
     await onSendMessage(message);
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Enter" || event.shiftKey) return;
-    event.preventDefault();
-    void handleSubmit();
   };
 
   const handleClearChat = async () => {
@@ -257,51 +245,20 @@ export function ChatArea({
         )}
       </div>
 
-      <div className="border-t border-border p-4">
-        <ClearChatModal
-          isOpen={isClearModalOpen}
-          isClearing={isClearing}
-          onCancel={() => setIsClearModalOpen(false)}
-          onConfirm={() => void handleClearChat()}
-        />
-        <div className="mx-auto max-w-3xl space-y-2">
-          {error ? (
-            <div
-              role="alert"
-              className="rounded-lg border border-error bg-error/10 px-3 py-2 text-xs text-error"
-            >
-              {error}
-            </div>
-          ) : null}
-          <div className="flex items-stretch gap-3">
-            <textarea
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Hacé una pregunta sobre tus fuentes..."
-              className={cn(
-                "min-h-[44px] min-w-0 flex-1 resize-none rounded-xl border border-border bg-muted px-3 py-2 text-base text-foreground sm:text-sm",
-                "placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                "disabled:cursor-not-allowed disabled:opacity-60",
-                "dark:border-border",
-              )}
-              disabled={!hasSources || isStreaming || isLoading}
-              rows={2}
-            />
-            <Button
-              onClick={() => void handleSubmit()}
-              disabled={isSendDisabled}
-              className="px-4 sm:px-6"
-            >
-              Enviar
-            </Button>
-          </div>
-
-        </div>
-      </div>
+      <ClearChatModal
+        isOpen={isClearModalOpen}
+        isClearing={isClearing}
+        onCancel={() => setIsClearModalOpen(false)}
+        onConfirm={() => void handleClearChat()}
+      />
+      <ChatComposer
+        value={draft}
+        error={error}
+        isInputDisabled={!hasSources || isStreaming || isLoading}
+        isSendDisabled={isSendDisabled}
+        onChange={setDraft}
+        onSubmit={() => void handleSubmit()}
+      />
     </div>
   );
 }
-
-
-

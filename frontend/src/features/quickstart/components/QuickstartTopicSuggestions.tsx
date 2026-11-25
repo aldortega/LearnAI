@@ -45,14 +45,11 @@ export function QuickstartTopicSuggestions({
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-end justify-between gap-3">
-        <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col">
           <h3 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
             Temas sugeridos
           </h3>
-          <p className="text-xs text-foreground/65">
-            Ideas extra a partir de tus fuentes. Toca una para añadirla a tus temas.
-          </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -87,12 +84,6 @@ export function QuickstartTopicSuggestions({
           </p>
         ) : null}
 
-        {!isStale && remaining > 0 ? (
-          <p className="text-[11px] font-medium tabular-nums text-muted-foreground/70">
-            {remaining} de {topicLimit} disponibles
-          </p>
-        ) : null}
-
         {!isStale && remaining <= 0 ? (
           <p className="text-xs text-foreground/75" role="alert">
             Alcanzaste el límite de temas para esta notebook.
@@ -105,7 +96,7 @@ export function QuickstartTopicSuggestions({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
           {isLoading ? (
             <>
               {[1, 2, 3, 4].map((slot) => (

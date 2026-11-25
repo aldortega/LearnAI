@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { DemoSourceStatus, DemoStudyMode, OnboardingStep } from "../types/onboarding.types";
-import { DEMO_ANSWER } from "../utils/demoContent";
+import type { DemoAskPhase, DemoSourceStatus, DemoStudyMode, OnboardingStep } from "../types/onboarding.types";
+import { DEMO_NOTEBOOK } from "../utils/demoContent";
 import { ONBOARDING_STEPS } from "../utils/onboardingSteps";
+import { useAskDemo } from "./useAskDemo";
+import { useUploadDemo } from "./useUploadDemo";
 
-const CREATE_DELAY_MS = 900;
-const UPLOAD_DELAY_MS = 500;
-const PROCESSING_MS = 2200;
-const ASK_DELAY_MS = 700;
-const SEGMENT_MS = 450;
+const TYPE_START_DELAY_MS = 500;
+const TYPE_CHAR_MS = 110;
+const CREATE_DELAY_MS = 600;
+const NOTEBOOK_NAME_CHARS = Array.from(DEMO_NOTEBOOK.name);
 const STUDY_MODE_DELAY_MS = 600;
 
 export type OnboardingDemo = {
@@ -17,10 +18,13 @@ export type OnboardingDemo = {
   totalSteps: number;
   isFirstStep: boolean;
   isLastStep: boolean;
+  typedNotebookName: string;
   isNotebookCreated: boolean;
   sourceStatus: DemoSourceStatus;
-  isQuestionAsked: boolean;
-  revealedSegments: number;
+  sourceProgress: number;
+  typedQuestion: string;
+  askPhase: DemoAskPhase;
+  revealedTokens: number;
   studyMode: DemoStudyMode | null;
   next: () => void;
   back: () => void;
@@ -30,43 +34,31 @@ export type OnboardingDemo = {
 
 export function useOnboardingDemo(): OnboardingDemo {
   const [stepIndex, setStepIndex] = useState(0);
+  const [typedChars, setTypedChars] = useState(0);
   const [isNotebookCreated, setIsNotebookCreated] = useState(false);
-  const [sourceStatus, setSourceStatus] = useState<DemoSourceStatus>("none");
-  const [isQuestionAsked, setIsQuestionAsked] = useState(false);
-  const [revealedSegments, setRevealedSegments] = useState(0);
   const [studyMode, setStudyMode] = useState<DemoStudyMode | null>(null);
 
   const step = ONBOARDING_STEPS[stepIndex];
   const lastIndex = ONBOARDING_STEPS.length - 1;
+  const upload = useUploadDemo(step === "upload");
+  const ask = useAskDemo(step === "ask");
 
   useEffect(() => {
     const timers: number[] = [];
     const schedule = (fn: () => void, ms: number) => timers.push(window.setTimeout(fn, ms));
 
-    if (step === "create" && !isNotebookCreated) {
+    if (step === "create" && typedChars < NOTEBOOK_NAME_CHARS.length) {
+      schedule(() => setTypedChars((count) => count + 1), typedChars === 0 ? TYPE_START_DELAY_MS : TYPE_CHAR_MS);
+    }
+    if (step === "create" && typedChars === NOTEBOOK_NAME_CHARS.length && !isNotebookCreated) {
       schedule(() => setIsNotebookCreated(true), CREATE_DELAY_MS);
-    }
-    if (step === "upload" && sourceStatus === "none") {
-      schedule(() => setSourceStatus("processing"), UPLOAD_DELAY_MS);
-    }
-    if (sourceStatus === "processing") {
-      schedule(() => setSourceStatus("done"), PROCESSING_MS);
-    }
-    if (step === "ask" && !isQuestionAsked) {
-      schedule(() => {
-        setIsQuestionAsked(true);
-        setRevealedSegments(1);
-      }, ASK_DELAY_MS);
-    }
-    if (isQuestionAsked && revealedSegments < DEMO_ANSWER.length) {
-      schedule(() => setRevealedSegments((count) => count + 1), SEGMENT_MS);
     }
     if (step === "study-modes" && studyMode === null) {
       schedule(() => setStudyMode("quickstart"), STUDY_MODE_DELAY_MS);
     }
 
     return () => timers.forEach((id) => window.clearTimeout(id));
-  }, [step, isNotebookCreated, sourceStatus, isQuestionAsked, revealedSegments, studyMode]);
+  }, [step, typedChars, isNotebookCreated, studyMode]);
 
   const goTo = useCallback(
     (index: number) => setStepIndex(Math.max(0, Math.min(lastIndex, index))),
@@ -81,10 +73,13 @@ export function useOnboardingDemo(): OnboardingDemo {
     totalSteps: ONBOARDING_STEPS.length,
     isFirstStep: stepIndex === 0,
     isLastStep: stepIndex === lastIndex,
+    typedNotebookName: NOTEBOOK_NAME_CHARS.slice(0, typedChars).join(""),
     isNotebookCreated,
-    sourceStatus,
-    isQuestionAsked,
-    revealedSegments,
+    sourceStatus: upload.status,
+    sourceProgress: upload.progress,
+    typedQuestion: ask.typedQuestion,
+    askPhase: ask.phase,
+    revealedTokens: ask.revealedTokens,
     studyMode,
     next,
     back,

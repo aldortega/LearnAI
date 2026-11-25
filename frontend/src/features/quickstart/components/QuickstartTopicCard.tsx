@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "../../../shared/lib/cn";
 import type { QuickstartTopic } from "../types/quickstart.types";
 import { resolveTopicEmoji } from "../utils/topicEmoji";
+import { QuickstartTopicMobileMenu } from "./QuickstartTopicMobileMenu";
 
 type Props = {
   topic: QuickstartTopic;
@@ -62,13 +63,13 @@ export function QuickstartTopicCard({
   };
 
   const rowClasses = cn(
-    "group/row relative grid grid-cols-[auto_auto_auto_1fr_auto] items-center gap-3 sm:gap-4 px-2 sm:px-3 py-3.5 transition-colors",
-    "border-b border-border/60 last:border-b-0",
+    "group/row relative grid grid-cols-[auto_auto_1fr_auto] sm:grid-cols-[auto_auto_auto_1fr_auto] items-center gap-3 sm:gap-4 px-2 sm:px-3 py-3.5 transition-colors",
+    "border-b border-border/60 last:border-b-0 group-first/card:rounded-t-2xl group-last/card:rounded-b-2xl",
     isDragging ? "opacity-50" : "hover:bg-muted/40",
   );
 
   return (
-    <div ref={cardRef} className="relative">
+    <div ref={cardRef} className="group/card relative">
       {dropEdge ? (
         <span
           aria-hidden
@@ -120,19 +121,19 @@ export function QuickstartTopicCard({
             canOpenTopic ? "cursor-pointer" : "cursor-default",
           )}
         >
-          <span className="block truncate text-[15px] font-semibold leading-tight text-foreground transition-colors group-hover/row:text-primary">
+          <span className="line-clamp-2 sm:block sm:truncate text-[15px] font-semibold leading-tight text-foreground transition-colors group-hover/row:text-primary">
             {topic.title}
           </span>
         </button>
 
-        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100">
+        <div className="flex items-center gap-0.5 transition-opacity sm:opacity-0 sm:group-hover/row:opacity-100 sm:focus-within:opacity-100">
           <button
             type="button"
             onClick={handleMove(-1)}
             disabled={!canMoveUp || isDeleting}
             aria-label={`Mover ${topic.title} hacia arriba`}
             title="Mover arriba"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-30"
+            className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ArrowUp className="h-4 w-4" />
           </button>
@@ -142,7 +143,7 @@ export function QuickstartTopicCard({
             disabled={!canMoveDown || isDeleting}
             aria-label={`Mover ${topic.title} hacia abajo`}
             title="Mover abajo"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-30"
+            className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ArrowDown className="h-4 w-4" />
           </button>
@@ -153,11 +154,18 @@ export function QuickstartTopicCard({
               disabled={isDeleting}
               aria-label={`Eliminar tema ${topic.title}`}
               title="Eliminar tema"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-error/10 hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:cursor-not-allowed disabled:opacity-30"
+              className="hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-error/10 hover:text-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/50 disabled:cursor-not-allowed disabled:opacity-30"
             >
               <Trash2 className="h-4 w-4" />
             </button>
           ) : null}
+          <QuickstartTopicMobileMenu
+            topicTitle={topic.title}
+            isDisabled={isDeleting}
+            onMoveUp={canMoveUp ? () => onMoveTopic(topic.id, -1) : undefined}
+            onMoveDown={canMoveDown ? () => onMoveTopic(topic.id, 1) : undefined}
+            onDelete={canDelete ? () => onDeleteTopic(topic) : undefined}
+          />
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ export const STEP_COPY: Record<OnboardingStep, StepCopy> = {
   },
   upload: {
     title: "2. Subí tus fuentes",
-    body: "Arrastrá PDFs, DOCX o TXT. LearnAI los procesa e indexa para que la IA responda solo con tu contenido.",
+    body: "Arrastrá PDFs, DOCX, PPTX o TXT. LearnAI los procesa e indexa para que la IA responda solo con tu contenido.",
   },
   ask: {
     title: "3. Preguntá lo que quieras",

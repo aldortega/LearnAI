@@ -22,7 +22,7 @@ type Props = {
 
 export function GenerationMonitorProvider({ children }: Props) {
   const { user } = useAuth();
-  const { pushToast, upsertToast, removeToast } = useToast();
+  const { pushToast } = useToast();
 
   const jobsRef = useRef<Map<string, TrackedGenerationJob>>(new Map());
   const waitersRef = useRef<Map<string, Set<Waiter>>>(new Map());
@@ -66,7 +66,6 @@ export function GenerationMonitorProvider({ children }: Props) {
       const current = jobsRef.current.get(key);
       if (!current) return;
 
-      removeToast(key);
       jobsRef.current.delete(key);
       inFlightRef.current.delete(key);
       flushStorage();
@@ -76,14 +75,11 @@ export function GenerationMonitorProvider({ children }: Props) {
         return;
       }
 
-      const label = generationKindLabels[current.kind];
       if (payload.status === "done") {
-        pushToast({
-          variant: "success",
-          title: `Se completo ${label}`,
-        });
         return;
       }
+
+      const label = generationKindLabels[current.kind];
 
       pushToast({
         variant: "error",
@@ -91,7 +87,7 @@ export function GenerationMonitorProvider({ children }: Props) {
         description: payload.error ?? undefined,
       });
     },
-    [flushStorage, pushToast, removeToast, resolveWaiters],
+    [flushStorage, pushToast, resolveWaiters],
   );
 
   const clearAllJobs = useCallback(() => {
@@ -99,14 +95,11 @@ export function GenerationMonitorProvider({ children }: Props) {
     jobsRef.current.clear();
     inFlightRef.current.clear();
     for (const key of keys) {
-      removeToast(key);
-    }
-    for (const key of keys) {
       resolveWaiters(key, null);
     }
     waitersRef.current.clear();
     sessionStorage.removeItem(STORAGE_KEY);
-  }, [removeToast, resolveWaiters]);
+  }, [resolveWaiters]);
 
   const trackJob = useCallback(
     ({ ownerId, notebookId, kind, jobId, initialStatus, initialError }: TrackJobInput) => {
@@ -126,16 +119,10 @@ export function GenerationMonitorProvider({ children }: Props) {
         updatedAt: now,
       });
 
-      const label = generationKindLabels[kind];
-      upsertToast(key, {
-        variant: "loading",
-        title: `Generando ${label}`,
-      });
-
       flushStorage();
       return key;
     },
-    [flushStorage, upsertToast],
+    [flushStorage],
   );
 
   const waitForJob = useCallback(async <TJob extends GenerationJobBase>(key: string) => {
@@ -181,18 +168,13 @@ export function GenerationMonitorProvider({ children }: Props) {
       for (const item of parsed) {
         if (item.ownerId !== user.id) continue;
         next.set(item.key, item);
-        const label = generationKindLabels[item.kind];
-        upsertToast(item.key, {
-          variant: "loading",
-          title: `Generando ${label}`,
-        });
       }
       jobsRef.current = next;
       flushStorage();
     } catch {
       sessionStorage.removeItem(STORAGE_KEY);
     }
-  }, [clearAllJobs, flushStorage, upsertToast, user]);
+  }, [clearAllJobs, flushStorage, user]);
 
   useEffect(() => {
     if (!user) return;

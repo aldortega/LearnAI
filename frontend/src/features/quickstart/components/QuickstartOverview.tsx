@@ -181,14 +181,11 @@ export function QuickstartOverview({
         </section>
 
         <section className="flex flex-col gap-4">
-          <div className="flex items-end justify-between gap-3">
-            <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col">
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-[28px] sm:leading-[1.15]">
                 Temas principales
               </h2>
-              <p className="text-xs text-foreground/65">
-                Generados automáticamente desde tus fuentes. Abrí uno para profundizar.
-              </p>
             </div>
             {topicCount > 0 ? (
               <span className="font-mono text-xs tabular-nums text-muted-foreground/70">
