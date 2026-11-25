@@ -1,7 +1,9 @@
 import { RefreshCcw } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { ModeTitle } from "../../notebooks/components/ModeTitle";
 import { RegenerateMindmapModal } from "./RegenerateMindmapModal";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   children: ReactNode;
@@ -39,18 +41,18 @@ export function MindmapShell({
   return (
     <div className="flex h-full flex-col bg-surface">
       <div className="flex h-[45px] items-center justify-between border-b border-border px-4">
-        <h2 className="text-sm font-semibold text-foreground">Mapa mental</h2>
+        <ModeTitle>Mapa mental</ModeTitle>
         <div className="flex items-center gap-2">
           {showRefreshAction ? (
             <button
               type="button"
-              className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className={`${ICON_MOTION_TRIGGER} rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50`}
               onClick={handleRefreshRequest}
               disabled={!canRefresh || isRefreshing}
               aria-label="Actualizar mapa mental"
               title="Actualizar mapa mental"
             >
-              <RefreshCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCcw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : iconMotion.spinOnHover}`} />
             </button>
           ) : null}
         </div>
