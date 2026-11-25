@@ -33,9 +33,9 @@ export function AnswerFeedback({
       <div className="flex items-start gap-3">
         <div className="mt-0.5">
           {isCorrect ? (
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle2 className="h-5 w-5 animate-pop-in [animation-delay:120ms] motion-reduce:animate-none" />
           ) : (
-            <XCircle className="h-5 w-5" />
+            <XCircle className="h-5 w-5 animate-shake [animation-delay:120ms] motion-reduce:animate-none" />
           )}
         </div>
         <div className="min-w-0">
