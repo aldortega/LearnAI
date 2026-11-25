@@ -6,6 +6,7 @@ import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyReportsIllustration } from "../../../shared/ui/illustrations/EmptyReportsIllustration";
 
 import type { ReportOut } from "../types/reports.types";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   reports: ReportOut[];
@@ -102,9 +103,9 @@ function ReportPreviewCard({
               type="button"
               onClick={handleDeleteReport}
               disabled={isAnyReportDeleting}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className={cn(ICON_MOTION_TRIGGER, "flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60")}
             >
-              <Trash2 className={cn("h-4 w-4", isDeleting && "animate-pulse")} />
+              <Trash2 className={cn("h-4 w-4", iconMotion.trashLidOnHover, isDeleting && "animate-pulse")} />
               Eliminar
             </button>
           </div>

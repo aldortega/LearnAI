@@ -8,6 +8,7 @@ from .rag import ChatMessageSource
 
 FlashcardCountPreset = Literal["less", "default", "more"]
 FlashcardDifficulty = Literal["easy", "medium", "hard"]
+FlashcardType = Literal["definition", "question", "cloze"]
 
 
 class FlashcardsGenerateRequest(BaseModel):
@@ -26,6 +27,7 @@ class FlashcardSourceRef(BaseModel):
 
 class FlashcardOut(BaseModel):
     id: str
+    type: FlashcardType
     term: str
     definition: str
 

@@ -11,6 +11,7 @@ import {
   forgotPasswordSchema,
   type ForgotPasswordSchema,
 } from "../utils/authSchemas";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 export function ForgotPasswordPage() {
   const { forgotPassword, isLoading, error, success, clearError } = useForgotPassword();
@@ -53,9 +54,9 @@ export function ForgotPasswordPage() {
 
           <Link
             to="/"
-            className="flex items-center justify-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
+            className={`${ICON_MOTION_TRIGGER} flex items-center justify-center gap-2 text-sm font-medium text-primary hover:text-primary/80`}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className={`h-4 w-4 ${iconMotion.nudgeLeftOnHover}`} />
             Volver al inicio de sesión
           </Link>
         </div>
@@ -100,9 +101,9 @@ export function ForgotPasswordPage() {
 
         <Link
           to="/"
-          className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          className={`${ICON_MOTION_TRIGGER} flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground`}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className={`h-4 w-4 ${iconMotion.nudgeLeftOnHover}`} />
           Volver al inicio de sesión
         </Link>
       </form>

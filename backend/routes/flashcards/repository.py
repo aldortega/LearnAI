@@ -9,6 +9,7 @@ from ...schemas.flashcards import FlashcardOut, FlashcardSetOut, FlashcardsOut
 from ..notebook_access import resolve_notebook_access
 from .normalization import (
     coerce_text,
+    normalize_card_type,
     normalize_definition,
     normalize_set_title,
     normalize_term,
@@ -70,12 +71,16 @@ def map_cards_to_out(cards_data: object) -> list[FlashcardOut]:
     for index, raw_card in enumerate(cards_data, start=1):
         if not isinstance(raw_card, dict):
             continue
+        card_type = normalize_card_type(raw_card.get("type"))
+        if card_type is None:
+            continue
         card_id = coerce_text(raw_card.get("id")) or f"card-{index}"
         term = normalize_term(raw_card.get("term"), index)
-        definition = normalize_definition(raw_card.get("definition"), term)
+        definition = normalize_definition(raw_card.get("definition"))
         cards_out.append(
             FlashcardOut(
                 id=card_id,
+                type=card_type,
                 term=term,
                 definition=definition,
             )

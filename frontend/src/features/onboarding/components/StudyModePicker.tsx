@@ -1,10 +1,10 @@
-import { BookOpenCheck, Network, Sparkles } from "lucide-react";
+import { BookOpenCheck, Network, Rocket } from "lucide-react";
 
 import { cn } from "../../../shared/lib/cn";
 import type { DemoStudyMode } from "../types/onboarding.types";
 import { DEMO_STUDY_MODES } from "../utils/demoContent";
 
-const ICONS = { quickstart: Sparkles, quiz: BookOpenCheck, mindmap: Network } as const;
+const ICONS = { quickstart: Rocket, quiz: BookOpenCheck, mindmap: Network } as const;
 
 type Props = {
   active: DemoStudyMode | null;

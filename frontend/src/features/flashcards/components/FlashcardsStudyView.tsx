@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 
+import { ClozeText } from "./ClozeText";
 import { FlashcardExplainModal } from "./FlashcardExplainModal";
 import { useFlashcardExplanation } from "../hooks/useFlashcardExplanation";
 import type { FlashcardSetOut } from "../types/flashcards.types";
@@ -205,7 +206,11 @@ export function FlashcardsStudyView({
                 >
                   <div className="absolute inset-0 flex items-center justify-center overflow-y-auto rounded-xl border border-border bg-muted px-4 py-4 shadow-sm transition [backface-visibility:hidden] hover:border-border-strong hover:shadow-md">
                     <p className="w-full text-center text-base font-semibold leading-relaxed text-foreground sm:text-lg">
-                      {currentCard.term}
+                      {currentCard.type === "cloze" ? (
+                        <ClozeText text={currentCard.term} />
+                      ) : (
+                        currentCard.term
+                      )}
                     </p>
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center overflow-y-auto rounded-xl border border-border bg-muted px-4 py-4 pb-14 shadow-sm transition [backface-visibility:hidden] [transform:rotateY(180deg)] hover:border-border-strong hover:shadow-md">

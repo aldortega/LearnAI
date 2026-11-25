@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import type { PresentationOut } from "../types/presentations.types";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 type PresentationViewMode = "generate" | "history";
 type HistoryViewMode = "cards" | "detail";
@@ -57,7 +58,7 @@ export function PresentationsHeaderActions({
             type="button"
             onClick={onPreviousSlide}
             disabled={!activePresentation || isFirstSlide}
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
             title="Slide anterior"
             aria-label="Slide anterior"
           >
@@ -67,7 +68,7 @@ export function PresentationsHeaderActions({
             type="button"
             onClick={onNextSlide}
             disabled={!activePresentation || isLastSlide}
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
             title="Slide siguiente"
             aria-label="Slide siguiente"
           >
@@ -80,7 +81,7 @@ export function PresentationsHeaderActions({
           type="button"
           onClick={onDownloadPdf}
           disabled={!activePresentation || isDownloading}
-          className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+          className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
           title="Descargar PDF"
         >
           {isDownloading ? (
@@ -95,7 +96,7 @@ export function PresentationsHeaderActions({
           type="button"
           onClick={onEditSlide}
           disabled={!canEditSlide || isEditingSlide}
-          className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+          className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
           title="Editar/regenerar slide"
           aria-label="Editar/regenerar slide"
         >
@@ -110,14 +111,14 @@ export function PresentationsHeaderActions({
         type="button"
         onClick={onToggleView}
         disabled={disableToggle}
-        className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+        className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
         title="Cambiar vista"
       >
         {viewMode === "history" ? (
           historyView === "detail" ? (
             <Presentation className="h-4 w-4" />
           ) : (
-            <Plus className="h-4 w-4" />
+            <Plus className={`h-4 w-4 ${iconMotion.rotateQuarterOnHover}`} />
           )
         ) : (
           <Presentation className="h-4 w-4" />

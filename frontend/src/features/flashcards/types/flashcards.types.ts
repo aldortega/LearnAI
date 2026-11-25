@@ -2,6 +2,7 @@ import type { CitableSource } from "../../../shared/lib/citations";
 
 export type FlashcardCountPreset = "less" | "default" | "more";
 export type FlashcardDifficulty = "easy" | "medium" | "hard";
+export type FlashcardType = "definition" | "question" | "cloze";
 
 export type FlashcardsGenerateRequest = {
   card_count?: FlashcardCountPreset;
@@ -11,6 +12,7 @@ export type FlashcardsGenerateRequest = {
 
 export type FlashcardOut = {
   id: string;
+  type: FlashcardType;
   term: string;
   definition: string;
 };

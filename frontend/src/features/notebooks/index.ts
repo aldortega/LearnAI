@@ -15,6 +15,7 @@ export { useNotebookStudioSources } from "./hooks/useNotebookStudioSources";
 export { useInviteUser } from "./hooks/useInviteUser";
 export { useUserSearch } from "./hooks/useUserSearch";
 export { NotebookShell } from "./components/NotebookShell";
+export { ModeTitle } from "./components/ModeTitle";
 export { InviteUserModal } from "./components/InviteUserModal";
 export type {
   Notebook,

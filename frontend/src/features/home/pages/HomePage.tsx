@@ -1,4 +1,4 @@
-﻿import { ChevronDown, ChevronUp, Plus } from "lucide-react";
+﻿import { ChevronDown, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useAuth } from "../../../shared/hooks/useAuth";
@@ -12,9 +12,9 @@ import { LeaveNotebookModal } from "../../notebooks/components/LeaveNotebookModa
 import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyNotebooksIllustration } from "../../../shared/ui/illustrations/EmptyNotebooksIllustration";
 import { Header } from "../components/Header";
-import { useCreateNotebookModal } from "../hooks/useCreateNotebookModal";
 import { NotebookCard } from "../components/NotebookCard";
 import { NotebookListItem } from "../components/NotebookListItem";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 const INITIAL_VISIBLE_OWNED = 3;
 const INITIAL_VISIBLE_SHARED = 2;
@@ -43,7 +43,7 @@ export function HomePage() {
   const { notebooks, isLoading: isNotebooksLoading, error: notebooksError, reload } = useNotebooks(user?.id);
   const { deleteNotebook, isLoading, error, clearError } = useDeleteNotebook();
   const { leaveNotebook, isLoading: isLeaving, error: leaveError, clearError: clearLeaveError } = useLeaveNotebook();
-  const createModal = useCreateNotebookModal();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -168,10 +168,10 @@ export function HomePage() {
 
             <button
               type="button"
-              onClick={createModal.open}
-              className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="group/icon flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className={`h-4 w-4 ${iconMotion.rotateQuarterOnHover}`} />
               Crear Cuaderno
             </button>
           </div>
@@ -192,11 +192,7 @@ export function HomePage() {
                   className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition hover:text-foreground"
                 >
                   {showAllOwned ? "Ver menos" : "Ver más"}
-                  {showAllOwned ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
+                  <ChevronDown className={`h-4 w-4 ${iconMotion.disclosure} ${showAllOwned ? "rotate-180" : ""}`} />
                 </button>
               ) : null}
             </div>
@@ -255,11 +251,7 @@ export function HomePage() {
                     className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition hover:text-foreground"
                   >
                     {showAllShared ? "Ver menos" : "Ver más"}
-                    {showAllShared ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
+                    <ChevronDown className={`h-4 w-4 ${iconMotion.disclosure} ${showAllShared ? "rotate-180" : ""}`} />
                   </button>
                 ) : null}
               </div>
@@ -287,8 +279,8 @@ export function HomePage() {
       </main>
 
       <CreateNotebookModal
-        isOpen={createModal.isOpen}
-        onClose={createModal.close}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => {
           void reload();
         }}

@@ -10,6 +10,7 @@ import { EmptyState } from "../../../shared/ui/EmptyState";
 import { EmptyAudioIllustration } from "../../../shared/ui/illustrations/EmptyAudioIllustration";
 import type { PodcastOut } from "../types/audio.types";
 import { PodcastPlayer } from "./PodcastPlayer";
+import { ICON_MOTION_TRIGGER, iconMotion } from "../../../shared/ui/iconMotion";
 
 type Props = {
   podcasts: PodcastOut[];
@@ -72,9 +73,9 @@ function PodcastCard({
             type="button"
             onClick={handleDelete}
             disabled={isAnyDeleting}
-            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            className={`${ICON_MOTION_TRIGGER} flex w-full items-center gap-2 px-4 py-2 text-sm text-error hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60`}
           >
-            <Trash2 className={`h-4 w-4 ${isDeleting ? "animate-pulse" : ""}`} />
+            <Trash2 className={`h-4 w-4 ${iconMotion.trashLidOnHover} ${isDeleting ? "animate-pulse" : ""}`} />
             Eliminar
           </button>
         </div>

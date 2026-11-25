@@ -9,13 +9,13 @@ type Props = {
 };
 
 export function OnboardingProvider({ children }: Props) {
-  const { isOpen, openTutorial, closeTutorial, finishTutorial } = useOnboardingState();
+  const { isOpen, openTutorial, closeTutorial } = useOnboardingState();
   const value = useMemo<OnboardingContextValue>(() => ({ isOpen, openTutorial }), [isOpen, openTutorial]);
 
   return (
     <OnboardingContext.Provider value={value}>
       {children}
-      {isOpen ? <OnboardingCarousel onClose={closeTutorial} onFinish={finishTutorial} /> : null}
+      {isOpen ? <OnboardingCarousel onClose={closeTutorial} /> : null}
     </OnboardingContext.Provider>
   );
 }

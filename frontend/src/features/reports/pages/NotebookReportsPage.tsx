@@ -18,6 +18,7 @@ import { useReportsConfig } from "../hooks/useReportsConfig";
 import { useReportsHistory } from "../hooks/useReportsHistory";
 import { useReportsNotebookSources } from "../hooks/useReportsNotebookSources";
 import type { ReportFormatType, ReportOut, ReportPromptTemplate, ReportSuggestion } from "../types/reports.types";
+import { iconMotion } from "../../../shared/ui/iconMotion";
 
 const SUGGESTIONS_SYNC_INTERVAL_MS = 2000;
 const SUGGESTIONS_SYNC_TIMEOUT_MS = 180000;
@@ -641,7 +642,7 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
                 disabled={!activeReport || downloadingReportId === activeReport.id}
                 aria-label="Descargar PDF"
                 title={downloadingReportId === activeReport?.id ? "Descargando PDF..." : "Descargar PDF"}
-                className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+                className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {downloadingReportId === activeReport?.id ? (
                   <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -656,12 +657,12 @@ export function NotebookReportsPage({ routeMode = "list" }: Props) {
               disabled={isHeaderActionDisabled}
               aria-label={headerActionLabel}
               title={headerActionLabel}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="group/icon inline-flex items-center justify-center rounded-md p-1.5 text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
               {viewMode === "history" ? historyView === "detail" ? (
                 <FileText className="h-4 w-4" />
               ) : (
-                <Plus className="h-4 w-4" />
+                <Plus className={`h-4 w-4 ${iconMotion.rotateQuarterOnHover}`} />
               ) : (
                 <FileText className="h-4 w-4" />
               )}
