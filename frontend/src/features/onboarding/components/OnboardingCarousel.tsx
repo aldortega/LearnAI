@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 
@@ -47,14 +46,6 @@ export function OnboardingCarousel({ onClose, onFinish }: Props) {
       aria-describedby={descriptionId}
     >
       <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl ring-1 ring-border">
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Cerrar tutorial"
-          className="absolute right-3 top-3 z-10 cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <X className="h-5 w-5" />
-        </button>
         <div key={demo.step} className="flex min-h-64 flex-1 items-center justify-center overflow-y-auto bg-muted px-4 py-8 sm:min-h-80 sm:px-6">
           <OnboardingScene demo={demo} />
         </div>
