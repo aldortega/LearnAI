@@ -29,14 +29,19 @@ import { NotebookReportsPage } from "./features/reports/pages/NotebookReportsPag
 import { NotebookVoicePage } from "./features/voice-chat/pages/NotebookVoicePage";
 import { OnboardingProvider } from "./features/onboarding";
 import { useAuth } from "./shared/hooks/useAuth";
+import { useMinimumDuration } from "./shared/hooks/useMinimumDuration";
 import { ToastProvider } from "./shared/ui/toast/ToastProvider";
+import { AppLoadingScreen } from "./shared/ui/AppLoadingScreen";
 import { NotebookLoadingScreen } from "./shared/ui/NotebookLoadingScreen";
+
+const SPLASH_MIN_MS = 1200;
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, isBootstrapping } = useAuth();
+  const showSplash = useMinimumDuration(isBootstrapping, SPLASH_MIN_MS);
 
-  if (isBootstrapping) {
-    return <NotebookLoadingScreen message="Cargando..." />;
+  if (showSplash) {
+    return <AppLoadingScreen />;
   }
 
   if (!user) {
@@ -52,9 +57,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 function RootRoute() {
   const { user, isBootstrapping } = useAuth();
+  const showSplash = useMinimumDuration(isBootstrapping, SPLASH_MIN_MS);
 
-  if (isBootstrapping) {
-    return <NotebookLoadingScreen message="Cargando..." />;
+  if (showSplash) {
+    return <AppLoadingScreen />;
   }
 
   if (!user) {
@@ -70,9 +76,10 @@ function RootRoute() {
 
 function GuestRoute({ children }: { children: ReactNode }) {
   const { user, isBootstrapping } = useAuth();
+  const showSplash = useMinimumDuration(isBootstrapping, SPLASH_MIN_MS);
 
-  if (isBootstrapping) {
-    return <NotebookLoadingScreen message="Cargando..." />;
+  if (showSplash) {
+    return <AppLoadingScreen />;
   }
 
   if (user) {
